@@ -39,10 +39,9 @@ Traccer bu muammoni hal qiladi:
 ### 📋 Kunlik Jurnal / Odatlar
 
 - Ijobiy odatlarni belgilash: **Bajarildi / Bajarilmadi / Belgilanmagan** — uch holatli tizim (avval faqat salbiy odatlarda bo'lgan mantiq endi ijobiy odatlarga ham qo'llanildi)
-- Vaqt jadvalli odatlar uchun kechikish muhlati (`isHabitLoggable`) — belgilangan boshlanish vaqtidan keyin ma'lum vaqt oralig'ida hali belgilash mumkin, undan keyin oyna yopiladi
 - Raqamli odatlar: suv ichish (stakan), yugurish (daqiqa) va h.k.
 - **Odat katalogi**: yangi odat qo'shishda erkin matn kiritish olib tashlandi — foydalanuvchi faqat kategoriyalangan tayyor ro'yxatdan tanlaydi (Sog'liq, Diqqat va Ta'lim, Muntazamlik kategoriyalari; masalan "Kuniga 2 litr suv ichish", "8 soat uxlash", "Ertalabki badantarbiya", "30 daqiqa kitob o'qish", "Telefonni 2 soatga cheklash")
-- **Oldingi kunlar** uchun retroaktiv belgilash imkoniyati; o'tgan kunlarning jurnal yozuvlari (kayfiyat/matn) endi **faqat o'qish uchun** (read-only) — o'zgartirib bo'lmaydi
+- **Qat'iy kunlik qulflash** (`isLogDateLocked`): har bir kun uchun odat belgilash/o'zgartirish oynasi shu kun 00:00'dan ertasi kuni soat 09:00'gacha ochiq. Bu muddat o'tgach — hatto avval belgilangan yozuv bo'lsa ham — kun butunlay qulflanadi (checkbox/X tugmalari yo'qoladi, 🔒 belgisi chiqadi); haftalik navigatsiyada eski kunlarni ko'rish mumkin, lekin faqat o'qish uchun. Jurnal yozuvlari (kayfiyat/matn) ham xuddi shunday o'tgan kunlar uchun **faqat o'qish uchun** (read-only)
 
 ### 👥 Guruh Tizimi (asosiy funksiya)
 

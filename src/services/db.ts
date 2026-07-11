@@ -414,6 +414,7 @@ export async function toggleHabitLog(
 ) {
   const today = toDateStr()
   const logDate = date || today
+  if (isLogDateLocked(logDate)) throw new Error(LOG_LOCKED_MESSAGE)
   const { data, error } = await supabase
     .from('habit_logs')
     .upsert({
@@ -447,25 +448,38 @@ export async function toggleHabitLog(
   return data
 }
 
-// Vaqtli (scheduled) odatlar uchun "muddati o'tgan" mantiq: soat 00:00'da
-// boshlanadigan "Uyqu" kabi odatlar kechayarim atrofida tugaydi, shuning
-// uchun belgilash oynasi ertasi kuni soat 09:00'gacha davom etadi — undan
-// keyin (va agar hali belgilanmagan bo'lsa) odat "belgilab bo'lmaydigan"
-// holatga o'tadi. Bu sof vaqt matematikasi — serverda cron yoki avtomatik
-// yozuv shart emas, faqat UI interaktivligini cheklaydi.
-const OVERDUE_GRACE_HOUR = 9
+// Kunlik Jurnal — qat'iy qulflash: har bir kun uchun belgilash/o'zgartirish
+// oynasi shu kun 00:00'dan ertasi kuni soat 09:00'gacha ochiq (masalan
+// "Uyqu" kabi kechayarimdan keyin tugaydigan odatlar uchun ham yetarli
+// muhlat qoldiradi). Bu muddat o'tgach — hatto allaqachon belgilangan
+// yozuv bo'lsa ham — kun butunlay qulflanadi: yangi belgilash, mavjud
+// belgini bekor qilish yoki qiymatini o'zgartirish endi mumkin emas. Bu
+// sof vaqt matematikasi (serverda cron yoki avtomatik yozuv shart emas)
+// va universal — barcha odat turlariga (vaqtli/vaqtsiz/musbat/salbiy)
+// bab-baravar qo'llaniladi, faqat sanaga bog'liq.
+const LOCK_GRACE_HOUR = 9
+export const LOG_LOCKED_MESSAGE = "Bu kun uchun belgilash muddati tugagan (ertasi kuni soat 09:00 gacha ochiq edi)."
 
-export function isHabitLoggable(
-  habit: { scheduled_start?: string | null },
-  dateStr: string,
-  now: Date = new Date()
-): boolean {
-  if (!habit.scheduled_start) return true
+export function isLogDateLocked(dateStr: string, now: Date = new Date()): boolean {
   const windowStart = new Date(dateStr + 'T00:00:00')
   const windowEnd = new Date(windowStart)
   windowEnd.setDate(windowEnd.getDate() + 1)
-  windowEnd.setHours(OVERDUE_GRACE_HOUR, 0, 0, 0)
-  return now >= windowStart && now < windowEnd
+  windowEnd.setHours(LOCK_GRACE_HOUR, 0, 0, 0)
+  return !(now >= windowStart && now < windowEnd)
+}
+
+// "Kutilmoqda" holatiga qaytarish (log qatorini o'chirish) — toggleHabitLog
+// bilan bir xil qulflash tekshiruvidan o'tadi, shuning uchun HabitsLog.tsx
+// endi bevosita supabase.from('habit_logs').delete() chaqirmaydi.
+export async function deleteHabitLog(habitId: string, userId: string, date: string) {
+  if (isLogDateLocked(date)) throw new Error(LOG_LOCKED_MESSAGE)
+  const { error } = await supabase
+    .from('habit_logs')
+    .delete()
+    .eq('habit_id', habitId)
+    .eq('user_id', userId)
+    .eq('log_date', date)
+  if (error) throw error
 }
 
 // Kunlik progress hisob-kitobi — YAGONA MANBA. App.tsx (login'da boshlang'ich
@@ -1480,12 +1494,29 @@ export async function getHealthLog(userId: string, date: string) {
 export async function upsertHealthLog(
   userId: string,
   date: string,
-  fields: { steps?: number | null; sleep_hours?: number | null; water_glasses?: number | null; screen_time_hours?: number | null }
+  fields: { steps?: number | null; sleep_hours?: number | null; water_glasses?: number | null; screen_time_hours?: number | null; nature_time_minutes?: number | null; social_time_minutes?: number | null }
 ) {
   const { error } = await supabase
     .from('health_logs')
     .upsert({ user_id: userId, log_date: date, ...fields }, { onConflict: 'user_id,log_date' })
   if (error) throw error
+}
+
+// Kunlik Jurnaldagi "Raqamli Ko'rsatkichlar" slaydiri (Tabiat/Ijtimoiy
+// tarmoq vaqti) uchun tor qavatlash — bular alohida odat emas (habit_id
+// yo'q), shuning uchun health_logs'dagi mos ustunga yoziladi, xuddi
+// sleep_hours/screen_time_hours kabi boshqa kunlik sog'liq
+// ko'rsatkichlari bilan bir xil "yagona manba" jadvalida.
+export type HabitMetricKey = 'nature_time_minutes' | 'social_time_minutes'
+
+export async function upsertHabitMetric(
+  userId: string,
+  metricKey: HabitMetricKey,
+  logDate: string,
+  value: number
+): Promise<void> {
+  if (isLogDateLocked(logDate)) throw new Error(LOG_LOCKED_MESSAGE)
+  await upsertHealthLog(userId, logDate, { [metricKey]: value })
 }
 
 export async function getMonthHealthLogs(userId: string, year: number, month: number): Promise<any[]> {

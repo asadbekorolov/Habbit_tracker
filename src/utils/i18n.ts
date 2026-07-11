@@ -116,6 +116,12 @@ const uz = {
   log_metrics: "📊 Raqamli Ko'rsatkichlar",
   log_nature_time: "Tabiat Vaqti",
   log_social_time: "Ijtimoiy Tarmoq Vaqti",
+  log_locked_error: "Bu kun uchun belgilash muddati tugagan (ertasi kuni soat 09:00 gacha ochiq edi).",
+  log_locked_badge: "Qulflangan",
+  log_locked_banner: "🔒 Bu kun qulflangan — muddati (ertasi kuni soat 09:00) o'tgan, endi o'zgartirib bo'lmaydi.",
+  log_metrics_save_btn: "Saqlash",
+  log_metrics_saved: "✓ Saqlandi!",
+  log_metrics_save_error: "Saqlashda xatolik yuz berdi",
 
   // ── HabitsManager ────────────────────────────────────────────
   habits_title: "Odatlarni Boshqarish",
@@ -890,6 +896,12 @@ const ru: typeof uz = {
   log_metrics: "📊 Числовые Показатели",
   log_nature_time: "Время на природе",
   log_social_time: "Время в соцсетях",
+  log_locked_error: "Срок отметки для этого дня истёк (был открыт до 09:00 следующего дня).",
+  log_locked_badge: "Заблокировано",
+  log_locked_banner: "🔒 Этот день заблокирован — срок (09:00 следующего дня) истёк, изменения больше невозможны.",
+  log_metrics_save_btn: "Сохранить",
+  log_metrics_saved: "✓ Сохранено!",
+  log_metrics_save_error: "Ошибка при сохранении",
 
   // ── HabitsManager ────────────────────────────────────────────
   habits_title: "Управление Привычками",
@@ -1664,6 +1676,12 @@ const en: typeof uz = {
   log_metrics: "📊 Numeric Metrics",
   log_nature_time: "Nature Time",
   log_social_time: "Social Media Time",
+  log_locked_error: "The logging window for this day has closed (it was open until 09:00 the next day).",
+  log_locked_badge: "Locked",
+  log_locked_banner: "🔒 This day is locked — the deadline (09:00 the next day) has passed, it can no longer be changed.",
+  log_metrics_save_btn: "Save",
+  log_metrics_saved: "✓ Saved!",
+  log_metrics_save_error: "Failed to save",
 
   // ── HabitsManager ────────────────────────────────────────────
   habits_title: "Manage Habits",

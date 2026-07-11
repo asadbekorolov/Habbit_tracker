@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from "react";
-import { Check, Flame, Loader2, Minus, Plus, ChevronLeft, ChevronRight, Snowflake, WifiOff, X } from "lucide-react";
-import { getHabits, getLogsForDate, toggleHabitLog, getLast30DaysLogs, getStreakFreezes, getMonthlyFreezeCount, useStreakFreeze, getExtraFreezeCount, FREE_FREEZES_PER_MONTH, isHabitLoggable, computeHabitProgress, checkAndUnlockAchievements } from "../../services/db";
-import { supabase } from "../../services/supabase";
+import { toast } from "sonner";
+import { Check, Flame, Loader2, Lock, Minus, Plus, Save, ChevronLeft, ChevronRight, Snowflake, WifiOff, X } from "lucide-react";
+import { getHabits, getLogsForDate, toggleHabitLog, deleteHabitLog, getLast30DaysLogs, getStreakFreezes, getMonthlyFreezeCount, useStreakFreeze, getExtraFreezeCount, FREE_FREEZES_PER_MONTH, isLogDateLocked, computeHabitProgress, checkAndUnlockAchievements, getHealthLog, upsertHabitMetric, type HabitMetricKey } from "../../services/db";
 import { sortByOrder } from "../../utils/habitOrder";
 import { toDateStr } from "../../utils/date";
 import { cacheHabits, getCachedHabits, cacheLogs, getCachedLogs, cacheStreaks, getCachedStreaks, addPendingLog, getPendingLogs, savePendingLogs } from "../../services/offline";
@@ -74,6 +74,7 @@ export function HabitsLog({ isDark, profile, onCompletedChange, onScoreChange, o
 
   const today = toDateStr();
   const isToday = selectedDate === today;
+  const dateLocked = isLogDateLocked(selectedDate);
 
   useEffect(() => { loadData(selectedDate); }, [profile.id, selectedDate]);
 
@@ -281,6 +282,7 @@ export function HabitsLog({ isDark, profile, onCompletedChange, onScoreChange, o
   }
 
   async function toggleHabit(habitId: string, isNegative = false) {
+    if (dateLocked) { toast.error(t('log_locked_error')); return; }
     const wasDone = completedIds.has(habitId);
     const wasLogged = loggedIds.has(habitId);
     const newState = !wasDone;
@@ -323,7 +325,7 @@ export function HabitsLog({ isDark, profile, onCompletedChange, onScoreChange, o
     }
     try {
       if (resetting) {
-        await supabase.from('habit_logs').delete().eq('habit_id', habitId).eq('user_id', profile.id).eq('log_date', selectedDate);
+        await deleteHabitLog(habitId, profile.id, selectedDate);
       } else {
         await toggleHabitLog(habitId, profile.id, newState, newState ? 1 : 0, wasDone, isNegative, selectedDate);
         if (newState) triggerAchievementCheck();
@@ -343,13 +345,14 @@ export function HabitsLog({ isDark, profile, onCompletedChange, onScoreChange, o
   // Musbat odat uchun ataylab "Bajarilmadi (X)" belgisi — markNegativeHabit
   // bilan bir xil naqsh: qayta bossa neytral ("Kutilmoqda")ga qaytaradi.
   async function markHabitMissed(habitId: string) {
+    if (dateLocked) { toast.error(t('log_locked_error')); return; }
     const wasDone = completedIds.has(habitId);
     const wasLogged = loggedIds.has(habitId);
     const alreadyMissed = wasLogged && !wasDone;
     setSavingIds(p => new Set(p).add(habitId));
     try {
       if (alreadyMissed) {
-        await supabase.from('habit_logs').delete().eq('habit_id', habitId).eq('user_id', profile.id).eq('log_date', selectedDate);
+        await deleteHabitLog(habitId, profile.id, selectedDate);
         const nextLogged = new Set(loggedIds);
         nextLogged.delete(habitId);
         setLoggedIds(nextLogged);
@@ -374,6 +377,7 @@ export function HabitsLog({ isDark, profile, onCompletedChange, onScoreChange, o
   }
 
   async function handleValueChange(habit: Habit, newValue: number) {
+    if (dateLocked) { toast.error(t('log_locked_error')); return; }
     const target = habit.target_value || 1;
     const completed = newValue >= target;
     const prevCompleted = completedIds.has(habit.id);
@@ -412,6 +416,7 @@ export function HabitsLog({ isDark, profile, onCompletedChange, onScoreChange, o
   }
 
   async function markNegativeHabit(habitId: string, broke: boolean) {
+    if (dateLocked) { toast.error(t('log_locked_error')); return; }
     const alreadyLogged = loggedIds.has(habitId);
     const alreadyBroke = completedIds.has(habitId);
     const alreadyKept = alreadyLogged && !alreadyBroke;
@@ -419,7 +424,7 @@ export function HabitsLog({ isDark, profile, onCompletedChange, onScoreChange, o
     setSavingIds(p => new Set(p).add(habitId));
     try {
       if (sameState) {
-        await supabase.from('habit_logs').delete().eq('habit_id', habitId).eq('user_id', profile.id).eq('log_date', selectedDate);
+        await deleteHabitLog(habitId, profile.id, selectedDate);
         const nextLogged = new Set(loggedIds); nextLogged.delete(habitId);
         const nextCompleted = new Set(completedIds); nextCompleted.delete(habitId);
         setLoggedIds(nextLogged);
@@ -618,6 +623,17 @@ export function HabitsLog({ isDark, profile, onCompletedChange, onScoreChange, o
         </div>
       )}
 
+      {/* ─── Locked Day Banner ─── */}
+      {dateLocked && (
+        <div className="flex items-center gap-3 px-4 py-3 rounded-2xl"
+          style={{ background: isDark ? "rgba(255,255,255,0.04)" : "#F3F4F6", border: `1px solid ${isDark ? "rgba(255,255,255,0.08)" : "rgba(0,0,0,0.08)"}` }}>
+          <Lock size={16} style={{ color: "var(--muted-foreground)", flexShrink: 0 }} />
+          <p className="text-xs flex-1" style={{ color: "var(--muted-foreground)" }}>
+            {t('log_locked_banner')}
+          </p>
+        </div>
+      )}
+
       {/* ─── Offline Banner ─── */}
       {isOffline && (
         <div className="flex items-center gap-3 px-4 py-3 rounded-2xl"
@@ -756,11 +772,13 @@ export function HabitsLog({ isDark, profile, onCompletedChange, onScoreChange, o
                 const saving = savingIds.has(habit.id);
                 const color = blockColor(idx);
                 const isNumeric = (habit.target_value || 1) > 1;
-                // Belgilash oynasi tugagan (masalan "Uyqu" 00:00'da boshlanib,
-                // ertasi kuni 09:00'dan keyin) va hali belgilanmagan bo'lsa —
-                // bloq "belgilab bo'lmaydi" holatida ko'rsatiladi (server
-                // yozuvi yaratilmaydi, faqat UI qulflanadi).
-                const loggable = isHabitLoggable(habit, selectedDate) || logged;
+                // Kun qulflangan bo'lsa (ertasi kuni soat 09:00 o'tgan) —
+                // hatto allaqachon belgilangan yozuv bo'lsa ham endi
+                // o'zgartirib bo'lmaydi, bloq "qulflangan" holatida
+                // ko'rsatiladi (server yozuvi yaratilmaydi/o'chirilmaydi,
+                // faqat UI interaktivligi cheklanadi — haqiqiy tekshiruv
+                // db.ts'dagi toggleHabitLog/deleteHabitLog ichida).
+                const loggable = !dateLocked;
                 const canToggle = loggable && !saving && !isNumeric;
 
                 return (
@@ -869,7 +887,7 @@ export function HabitsLog({ isDark, profile, onCompletedChange, onScoreChange, o
                   <div key={habit.id} className="px-3 py-2.5 rounded-xl" style={{
                     background: done ? isDark ? "rgba(74,222,128,0.07)" : "#F0FDF4" : isDark ? "rgba(255,255,255,0.03)" : "#F9FAFB",
                     border: `1px solid ${done ? "rgba(74,222,128,0.2)" : isDark ? "rgba(255,255,255,0.05)" : "rgba(0,0,0,0.05)"}`,
-                    opacity: saving ? 0.7 : 1,
+                    opacity: saving ? 0.7 : dateLocked ? 0.5 : 1,
                   }}>
                     <div className="flex items-center gap-2 mb-1.5">
                       <span className="text-base">{habit.emoji}</span>
@@ -883,33 +901,39 @@ export function HabitsLog({ isDark, profile, onCompletedChange, onScoreChange, o
                         {isTime ? `${formatTime(currentVal)}/${formatTime(target)}` : `${currentVal}/${target}${habit.unit ? ` ${habit.unit}` : ""}`}
                       </span>
                     </div>
-                    <div className="flex items-center gap-2">
-                      <div className="flex-1 h-1 rounded-full overflow-hidden" style={{ background: isDark ? "rgba(255,255,255,0.08)" : "rgba(0,0,0,0.08)" }}>
-                        <div className="h-full rounded-full transition-all" style={{ width: `${pct}%`, background: "#4ADE80" }} />
+                    {dateLocked ? (
+                      <div className="flex items-center gap-1.5 text-[10px]" style={{ color: "var(--muted-foreground)" }}>
+                        <Lock size={10} /> {t('log_locked_badge')}
                       </div>
-                      <button type="button" aria-label={t('log_decrease')} onClick={() => !saving && handleValueChange(habit, Math.max(0, currentVal - step))} disabled={saving || currentVal === 0}
-                        className="w-6 h-6 rounded-lg flex items-center justify-center text-sm font-bold"
-                        style={{ background: isDark ? "rgba(255,255,255,0.08)" : "#E5E7EB", color: "var(--foreground)", opacity: currentVal === 0 ? 0.3 : 1 }}>
-                        −
-                      </button>
-                      <button type="button" aria-label={t('log_increase')} onClick={() => !saving && handleValueChange(habit, currentVal + step)} disabled={saving}
-                        className="w-6 h-6 rounded-lg flex items-center justify-center text-sm font-bold"
-                        style={{ background: done ? "#4ADE80" : isDark ? "rgba(255,255,255,0.08)" : "#E5E7EB", color: done ? "#000" : "var(--foreground)" }}>
-                        {saving ? <Loader2 size={10} className="animate-spin" /> : "+"}
-                      </button>
-                    </div>
+                    ) : (
+                      <div className="flex items-center gap-2">
+                        <div className="flex-1 h-1 rounded-full overflow-hidden" style={{ background: isDark ? "rgba(255,255,255,0.08)" : "rgba(0,0,0,0.08)" }}>
+                          <div className="h-full rounded-full transition-all" style={{ width: `${pct}%`, background: "#4ADE80" }} />
+                        </div>
+                        <button type="button" aria-label={t('log_decrease')} onClick={() => !saving && handleValueChange(habit, Math.max(0, currentVal - step))} disabled={saving || currentVal === 0}
+                          className="w-6 h-6 rounded-lg flex items-center justify-center text-sm font-bold"
+                          style={{ background: isDark ? "rgba(255,255,255,0.08)" : "#E5E7EB", color: "var(--foreground)", opacity: currentVal === 0 ? 0.3 : 1 }}>
+                          −
+                        </button>
+                        <button type="button" aria-label={t('log_increase')} onClick={() => !saving && handleValueChange(habit, currentVal + step)} disabled={saving}
+                          className="w-6 h-6 rounded-lg flex items-center justify-center text-sm font-bold"
+                          style={{ background: done ? "#4ADE80" : isDark ? "rgba(255,255,255,0.08)" : "#E5E7EB", color: done ? "#000" : "var(--foreground)" }}>
+                          {saving ? <Loader2 size={10} className="animate-spin" /> : "+"}
+                        </button>
+                      </div>
+                    )}
                   </div>
                 );
               }
 
               return (
-                <button type="button" key={habit.id} onClick={() => !saving && toggleHabit(habit.id)} disabled={saving}
+                <button type="button" key={habit.id} onClick={() => !saving && !dateLocked && toggleHabit(habit.id)} disabled={saving || dateLocked}
                   className="flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-left transition-all"
                   style={{
                     background: done ? isDark ? "rgba(74,222,128,0.07)" : "#F0FDF4" : missed ? isDark ? "rgba(248,113,113,0.07)" : "#FFF5F5" : isDark ? "rgba(255,255,255,0.03)" : "#F9FAFB",
                     border: `1px solid ${done ? "rgba(74,222,128,0.2)" : missed ? "rgba(248,113,113,0.2)" : isDark ? "rgba(255,255,255,0.05)" : "rgba(0,0,0,0.05)"}`,
-                    opacity: saving ? 0.7 : 1,
-                    cursor: saving ? "default" : "pointer",
+                    opacity: saving ? 0.7 : dateLocked ? 0.5 : 1,
+                    cursor: saving || dateLocked ? "default" : "pointer",
                   }}>
                   <div className="w-5 h-5 rounded-md flex items-center justify-center shrink-0"
                     style={{
@@ -929,6 +953,9 @@ export function HabitsLog({ isDark, profile, onCompletedChange, onScoreChange, o
                       <Flame size={9} fill="#F97316" /> {streak}
                     </span>
                   )}
+                  {dateLocked ? (
+                    <Lock size={13} className="shrink-0" style={{ color: "var(--muted-foreground)" }} />
+                  ) : (
                   <button
                     type="button"
                     aria-label={t('log_break_btn')}
@@ -942,6 +969,7 @@ export function HabitsLog({ isDark, profile, onCompletedChange, onScoreChange, o
                   >
                     <X size={12} strokeWidth={2.5} />
                   </button>
+                  )}
                 </button>
               );
             })}
@@ -970,14 +998,14 @@ export function HabitsLog({ isDark, profile, onCompletedChange, onScoreChange, o
                 <button
                   type="button"
                   key={habit.id}
-                  onClick={() => !saving && markNegativeHabit(habit.id, false)}
-                  disabled={saving}
+                  onClick={() => !saving && !dateLocked && markNegativeHabit(habit.id, false)}
+                  disabled={saving || dateLocked}
                   className="flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-left transition-all"
                   style={{
                     background: isKept ? (isDark ? "rgba(74,222,128,0.07)" : "#F0FDF4") : isBroke ? (isDark ? "rgba(248,113,113,0.07)" : "#FFF5F5") : (isDark ? "rgba(255,255,255,0.03)" : "#F9FAFB"),
                     border: `1px solid ${isKept ? "rgba(74,222,128,0.2)" : isBroke ? "rgba(248,113,113,0.2)" : isDark ? "rgba(255,255,255,0.05)" : "rgba(0,0,0,0.05)"}`,
-                    opacity: saving ? 0.7 : 1,
-                    cursor: saving ? "default" : "pointer",
+                    opacity: saving ? 0.7 : dateLocked ? 0.5 : 1,
+                    cursor: saving || dateLocked ? "default" : "pointer",
                     width: "100%",
                   }}
                 >
@@ -1016,6 +1044,9 @@ export function HabitsLog({ isDark, profile, onCompletedChange, onScoreChange, o
                     </span>
                   )}
 
+                  {dateLocked ? (
+                    <Lock size={13} className="shrink-0" style={{ color: "var(--muted-foreground)" }} />
+                  ) : (
                   <button
                     type="button"
                     aria-label={t('log_break_btn')}
@@ -1029,6 +1060,7 @@ export function HabitsLog({ isDark, profile, onCompletedChange, onScoreChange, o
                   >
                     <X size={12} strokeWidth={2.5} />
                   </button>
+                  )}
                 </button>
               );
             })}
@@ -1037,15 +1069,54 @@ export function HabitsLog({ isDark, profile, onCompletedChange, onScoreChange, o
       )}
 
       {/* ─── Numeric Metrics ─── */}
-      <NumericMetrics isDark={isDark} inputStyle={inputStyle} />
+      <NumericMetrics isDark={isDark} inputStyle={inputStyle} profile={profile} logDate={selectedDate} locked={dateLocked} />
     </div>
   );
 }
 
-function NumericMetrics({ isDark, inputStyle }: { isDark: boolean; inputStyle: React.CSSProperties }) {
+function NumericMetrics({ isDark, inputStyle, profile, logDate, locked }: {
+  isDark: boolean; inputStyle: React.CSSProperties; profile: Profile; logDate: string; locked: boolean;
+}) {
   const { t } = useLang();
+  // "value" — slaydirda ko'rsatilayotgan (hali saqlanmagan bo'lishi mumkin)
+  // qiymat; "saved" — serverdagi oxirgi tasdiqlangan qiymat. Ikkisi farq
+  // qilsa ("dirty"), Saqlash tugmasi yonadi — slayder harakati endi
+  // avtomatik DB yozuvini qo'zg'atmaydi.
   const [natureTime, setNatureTime] = useState(0);
+  const [savedNature, setSavedNature] = useState(0);
+  const [savingNature, setSavingNature] = useState(false);
   const [socialTime, setSocialTime] = useState(0);
+  const [savedSocial, setSavedSocial] = useState(0);
+  const [savingSocial, setSavingSocial] = useState(false);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    let cancelled = false;
+    setLoading(true);
+    getHealthLog(profile.id, logDate).then((log) => {
+      if (cancelled) return;
+      const n = log?.nature_time_minutes ?? 0;
+      const s = log?.social_time_minutes ?? 0;
+      setNatureTime(n); setSavedNature(n);
+      setSocialTime(s); setSavedSocial(s);
+    }).catch(() => {}).finally(() => { if (!cancelled) setLoading(false); });
+    return () => { cancelled = true; };
+  }, [profile.id, logDate]);
+
+  async function saveMetric(key: HabitMetricKey, value: number, setSaving: (v: boolean) => void, setSaved: (v: number) => void) {
+    setSaving(true);
+    try {
+      await upsertHabitMetric(profile.id, key, logDate, value);
+      setSaved(value);
+      toast.success(t('log_metrics_saved'));
+    } catch (e: any) {
+      toast.error(e?.message || t('log_metrics_save_error'));
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  const disabled = locked || loading;
 
   return (
     <div style={{
@@ -1054,10 +1125,27 @@ function NumericMetrics({ isDark, inputStyle }: { isDark: boolean; inputStyle: R
       borderRadius: 14,
       padding: "16px",
     }}>
-      <h3 className="text-sm font-semibold mb-4" style={{ color: "var(--foreground)" }}>{t('log_metrics')}</h3>
+      <div className="flex items-center gap-2 mb-4">
+        <h3 className="text-sm font-semibold" style={{ color: "var(--foreground)" }}>{t('log_metrics')}</h3>
+        {locked && (
+          <span className="ml-auto flex items-center gap-1 text-[10px]" style={{ color: "var(--muted-foreground)" }}>
+            <Lock size={10} /> {t('log_locked_badge')}
+          </span>
+        )}
+      </div>
       <div className="space-y-5">
-        <MetricSlider label={t('log_nature_time')} emoji="🌿" value={natureTime} onChange={setNatureTime} max={120} target={60} color="var(--neon-green)" isDark={isDark} unit={t('minutes')} step={5} inputStyle={inputStyle} />
-        <MetricSlider label={t('log_social_time')} emoji="📱" value={socialTime} onChange={setSocialTime} max={180} target={60} color="var(--coral-red)" isDark={isDark} unit={t('minutes')} invertProgress step={5} inputStyle={inputStyle} />
+        <MetricSlider
+          label={t('log_nature_time')} emoji="🌿" value={natureTime} onChange={setNatureTime}
+          max={120} target={60} color="var(--neon-green)" isDark={isDark} unit={t('minutes')} step={5} inputStyle={inputStyle}
+          dirty={natureTime !== savedNature} saving={savingNature} disabled={disabled}
+          onSave={() => saveMetric('nature_time_minutes', natureTime, setSavingNature, setSavedNature)}
+        />
+        <MetricSlider
+          label={t('log_social_time')} emoji="📱" value={socialTime} onChange={setSocialTime}
+          max={180} target={60} color="var(--coral-red)" isDark={isDark} unit={t('minutes')} invertProgress step={5} inputStyle={inputStyle}
+          dirty={socialTime !== savedSocial} saving={savingSocial} disabled={disabled}
+          onSave={() => saveMetric('social_time_minutes', socialTime, setSavingSocial, setSavedSocial)}
+        />
       </div>
     </div>
   );
@@ -1067,23 +1155,25 @@ interface MetricSliderProps {
   label: string; emoji: string; value: number; onChange: (v: number) => void;
   max: number; target: number; color: string; isDark: boolean; unit: string;
   invertProgress?: boolean; step?: number; inputStyle: React.CSSProperties;
+  dirty: boolean; saving: boolean; disabled: boolean; onSave: () => void;
 }
 
-function MetricSlider({ label, emoji, value, onChange, max, target, color, isDark, unit, invertProgress, step = 1, inputStyle }: MetricSliderProps) {
+function MetricSlider({ label, emoji, value, onChange, max, target, color, isDark, unit, invertProgress, step = 1, dirty, saving, disabled, onSave }: MetricSliderProps) {
   const { t } = useLang();
   const progress = Math.min((value / max) * 100, 100);
   const isGood = invertProgress ? value <= target : value >= target;
   const adjust = (delta: number) => onChange(Math.max(0, value + delta));
+  const canSave = dirty && !saving && !disabled;
 
   return (
-    <div>
-      <div className="flex items-center justify-between mb-2">
+    <div style={{ opacity: disabled ? 0.6 : 1 }}>
+      <div className="flex items-center justify-between mb-2 flex-wrap gap-y-1.5">
         <div className="flex items-center gap-2">
           <span>{emoji}</span>
           <span className="text-sm font-medium" style={{ color: "var(--foreground)" }}>{label}</span>
         </div>
         <div className="flex items-center gap-1.5">
-          <button type="button" aria-label={t('log_decrease')} onClick={() => adjust(-step)}
+          <button type="button" aria-label={t('log_decrease')} onClick={() => adjust(-step)} disabled={disabled}
             className="w-7 h-7 rounded-lg flex items-center justify-center"
             style={{ background: isDark ? "rgba(255,255,255,0.06)" : "#F3F4F6", color: "var(--muted-foreground)" }}>
             <Minus size={12} />
@@ -1091,15 +1181,26 @@ function MetricSlider({ label, emoji, value, onChange, max, target, color, isDar
           <span className="text-sm font-bold w-16 text-center" style={{ color, fontFamily: "'Geist Mono', monospace" }}>
             {value} {unit}
           </span>
-          <button type="button" aria-label={t('log_increase')} onClick={() => adjust(step)}
+          <button type="button" aria-label={t('log_increase')} onClick={() => adjust(step)} disabled={disabled}
             className="w-7 h-7 rounded-lg flex items-center justify-center"
             style={{ background: isDark ? "rgba(255,255,255,0.06)" : "#F3F4F6", color: "var(--muted-foreground)" }}>
             <Plus size={12} />
           </button>
+          <button type="button" onClick={onSave} disabled={!canSave}
+            className="flex items-center gap-1 text-[10px] font-semibold px-2 py-1.5 rounded-lg shrink-0"
+            style={{
+              background: canSave ? "var(--neon-green)" : isDark ? "rgba(255,255,255,0.06)" : "#F3F4F6",
+              color: canSave ? "#0E1117" : "var(--muted-foreground)",
+              opacity: saving ? 0.7 : 1,
+              cursor: canSave ? "pointer" : "default",
+            }}>
+            {saving ? <Loader2 size={11} className="animate-spin" /> : <Save size={11} />}
+            {t('log_metrics_save_btn')}
+          </button>
         </div>
       </div>
       <input
-        type="range" aria-label={label} min={0} max={Math.max(max, value)} value={value}
+        type="range" aria-label={label} min={0} max={Math.max(max, value)} value={value} disabled={disabled}
         onChange={(e) => onChange(Number(e.target.value))}
         className="w-full h-2 rounded-full appearance-none cursor-pointer"
         style={{ background: `linear-gradient(to right, ${color} ${progress}%, ${isDark ? "rgba(255,255,255,0.08)" : "#E5E7EB"} ${progress}%)`, accentColor: color }}
