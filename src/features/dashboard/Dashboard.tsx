@@ -174,7 +174,7 @@ export function Dashboard({ isDark, profile, completedToday, totalHabits, onNavi
         reportProgress(doneIds, nextLogged, nextKept);
       } else {
         const completed = !broke; // Kept (broke=false) => completed=true; Broke (broke=true) => completed=false
-        await toggleHabitLog(habitId, profile.id, completed, completed ? 1 : 0, alreadyKept);
+        await toggleHabitLog(habitId, profile.id, completed, completed ? 1 : 0, alreadyKept, true);
         const nextLogged = new Set(negLoggedIds); nextLogged.add(habitId);
         const nextKept = new Set(negKeptIds);
         if (completed) nextKept.add(habitId); else nextKept.delete(habitId);
