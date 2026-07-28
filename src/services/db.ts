@@ -860,29 +860,28 @@ export async function settleGroupWeek(groupId: string): Promise<GroupWeekWinner 
 }
 
 // ─── GROUP LOGS ────────────────────────────────────────────
+// log_group_habit RPC orqali — oddiy upsert emas, chunki approval_status
+// ustuniga to'g'ridan-to'g'ri yozish (003-migratsiyadagi xavfsizlik
+// GRANT'i tufayli) faqat INSERT'da ishlaydi, EDIT/qayta yuborishda
+// "permission denied" beradi. RPC serverda auth.uid()ni tekshirib, har
+// safar approval_status'ni 'pending'ga qaytaradi (qayta ko'rib chiqish).
 export async function logGroupHabit(
   groupHabitId: string,
   groupId: string,
-  userId: string,
+  _userId: string,
   completed: boolean,
   reps = 1,
   proofNote?: string
 ) {
   const today = toDateStr()
-  const { data, error } = await supabase
-    .from('group_habit_logs')
-    .upsert({
-      group_habit_id: groupHabitId,
-      group_id: groupId,
-      user_id: userId,
-      log_date: today,
-      completed,
-      reps,
-      proof_note: proofNote || null,
-      approval_status: 'pending',
-    }, { onConflict: 'group_habit_id,user_id,log_date' })
-    .select()
-    .single()
+  const { data, error } = await supabase.rpc('log_group_habit', {
+    p_group_habit_id: groupHabitId,
+    p_group_id: groupId,
+    p_log_date: today,
+    p_completed: completed,
+    p_reps: reps,
+    p_proof_note: proofNote || null,
+  })
   if (error) throw error
   return data
 }

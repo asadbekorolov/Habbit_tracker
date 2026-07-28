@@ -38,6 +38,10 @@ Migratsiya: `033_group_personal_habit_integration.sql` (+ `032_group_habit_logs_
 
 Migratsiya: `035_fix_group_approval_reward_date_bug.sql`.
 
+- [x] **Guruh odatini qayta belgilashda "permission denied for table group_habit_logs":** `logGroupHabit()` klientdan to'g'ridan-to'g'ri `group_habit_logs`ga upsert qilardi va har safar `approval_status`ni ham yozardi. 003-migratsiya xavfsizlik uchun ataylab faqat `(completed, reps, proof_note)` ustunlariga UPDATE ruxsatini bergan (a'zo o'zini-o'zi "tasdiqlangan" qila olmasligi uchun) — shuning uchun BIRINCHI marta belgilash (INSERT) ishlaydi, lekin xuddi shu kun uchun IKKINCHI marta belgilash/izohni tuzatish (UPDATE yo'liga tushadi) xato berardi. Yechim: yozish `log_group_habit` SECURITY DEFINER RPC orqali ko'chirildi — u `auth.uid()`ni tekshiradi va har safar `approval_status`ni xavfsiz tarzda 'pending'ga qaytaradi (eski tasdiq/rad holati tozalanadi). Sana hamon client hisoblagan (mahalliy vaqt) qiymat sifatida uzatiladi — server `CURRENT_DATE`siga o'tilmadi (035dagi vaqt-zonasi muammosini qaytarmaslik uchun).
+
+Migratsiya: `036_log_group_habit_rpc.sql`.
+
 ---
 
 ## 🛠 Admin Monitoring & Health-Check (avvalgi vazifa)
