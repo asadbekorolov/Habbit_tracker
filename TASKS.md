@@ -52,6 +52,14 @@ Migratsiya: `036_log_group_habit_rpc.sql`.
 
 Migratsiya: `037_telegram_requests.sql`.
 
+### 7. Dark/Light rejim nomuvofiqligi (yon panel qorong'i, kontent aralash)
+- [x] **Ildiz sabab — majburiy `.dark` klassi:** `App.tsx`da IKKITA alohida `useEffect` bor edi: biri (`[isDark]` bog'liq) `<html>`ga `isDark` holatiga qarab to'g'ri `dark` klassini qo'yar/olib tashlar edi; ikkinchisi (bo'sh `[]` bog'liqlik — auth-init effekti ichida) esa har doim, `isDark`dan qat'i nazar, `document.documentElement.classList.add("dark")` deb SHART-SHARTSIZ qo'shib qo'yar edi. Ikkalasi ham mount paytida ishga tushgani uchun, agar foydalanuvchining holati/tizim sozlamasi YORUG' bo'lsa ham, DOM'dagi `dark` klassi doim majburan yoqilib qolar edi.
+- [x] **Nima uchun "yon panel qorong'i, kontent aralash" ko'rinishi paydo bo'lgan:** `Sidebar.tsx` faqat CSS o'zgaruvchilari (`var(--sidebar)` va h.k.) orqali rang oladi — bular DOM'dagi `dark` klassiga bog'liq, shuning uchun u har doim qorong'i ko'rinardi. `Dashboard.tsx`dagi ko'p elementlar esa React `isDark` holatini to'g'ridan-to'g'ri `isDark ? ... : ...` shaklida ishlatadi — bu holat yorug' bo'lsa, ular yorug' ranglarni chizadi. Ikki mexanizm bir-biriga mos kelishi kerak edi, lekin majburiy klass buni buzgan — natijada bir qismi qorong'i, bir qismi yorug' bo'lib qolgan.
+- [x] **Tuzatish:** keraksiz, shart-shartsiz `document.documentElement.classList.add("dark")` qatori butunlay olib tashlandi — endi DOM klassini FAQAT `[isDark]`ga bog'liq effekt boshqaradi.
+- [x] **Qo'shimcha kontrast tuzatish:** Bosh sahifadagi "Streak Freeze xavfda" banneri va "Muzlatilgan" belgisi matn rangi (`#93C5FD`) hech qachon o'zgarmas edi (na `isDark` shartiga, na CSS o'zgaruvchisiga bog'liq emas edi) — yorug' rejimda deyarli oq fonda o'qib bo'lmas darajada past kontrast berardi. Endi `isDark` holatiga qarab to'q ko'k (`#2563EB`, yorug' rejim uchun) yoki asl pastel ko'k (qorong'i rejim uchun) tanlanadi.
+
+Fayl: `src/App.tsx`, `src/features/dashboard/Dashboard.tsx` — SQL migratsiya kerak emas.
+
 ---
 
 ## 🛠 Admin Monitoring & Health-Check (avvalgi vazifa)

@@ -133,7 +133,6 @@ export default function App() {
   }, []);
 
   useEffect(() => {
-    document.documentElement.classList.add("dark");
     document.body.style.fontFamily = "'Inter', -apple-system, BlinkMacSystemFont, sans-serif";
 
     // Supabase session tekshirish

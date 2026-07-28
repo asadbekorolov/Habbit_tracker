@@ -754,7 +754,7 @@ export function Dashboard({ isDark, profile, completedToday, totalHabits, onNavi
             🛡️
           </div>
           <div className="flex-1 min-w-0">
-            <p className="text-sm font-semibold" style={{ color: "#93C5FD" }}>
+            <p className="text-sm font-semibold" style={{ color: isDark ? "#93C5FD" : "#2563EB" }}>
               {`${currentStreak} ${t('dash_freeze_at_risk')}`}
             </p>
             <p className="text-[11px] mt-0.5" style={{ color: "var(--muted-foreground)" }}>
@@ -768,7 +768,7 @@ export function Dashboard({ isDark, profile, completedToday, totalHabits, onNavi
             style={{
               background: "rgba(147,197,253,0.15)",
               border: "1px solid rgba(147,197,253,0.3)",
-              color: "#93C5FD",
+              color: isDark ? "#93C5FD" : "#2563EB",
             }}
           >
             {t('dash_freeze_btn')} <ArrowRight size={13} />
@@ -786,7 +786,7 @@ export function Dashboard({ isDark, profile, completedToday, totalHabits, onNavi
           }}
         >
           <span className="text-lg">🛡️</span>
-          <p className="text-xs" style={{ color: "#93C5FD" }}>
+          <p className="text-xs" style={{ color: isDark ? "#93C5FD" : "#2563EB" }}>
             {t('dash_frozen_badge').replace('{n}', String(currentStreak))}
           </p>
         </div>
