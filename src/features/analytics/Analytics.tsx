@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo, useRef } from "react";
 import { toast } from "sonner";
 import { Trophy, Zap, Flame, BarChart2, Loader2, Image, Brain, Sparkles, RefreshCw } from "lucide-react";
 import { ResponsiveContainer, ComposedChart, Area, Line, XAxis, YAxis, CartesianGrid, Tooltip } from "recharts";
-import { getLast30DaysLogs, getMonthNotes, getMonthHealthLogs, getCoachNote, upsertCoachNote, spendCoinsForAnalysis, refundAnalysisCoins, AI_ANALYSIS_COST } from "../../services/db";
+import { getLast30DaysLogs, getMonthNotes, getMonthHealthLogs, getCoachNote, upsertCoachNote, spendCoinsForAnalysis, refundAnalysisCoins, AI_ANALYSIS_COST, isHabitLogSuccess } from "../../services/db";
 import { getLevel } from "../../utils/levels";
 import { toDateStr } from "../../utils/date";
 import type { Profile } from "../../services/supabase";
@@ -50,11 +50,12 @@ export function Analytics({ isDark, completedToday, totalHabits, profile }: Anal
     }).catch(() => {});
   }, [profile.id]);
 
-  // completed count per date (positive habits only)
+  // completed=true is the single success source for every habit type:
+  // positive done and negative kept/resisted are both green/success.
   const byDate = useMemo(() => {
     const map: Record<string, number> = {};
     for (const log of logs) {
-      if (log.completed && log.habits?.type === "positive") {
+      if (isHabitLogSuccess(log)) {
         map[log.log_date] = (map[log.log_date] || 0) + 1;
       }
     }
@@ -107,13 +108,13 @@ export function Analytics({ isDark, completedToday, totalHabits, profile }: Anal
     return Math.round((sum / days.length) * 100);
   }, [byDate, totalHabits]);
 
-  // Per-habit stats
+  // Per-habit success stats
   const habitStats = useMemo(() => {
     const map: Record<string, { name: string; emoji: string; days: Set<string>; streak: number }> = {};
     const now = new Date();
 
     for (const log of logs) {
-      if (log.completed && log.habits?.type === "positive") {
+      if (isHabitLogSuccess(log)) {
         const id = log.habit_id;
         if (!map[id]) {
           map[id] = { name: log.habits.name, emoji: log.habits.emoji, days: new Set(), streak: 0 };
@@ -243,7 +244,7 @@ export function Analytics({ isDark, completedToday, totalHabits, profile }: Anal
         const id = log.habit_id;
         if (!negMap[id]) negMap[id] = { name: log.habits.name, logged: 0, broken: 0 };
         negMap[id].logged++;
-        if (!log.completed) negMap[id].broken++;
+        if (!isHabitLogSuccess(log)) negMap[id].broken++;
       }
     }
     const negativeHabits = Object.values(negMap).map((n) => ({
@@ -252,7 +253,7 @@ export function Analytics({ isDark, completedToday, totalHabits, profile }: Anal
       breakRatePct: n.logged > 0 ? Math.round((n.broken / n.logged) * 100) : 0,
     }));
 
-    const weekdayBuckets = Array.from({ length: 7 }, () => ({ occurrences: 0, positiveDone: 0, negativeLogged: 0, negativeBroken: 0 }));
+    const weekdayBuckets = Array.from({ length: 7 }, () => ({ occurrences: 0, successCount: 0, negativeLogged: 0, negativeBroken: 0 }));
     const now = new Date();
     for (let i = 0; i < 30; i++) {
       const d = new Date(now);
@@ -262,15 +263,15 @@ export function Analytics({ isDark, completedToday, totalHabits, profile }: Anal
     for (const log of logs) {
       const wd = new Date(log.log_date + "T00:00:00").getDay();
       const bucket = weekdayBuckets[wd];
-      if (log.habits?.type === "positive" && log.completed) bucket.positiveDone++;
+      if (isHabitLogSuccess(log)) bucket.successCount++;
       if (log.habits?.type === "negative") {
         bucket.negativeLogged++;
-        if (!log.completed) bucket.negativeBroken++;
+        if (!isHabitLogSuccess(log)) bucket.negativeBroken++;
       }
     }
     const weekdaySummary = weekdayBuckets.map((b, wd) => ({
       weekday: uzWeekdayNames[wd],
-      avgHabitsCompleted: b.occurrences > 0 ? Math.round((b.positiveDone / b.occurrences) * 10) / 10 : 0,
+      avgHabitsCompleted: b.occurrences > 0 ? Math.round((b.successCount / b.occurrences) * 10) / 10 : 0,
       negativeBreakRatePct: b.negativeLogged > 0 ? Math.round((b.negativeBroken / b.negativeLogged) * 100) : null,
     }));
 
@@ -285,7 +286,7 @@ export function Analytics({ isDark, completedToday, totalHabits, profile }: Anal
       bestStreakDays: bestStreak,
       avgCompletionPct: avgPercent,
       totalHabitsTracked: totalHabits,
-      positiveHabits: habitStats.slice(0, 8).map((h) => ({ name: h.name, streakDays: h.streak, completionPct: h.pct })),
+      habitSuccessStats: habitStats.slice(0, 8).map((h) => ({ name: h.name, streakDays: h.streak, completionPct: h.pct })),
       negativeHabits,
       avgSleepHours: avg(healthLogs.map((h) => h.sleep_hours).filter((v): v is number => v != null)),
       avgScreenHours: avg(healthLogs.map((h) => h.screen_time_hours).filter((v): v is number => v != null)),

@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { toast } from "sonner";
 import { Check, Flame, Loader2, Lock, Minus, Plus, Save, ChevronLeft, ChevronRight, Snowflake, WifiOff, X } from "lucide-react";
-import { getHabits, getLogsForDate, toggleHabitLog, deleteHabitLog, getLast30DaysLogs, getStreakFreezes, getMonthlyFreezeCount, useStreakFreeze, getExtraFreezeCount, FREE_FREEZES_PER_MONTH, isLogDateLocked, computeHabitProgress, checkAndUnlockAchievements, getHealthLog, upsertHabitMetric, type HabitMetricKey } from "../../services/db";
+import { HABIT_FAILURE_COLOR, HABIT_SUCCESS_COLOR, getHabits, getLogsForDate, toggleHabitLog, deleteHabitLog, getLast30DaysLogs, getStreakFreezes, getMonthlyFreezeCount, useStreakFreeze, getExtraFreezeCount, FREE_FREEZES_PER_MONTH, isLogDateLocked, computeHabitProgress, checkAndUnlockAchievements, getHealthLog, upsertHabitMetric, type HabitMetricKey } from "../../services/db";
 import { sortByOrder } from "../../utils/habitOrder";
 import { toDateStr } from "../../utils/date";
 import { cacheHabits, getCachedHabits, cacheLogs, getCachedLogs, cacheStreaks, getCachedStreaks, addPendingLog, getPendingLogs, savePendingLogs } from "../../services/offline";
@@ -1013,8 +1013,8 @@ export function HabitsLog({ isDark, profile, onCompletedChange, onScoreChange, o
                   <div
                     className="w-5 h-5 rounded-md flex items-center justify-center shrink-0"
                     style={{
-                      background: isKept ? "var(--neon-green)" : isBroke ? "#F87171" : "transparent",
-                      border: `2px solid ${isKept ? "var(--neon-green)" : isBroke ? "#F87171" : isDark ? "rgba(255,255,255,0.2)" : "rgba(0,0,0,0.2)"}`,
+                      background: isKept ? HABIT_SUCCESS_COLOR : isBroke ? HABIT_FAILURE_COLOR : "transparent",
+                      border: `2px solid ${isKept ? HABIT_SUCCESS_COLOR : isBroke ? HABIT_FAILURE_COLOR : isDark ? "rgba(255,255,255,0.2)" : "rgba(0,0,0,0.2)"}`,
                     }}
                   >
                     {saving
@@ -1028,7 +1028,7 @@ export function HabitsLog({ isDark, profile, onCompletedChange, onScoreChange, o
                   <span
                     className="flex-1 text-xs font-medium"
                     style={{
-                      color: isKept ? "var(--neon-green)" : isBroke ? "#F87171" : "var(--foreground)",
+                      color: isKept ? HABIT_SUCCESS_COLOR : isBroke ? HABIT_FAILURE_COLOR : "var(--foreground)",
                       textDecoration: isBroke ? "line-through" : "none",
                       opacity: isBroke ? 0.75 : 1,
                     }}
@@ -1055,7 +1055,7 @@ export function HabitsLog({ isDark, profile, onCompletedChange, onScoreChange, o
                     className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0"
                     style={{
                       background: isBroke ? "rgba(248,113,113,0.2)" : isDark ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.05)",
-                      color: isBroke ? "#F87171" : "var(--muted-foreground)",
+                      color: isBroke ? HABIT_FAILURE_COLOR : "var(--muted-foreground)",
                       border: `1px solid ${isBroke ? "rgba(248,113,113,0.35)" : "transparent"}`,
                     }}
                   >

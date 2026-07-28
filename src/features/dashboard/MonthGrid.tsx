@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from "react";
 import { ChevronLeft, ChevronRight, Loader2, NotebookText } from "lucide-react";
-import { getHabits, getMonthLogs, getMonthNotes } from "../../services/db";
+import { getHabitStatusColor, getHabits, getMonthLogs, getMonthNotes } from "../../services/db";
 import type { Profile } from "../../services/supabase";
 import { toDateStr } from "../../utils/date";
 import { useLang } from "../../store/LangContext";
@@ -60,6 +60,12 @@ export function MonthGrid({ isDark, profile }: MonthGridProps) {
     for (const l of logs) m.set(`${l.habit_id}_${l.log_date}`, l.completed);
     return m;
   }, [logs]);
+
+  const getCellBackground = (status: boolean | undefined, future: boolean) => {
+    if (future) return "transparent";
+    if (status !== undefined) return getHabitStatusColor(status);
+    return isDark ? "rgba(255,255,255,0.07)" : "rgba(0,0,0,0.08)";
+  };
 
   function prevMonth() {
     if (month === 1) { setYear(y => y - 1); setMonth(12); }
@@ -257,13 +263,7 @@ export function MonthGrid({ isDark, profile }: MonthGridProps) {
                           <div
                             className="w-6 h-6 rounded mx-auto"
                             style={{
-                              background: future
-                                ? "transparent"
-                                : status === true
-                                ? "#4ADE80"
-                                : status === false
-                                ? "#F87171"
-                                : isDark ? "rgba(255,255,255,0.07)" : "rgba(0,0,0,0.08)",
+                              background: getCellBackground(status, future),
                               border: todayRow && status === undefined && !future
                                 ? "1px dashed rgba(74,222,128,0.4)"
                                 : status !== undefined

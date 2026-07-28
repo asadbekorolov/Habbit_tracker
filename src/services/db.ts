@@ -2,6 +2,17 @@ import { supabase } from './supabase'
 import type { Profile } from './supabase'
 import { toDateStr } from '../utils/date'
 
+export const HABIT_SUCCESS_COLOR = "#4ADE80"
+export const HABIT_FAILURE_COLOR = "#F87171"
+
+export function isHabitLogSuccess(log: { completed: boolean }): boolean {
+  return log.completed === true
+}
+
+export function getHabitStatusColor(completed: boolean): string {
+  return completed ? HABIT_SUCCESS_COLOR : HABIT_FAILURE_COLOR
+}
+
 const AVATAR_COLORS = [
   "linear-gradient(135deg, #4ADE80 0%, #22C55E 100%)",
   "linear-gradient(135deg, #60A5FA 0%, #3B82F6 100%)",
@@ -492,7 +503,7 @@ export function computeHabitProgress(
 ): { completed: number; total: number } {
   const completedSet = new Set<string>()
   for (const l of logs) {
-    if (l.completed) completedSet.add(l.habit_id)
+    if (isHabitLogSuccess(l)) completedSet.add(l.habit_id)
   }
   let completed = 0
   let total = habits.length

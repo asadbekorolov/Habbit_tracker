@@ -1,10 +1,9 @@
 import { useState, useEffect, useMemo, useRef } from "react";
 import { Flame, Trophy, ArrowRight, Loader2, CalendarDays, CheckCircle2, Check, Lightbulb, TrendingUp, AlertTriangle, Search, X, Shield } from "lucide-react";
-import { getLast30DaysLogs, getHabits, getTodayLogs, toggleHabitLog, searchUsers, getStreakFreezes, computeHabitProgress } from "../../services/db";
+import { HABIT_FAILURE_COLOR, HABIT_SUCCESS_COLOR, deleteHabitLog, getLast30DaysLogs, getHabits, getTodayLogs, toggleHabitLog, searchUsers, getStreakFreezes, computeHabitProgress } from "../../services/db";
 import { sortByOrder } from "../../utils/habitOrder";
 import { getLevel } from "../../utils/levels";
 import { toDateStr } from "../../utils/date";
-import { supabase } from "../../services/supabase";
 import type { Habit, Profile } from "../../services/supabase";
 import { useLang } from "../../store/LangContext";
 import { DAYS_SHORT } from "../../utils/i18n";
@@ -38,9 +37,9 @@ export function Dashboard({ isDark, profile, completedToday, totalHabits, onNavi
   const [savingIds, setSavingIds] = useState<Set<string>>(new Set());
   // Salbiy odatlar endi shu vidjetda ham ko'rsatiladi — HabitsLog.tsx'dagi
   // uch-holatli naqsh bilan bir xil: loggedIds (bugun bir marta belgilangan)
-  // + completedIds (belgilanganlar orasida "buzilgan" bo'lganlari). Kutilmoqda
+  // + completedIds (belgilanganlar orasida "saqlangan" bo'lganlari). Kutilmoqda
   // = loggedIds'da yo'q; Saqlanib qoldi = loggedIds'da bor-yu completedIds'da
-  // yo'q; Buzildi = ikkalasida ham bor.
+  // bor; Buzildi = loggedIds'da bor, completedIds'da yo'q.
   const [negativeHabits, setNegativeHabits] = useState<Habit[]>([]);
   const [negLoggedIds, setNegLoggedIds] = useState<Set<string>>(new Set());
   const [negKeptIds, setNegKeptIds] = useState<Set<string>>(new Set());
@@ -166,7 +165,7 @@ export function Dashboard({ isDark, profile, completedToday, totalHabits, onNavi
     setSavingIds((prev) => new Set(prev).add(habitId));
     try {
       if (sameState) {
-        await supabase.from('habit_logs').delete().eq('habit_id', habitId).eq('user_id', profile.id).eq('log_date', today);
+        await deleteHabitLog(habitId, profile.id, today);
         const nextLogged = new Set(negLoggedIds); nextLogged.delete(habitId);
         const nextKept = new Set(negKeptIds); nextKept.delete(habitId);
         setNegLoggedIds(nextLogged);
@@ -656,8 +655,8 @@ export function Dashboard({ isDark, profile, completedToday, totalHabits, onNavi
                       <div
                         className="w-5 h-5 rounded-md flex items-center justify-center shrink-0"
                         style={{
-                          background: kept ? "var(--neon-green)" : broke ? "#F87171" : "transparent",
-                          border: `2px solid ${kept ? "var(--neon-green)" : broke ? "#F87171" : isDark ? "rgba(255,255,255,0.2)" : "rgba(0,0,0,0.2)"}`,
+                          background: kept ? HABIT_SUCCESS_COLOR : broke ? HABIT_FAILURE_COLOR : "transparent",
+                          border: `2px solid ${kept ? HABIT_SUCCESS_COLOR : broke ? HABIT_FAILURE_COLOR : isDark ? "rgba(255,255,255,0.2)" : "rgba(0,0,0,0.2)"}`,
                         }}
                       >
                         {saving
@@ -669,7 +668,7 @@ export function Dashboard({ isDark, profile, completedToday, totalHabits, onNavi
                       <div className="flex-1 min-w-0">
                         <span className="text-xs font-medium truncate block"
                           style={{
-                            color: kept ? "var(--neon-green)" : broke ? "#F87171" : "var(--foreground)",
+                            color: kept ? HABIT_SUCCESS_COLOR : broke ? HABIT_FAILURE_COLOR : "var(--foreground)",
                             textDecoration: broke ? "line-through" : "none",
                             opacity: kept || broke ? 0.8 : 1,
                           }}>
@@ -683,7 +682,7 @@ export function Dashboard({ isDark, profile, completedToday, totalHabits, onNavi
                         className="w-6 h-6 rounded-lg flex items-center justify-center shrink-0"
                         style={{
                           background: broke ? "rgba(248,113,113,0.2)" : isDark ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.05)",
-                          color: broke ? "#F87171" : "var(--muted-foreground)",
+                          color: broke ? HABIT_FAILURE_COLOR : "var(--muted-foreground)",
                           border: `1px solid ${broke ? "rgba(248,113,113,0.35)" : "transparent"}`,
                         }}
                       >
