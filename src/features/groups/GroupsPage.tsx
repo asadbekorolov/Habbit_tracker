@@ -1451,9 +1451,13 @@ function GroupDetail({
                         border: isMe ? "1px solid rgba(74,222,128,0.25)" : card.border,
                       }}>
                       <span className="text-lg w-7 text-center shrink-0">{medals[i] || String(i + 1)}</span>
-                      <div className="w-9 h-9 rounded-full flex items-center justify-center text-sm font-bold shrink-0"
+                      <div className="w-9 h-9 rounded-full flex items-center justify-center text-sm font-bold shrink-0 overflow-hidden"
                         style={{ background: entry.color || "#4ADE80", color: "#0E1117" }}>
-                        {(entry.name || "?").split(" ").map((n: string) => n[0]).join("").toUpperCase().slice(0, 2)}
+                        {entry.avatarUrl ? (
+                          <img src={entry.avatarUrl} alt="" className="w-9 h-9 object-cover" />
+                        ) : (
+                          (entry.name || "?").split(" ").map((n: string) => n[0]).join("").toUpperCase().slice(0, 2)
+                        )}
                       </div>
                       <div className="flex-1 min-w-0">
                         <p className="text-sm font-medium flex items-center gap-1.5" style={{ color: isMe ? "#4ADE80" : "var(--foreground)" }}>

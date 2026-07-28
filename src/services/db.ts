@@ -773,12 +773,13 @@ export async function getGroupLeaderboard(groupId: string) {
     .select('*, member_goals(current_target)')
     .eq('group_id', groupId)
 
-  const scores: Record<string, { name: string; color: string; score: number; completed: number; hasStar: boolean }> = {}
+  const scores: Record<string, { name: string; color: string; avatarUrl: string | null; score: number; completed: number; hasStar: boolean }> = {}
 
   for (const m of members) {
     scores[m.user_id] = {
       name: m.profiles.display_name,
       color: m.profiles.avatar_color,
+      avatarUrl: m.profiles.avatar_url,
       score: 0,
       completed: 0,
       hasStar: isStarActive(m.profiles),
@@ -819,12 +820,13 @@ export async function getGroupWeeklyLeaderboard(groupId: string) {
     .eq('group_id', groupId)
     .gte('log_date', weekStartStr)
 
-  const scores: Record<string, { name: string; color: string; score: number; completed: number; hasStar: boolean }> = {}
+  const scores: Record<string, { name: string; color: string; avatarUrl: string | null; score: number; completed: number; hasStar: boolean }> = {}
 
   for (const m of members) {
     scores[m.user_id] = {
       name: m.profiles.display_name,
       color: m.profiles.avatar_color,
+      avatarUrl: m.profiles.avatar_url,
       score: 0,
       completed: 0,
       hasStar: isStarActive(m.profiles),

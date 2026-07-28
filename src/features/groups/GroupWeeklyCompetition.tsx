@@ -52,10 +52,14 @@ export function GroupWeeklyCompetition({ isDark, groupId, myUserId, card }: Grou
                 >
                   <span className="text-xs w-5 text-center shrink-0" style={{ color: "var(--muted-foreground)" }}>{i + 1}</span>
                   <div
-                    className="w-7 h-7 rounded-full flex items-center justify-center text-[11px] font-bold shrink-0"
+                    className="w-7 h-7 rounded-full flex items-center justify-center text-[11px] font-bold shrink-0 overflow-hidden"
                     style={{ background: entry.color || "#4ADE80", color: "#0E1117" }}
                   >
-                    {(entry.name || "?").split(" ").map((n: string) => n[0]).join("").toUpperCase().slice(0, 2)}
+                    {entry.avatarUrl ? (
+                      <img src={entry.avatarUrl} alt="" className="w-7 h-7 object-cover" />
+                    ) : (
+                      (entry.name || "?").split(" ").map((n: string) => n[0]).join("").toUpperCase().slice(0, 2)
+                    )}
                   </div>
                   <p className="text-xs flex-1 truncate" style={{ color: isMe ? "#4ADE80" : "var(--foreground)" }}>{entry.name}</p>
                   <span className="text-xs font-bold" style={{ color: "var(--foreground)", fontFamily: "'Geist Mono', monospace" }}>{entry.score}</span>
