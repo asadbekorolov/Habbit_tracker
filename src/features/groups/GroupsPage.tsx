@@ -6,6 +6,7 @@ import {
   Loader2, Trophy, Trash2, CheckCircle2, Circle, UserPlus,
   Clock, X, ChevronRight, BarChart3, ShieldCheck, AlertCircle,
   MessageSquare, Download, Send, Pencil, UsersRound,
+  Settings, LogOut, UserMinus, Shield, ArrowRightLeft,
 } from "lucide-react";
 import {
   createGroup, joinGroup, getMyGroups, getGroupMembers,
@@ -14,7 +15,7 @@ import {
   getPendingGroupApprovals, approveGroupLog, rejectGroupLog,
   getGroupMembersMonthlyStats, updateGroupTelegramLink,
   getGroupSubteams, createSubteam, addSubteamMember, removeSubteamMember, deleteSubteam,
-  isStarActive,
+  isStarActive, leaveGroup, kickMember, deleteGroup, setGroupMemberRole, transferGroupOwnership,
 } from "../../services/db";
 import { supabase } from "../../services/supabase";
 import type { Profile } from "../../services/supabase";
@@ -128,6 +129,11 @@ export function GroupsPage({ isDark, profile, onUserClick }: GroupsPageProps) {
         profile={profile}
         group={selectedGroup}
         onBack={() => { setView("list"); setSelectedGroup(null); }}
+        onGroupRemoved={(groupId) => {
+          setGroups((prev) => prev.filter((g) => g.id !== groupId));
+          setView("list");
+          setSelectedGroup(null);
+        }}
         card={card}
         inputStyle={inputStyle}
         onUserClick={onUserClick}
@@ -314,9 +320,10 @@ export function GroupsPage({ isDark, profile, onUserClick }: GroupsPageProps) {
 
 // ─── Group Detail ─────────────────────────────────────────────
 function GroupDetail({
-  isDark, profile, group, onBack, card, inputStyle, onUserClick
+  isDark, profile, group, onBack, onGroupRemoved, card, inputStyle, onUserClick
 }: {
   isDark: boolean; profile: Profile; group: any; onBack: () => void;
+  onGroupRemoved: (groupId: string) => void;
   card: React.CSSProperties; inputStyle: React.CSSProperties;
   onUserClick?: (userId: string) => void;
 }) {
@@ -372,8 +379,19 @@ function GroupDetail({
   const [newUnit, setNewUnit] = useState("");
   const [adding, setAdding] = useState(false);
 
-  const isAdmin = group.admin_id === profile.id;
+  const isOwner = group.admin_id === profile.id;
+  const myMembership = members.find((m: any) => m.user_id === profile.id);
+  const isAdmin = isOwner || myMembership?.role === "admin";
   const EMOJIS = ["🏃", "📚", "💪", "🧘", "🥗", "💧", "😴", "🎯", "✍️", "🎵", "🌿", "🏊", "⏰", "📱", "🚶", "🔄"];
+
+  // Guruh sozlamalari (chiqish / o'chirish) + a'zolikni boshqarish
+  const [showSettings, setShowSettings] = useState(false);
+  const [leaveError, setLeaveError] = useState("");
+  const [leaving, setLeaving] = useState(false);
+  const [confirmDelete, setConfirmDelete] = useState(false);
+  const [deletingGroup, setDeletingGroup] = useState(false);
+  const [memberActionId, setMemberActionId] = useState<string | null>(null);
+  const [transferTargetId, setTransferTargetId] = useState<string | null>(null);
 
   useEffect(() => { loadAll(); }, [group.id]);
 
@@ -538,6 +556,72 @@ function GroupDetail({
       setHabits((prev) => prev.filter((h) => h.id !== habitId));
     } catch (e: any) {
       setError(e.message || t('groups_err_generic'));
+    }
+  }
+
+  async function handleLeaveGroup() {
+    setLeaving(true);
+    setLeaveError("");
+    try {
+      await leaveGroup(group.id);
+      onGroupRemoved(group.id);
+    } catch (e: any) {
+      setLeaveError(e.message?.includes("owner_must_transfer") ? t('groups_err_owner_must_transfer') : (e.message || t('groups_err_generic')));
+      setLeaving(false);
+    }
+  }
+
+  async function handleDeleteGroup() {
+    if (!confirmDelete) { setConfirmDelete(true); return; }
+    setDeletingGroup(true);
+    setLeaveError("");
+    try {
+      await deleteGroup(group.id);
+      onGroupRemoved(group.id);
+    } catch (e: any) {
+      setLeaveError(e.message || t('groups_err_generic'));
+      setDeletingGroup(false);
+    }
+  }
+
+  async function handleKickMember(userId: string) {
+    setMemberActionId(userId);
+    setError("");
+    try {
+      await kickMember(group.id, userId);
+      setMembers((prev) => prev.filter((m: any) => m.user_id !== userId));
+    } catch (e: any) {
+      setError(e.message || t('groups_err_generic'));
+    } finally {
+      setMemberActionId(null);
+    }
+  }
+
+  async function handleToggleCoAdmin(userId: string, nextRole: "admin" | "member") {
+    setMemberActionId(userId);
+    setError("");
+    try {
+      await setGroupMemberRole(group.id, userId, nextRole);
+      setMembers((prev) => prev.map((m: any) => m.user_id === userId ? { ...m, role: nextRole } : m));
+    } catch (e: any) {
+      setError(e.message || t('groups_err_generic'));
+    } finally {
+      setMemberActionId(null);
+    }
+  }
+
+  async function handleTransferOwnership(userId: string) {
+    setMemberActionId(userId);
+    setError("");
+    try {
+      await transferGroupOwnership(group.id, userId);
+      group.admin_id = userId;
+      setMembers((prev) => prev.map((m: any) => m.user_id === userId ? { ...m, role: "admin" } : m));
+      setTransferTargetId(null);
+    } catch (e: any) {
+      setError(e.message || t('groups_err_generic'));
+    } finally {
+      setMemberActionId(null);
     }
   }
 
@@ -750,6 +834,11 @@ function GroupDetail({
             <Plus size={13} /> {t('groups_add_habit_btn')}
           </button>
         )}
+        <button onClick={() => { setShowSettings(true); setLeaveError(""); setConfirmDelete(false); }}
+          className="p-2 rounded-xl shrink-0"
+          style={{ background: isDark ? "rgba(255,255,255,0.06)" : "#F3F4F6" }}>
+          <Settings size={16} style={{ color: "var(--foreground)" }} />
+        </button>
       </div>
 
       {/* Tabs — scrollable on mobile */}
@@ -841,6 +930,49 @@ function GroupDetail({
       })()}
 
       {/* Reject modal */}
+      {/* Guruh sozlamalari modal */}
+      {showSettings && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4"
+          style={{ background: "rgba(0,0,0,0.6)", backdropFilter: "blur(4px)" }}
+          onClick={() => setShowSettings(false)}>
+          <div className="w-full max-w-sm p-5 rounded-2xl"
+            style={{ background: isDark ? "#161B22" : "#fff", border: `1px solid ${isDark ? "rgba(255,255,255,0.1)" : "rgba(0,0,0,0.1)"}` }}
+            onClick={(e) => e.stopPropagation()}>
+            <h3 className="text-sm font-semibold mb-3" style={{ color: "var(--foreground)" }}>{t('groups_settings_title')}</h3>
+
+            {leaveError && (
+              <p className="text-xs mb-3" style={{ color: "var(--coral-red)" }}>⚠ {leaveError}</p>
+            )}
+
+            <button type="button" onClick={handleLeaveGroup} disabled={leaving || deletingGroup}
+              className="w-full flex items-center gap-2.5 p-3 rounded-xl text-sm font-medium mb-2"
+              style={{ background: isDark ? "rgba(255,255,255,0.05)" : "#F3F4F6", color: "var(--foreground)", opacity: leaving ? 0.6 : 1 }}>
+              {leaving ? <Loader2 size={16} className="animate-spin" /> : <LogOut size={16} />}
+              {t('groups_leave')}
+            </button>
+
+            {isOwner && (
+              <button type="button" onClick={handleDeleteGroup} disabled={leaving || deletingGroup}
+                className="w-full flex items-center gap-2.5 p-3 rounded-xl text-sm font-medium"
+                style={{
+                  background: confirmDelete ? "rgba(248,113,113,0.15)" : isDark ? "rgba(248,113,113,0.08)" : "rgba(248,113,113,0.06)",
+                  color: "#F87171", border: `1px solid rgba(248,113,113,${confirmDelete ? 0.4 : 0.2})`,
+                  opacity: deletingGroup ? 0.6 : 1,
+                }}>
+                {deletingGroup ? <Loader2 size={16} className="animate-spin" /> : <Trash2 size={16} />}
+                {confirmDelete ? t('groups_delete_confirm') : t('groups_delete')}
+              </button>
+            )}
+
+            <button type="button" onClick={() => setShowSettings(false)}
+              className="w-full py-2.5 rounded-xl text-sm font-medium mt-3"
+              style={{ color: "var(--muted-foreground)" }}>
+              {t('close')}
+            </button>
+          </div>
+        </div>
+      )}
+
       {rejectLogId && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4"
           style={{ background: "rgba(0,0,0,0.6)", backdropFilter: "blur(4px)" }}
@@ -1153,36 +1285,90 @@ function GroupDetail({
                   if (!p) return null;
                   const initials = (p.display_name || "??").split(" ").map((n: string) => n[0]).join("").toUpperCase().slice(0, 2);
                   const mStats = memberStatsMap[m.user_id];
+                  const isThisOwner = m.user_id === group.admin_id;
+                  const isSelf = m.user_id === profile.id;
+                  const busy = memberActionId === m.user_id;
+                  const showTransferConfirm = transferTargetId === m.user_id;
                   return (
                     <div key={m.id || i} className="flex items-center gap-3 p-3.5 rounded-2xl transition-colors"
-                      onClick={() => onUserClick?.(m.user_id)}
-                      style={{ ...card, cursor: onUserClick ? "pointer" : "default" }}>
-                      <div className="w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold shrink-0 overflow-hidden"
-                        style={{ background: p.avatar_color || "#4ADE80", color: "#0E1117" }}>
-                        {p.avatar_url ? <img src={p.avatar_url} alt="" className="w-10 h-10 object-cover" /> : initials}
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2">
-                          <p className="text-sm font-medium truncate" style={{ color: "var(--foreground)" }}>
-                            {p.display_name}
-                          </p>
-                          <UserBadge active={isStarActive(p)} size={12} />
-                          {m.role === "admin" && <Crown size={12} style={{ color: "#FBBF24" }} />}
+                      style={card}>
+                      <div onClick={() => onUserClick?.(m.user_id)} className="flex items-center gap-3 flex-1 min-w-0"
+                        style={{ cursor: onUserClick ? "pointer" : "default" }}>
+                        <div className="w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold shrink-0 overflow-hidden"
+                          style={{ background: p.avatar_color || "#4ADE80", color: "#0E1117" }}>
+                          {p.avatar_url ? <img src={p.avatar_url} alt="" className="w-10 h-10 object-cover" /> : initials}
                         </div>
-                        <p className="text-xs" style={{ color: "var(--muted-foreground)" }}>@{p.username}</p>
-                        {mStats && (
-                          <div className="flex items-center gap-2 mt-1">
-                            <span className="text-[10px] px-1.5 py-0.5 rounded-full" style={{ background: "rgba(74,222,128,0.12)", color: "#4ADE80" }}>
-                              ✓ {mStats.approved}
-                            </span>
-                            {mStats.pending > 0 && (
-                              <span className="text-[10px] px-1.5 py-0.5 rounded-full" style={{ background: "rgba(251,191,36,0.12)", color: "#FBBF24" }}>
-                                ⏳ {mStats.pending}
-                              </span>
-                            )}
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2">
+                            <p className="text-sm font-medium truncate" style={{ color: "var(--foreground)" }}>
+                              {p.display_name}
+                            </p>
+                            <UserBadge active={isStarActive(p)} size={12} />
+                            {isThisOwner ? (
+                              <Crown size={12} style={{ color: "#FBBF24" }} />
+                            ) : m.role === "admin" ? (
+                              <Shield size={12} style={{ color: "#38BDF8" }} />
+                            ) : null}
                           </div>
-                        )}
+                          <p className="text-xs" style={{ color: "var(--muted-foreground)" }}>@{p.username}</p>
+                          {mStats && (
+                            <div className="flex items-center gap-2 mt-1">
+                              <span className="text-[10px] px-1.5 py-0.5 rounded-full" style={{ background: "rgba(74,222,128,0.12)", color: "#4ADE80" }}>
+                                ✓ {mStats.approved}
+                              </span>
+                              {mStats.pending > 0 && (
+                                <span className="text-[10px] px-1.5 py-0.5 rounded-full" style={{ background: "rgba(251,191,36,0.12)", color: "#FBBF24" }}>
+                                  ⏳ {mStats.pending}
+                                </span>
+                              )}
+                            </div>
+                          )}
+                        </div>
                       </div>
+
+                      {!isSelf && !isThisOwner && (isOwner || isAdmin) && (
+                        <div className="flex items-center gap-1 shrink-0" onClick={(e) => e.stopPropagation()}>
+                          {busy ? (
+                            <Loader2 size={14} className="animate-spin" style={{ color: "var(--muted-foreground)" }} />
+                          ) : showTransferConfirm ? (
+                            <>
+                              <span className="text-[10px]" style={{ color: "var(--muted-foreground)" }}>{t('groups_transfer_confirm')}</span>
+                              <button type="button" onClick={() => handleTransferOwnership(m.user_id)}
+                                className="text-[10px] font-semibold px-2 py-1 rounded-lg"
+                                style={{ background: "rgba(74,222,128,0.15)", color: "#4ADE80" }}>
+                                {t('groups_confirm_yes')}
+                              </button>
+                              <button type="button" onClick={() => setTransferTargetId(null)}
+                                className="text-[10px] font-semibold px-2 py-1 rounded-lg"
+                                style={{ color: "var(--muted-foreground)" }}>
+                                {t('cancel_short')}
+                              </button>
+                            </>
+                          ) : (
+                            <>
+                              {isOwner && (
+                                <>
+                                  <button type="button" title={m.role === "admin" ? t('groups_demote') : t('groups_promote')}
+                                    onClick={() => handleToggleCoAdmin(m.user_id, m.role === "admin" ? "member" : "admin")}
+                                    className="p-1.5 rounded-lg" style={{ color: m.role === "admin" ? "#38BDF8" : "var(--muted-foreground)" }}>
+                                    <Shield size={13} />
+                                  </button>
+                                  <button type="button" title={t('groups_transfer_ownership')}
+                                    onClick={() => setTransferTargetId(m.user_id)}
+                                    className="p-1.5 rounded-lg" style={{ color: "var(--muted-foreground)" }}>
+                                    <ArrowRightLeft size={13} />
+                                  </button>
+                                </>
+                              )}
+                              <button type="button" title={t('groups_kick')}
+                                onClick={() => handleKickMember(m.user_id)}
+                                className="p-1.5 rounded-lg" style={{ color: "#F87171" }}>
+                                <UserMinus size={13} />
+                              </button>
+                            </>
+                          )}
+                        </div>
+                      )}
                     </div>
                   );
                 })

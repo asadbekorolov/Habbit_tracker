@@ -15,6 +15,14 @@
 - [x] **Kunlik vazifalar (Daily Quests) + Guruh haftalik musobaqasi:** Bosh sahifada 3 ta kunlik vazifa kartasi (3 ta odat bajarish +5🪙, kunni 100% yakunlash +10🪙, salbiy odatga qarshi turish +5🪙) — shart har doim serverda (`claim_daily_quest()` RPC) mustaqil tekshiriladi, firibgarlik imkonsiz. Guruh "Reyting" tabida jonli "Shu hafta" mini-reyting va o'tgan hafta g'olibiga avtomatik +20🪙 mukofot banneri (`settle_group_week()` — kirganda o'z-o'zini hisoblaydi, cron shart emas). Migratsiya: `029_daily_quests_and_group_weekly.sql`.
 - [~] **Monetizatsiya integratsiyasi:** Arxitektura tayyorlandi — `docs/Monetization_Architecture.md` (Click/Payme oqimi, `payment_transactions` jadvali, xavfsizlik nazorat ro'yxati). Kod hali yozilmagan — merchant hisobi va API kalitlari kutilmoqda.
 
+### 4. Guruh A'zoligini Boshqarish (Group Membership & Management Rework)
+- [x] **Guruhdan chiqish:** Oddiy a'zo istalgan payt chiqadi. Asosiy sardor faqat (a) yagona a'zo bo'lsa (guruh butunlay o'chadi) yoki (b) avval egalikni boshqasiga topshirgandan keyin chiqa oladi.
+- [x] **Guruhni o'chirish:** Faqat asosiy sardor — guruh sozlamalari (⚙️) menyusidan, ikki bosishli tasdiqlash bilan. Barcha bog'liq odat/log/a'zolik yozuvlari kaskad orqali tozalanadi.
+- [x] **A'zoni chiqarib yuborish:** Sardor va co-adminlar A'zolar tabidan istalgan (o'zidan va asosiy sardordan tashqari) a'zoni chiqarib yubora oladi.
+- [x] **Ikkinchi admin (co-admin):** Asosiy sardor A'zolar tabidan istalgan a'zoga admin huquqi bera/olib tashlay oladi (`group_members.role`) — co-admin odat qo'shish/o'chirish, isbot tasdiqlash/rad etish va a'zo chiqarib yuborishni bajara oladi, lekin guruhni o'chira yoki boshqa birovni admin qila olmaydi. Egalikni to'liq topshirish (`transfer_group_ownership`) ham qo'shildi.
+
+Migratsiya: `031_group_membership_management.sql`.
+
 ---
 
 ## 🛠 Admin Monitoring & Health-Check (avvalgi vazifa)

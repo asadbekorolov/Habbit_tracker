@@ -630,6 +630,42 @@ export async function joinGroup(inviteCode: string, userId: string) {
   return group
 }
 
+// Oddiy a'zo darhol chiqadi. Asosiy sardor uchun: yagona a'zo bo'lsa guruh
+// butunlay o'chadi, aks holda server 'owner_must_transfer' xatosini
+// qaytaradi — avval Egalikni topshirish kerak.
+export async function leaveGroup(groupId: string): Promise<void> {
+  const { error } = await supabase.rpc('leave_group', { p_group_id: groupId })
+  if (error) throw error
+}
+
+// Sardor yoki co-admin chaqira oladi; asosiy sardorni chiqarib bo'lmaydi
+// (serverda tekshiriladi).
+export async function kickMember(groupId: string, userId: string): Promise<void> {
+  const { error } = await supabase.rpc('kick_member', { p_group_id: groupId, p_user_id: userId })
+  if (error) throw error
+}
+
+// Faqat asosiy sardor chaqira oladi — guruhni butunlay o'chiradi (barcha
+// odatlar, loglar, a'zolik yozuvlari kaskad orqali tozalanadi).
+export async function deleteGroup(groupId: string): Promise<void> {
+  const { error } = await supabase.rpc('delete_group', { p_group_id: groupId })
+  if (error) throw error
+}
+
+// Faqat asosiy sardor: biror a'zoni co-admin qiladi yoki co-admin
+// huquqini olib tashlaydi.
+export async function setGroupMemberRole(groupId: string, userId: string, role: 'admin' | 'member'): Promise<void> {
+  const { error } = await supabase.rpc('set_group_member_role', { p_group_id: groupId, p_user_id: userId, p_role: role })
+  if (error) throw error
+}
+
+// Faqat asosiy sardor: guruh egaligini boshqa a'zoga to'liq topshiradi
+// (groups.admin_id o'zgaradi, yangi egaga avtomatik co-admin roli beriladi).
+export async function transferGroupOwnership(groupId: string, newOwnerId: string): Promise<void> {
+  const { error } = await supabase.rpc('transfer_group_ownership', { p_group_id: groupId, p_new_owner_id: newOwnerId })
+  if (error) throw error
+}
+
 export async function getMyGroups(userId: string) {
   const { data, error } = await supabase
     .from('group_members')
