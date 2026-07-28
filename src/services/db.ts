@@ -1330,74 +1330,42 @@ export async function toggleFeedReaction(
 }
 
 // ─── TELEGRAM REQUESTS ───────────────────────────────────────
+// Yozish (yuborish/javob berish) send_telegram_request/respond_telegram_request
+// SECURITY DEFINER RPC'lari orqali — jadvalda client uchun to'g'ridan-to'g'ri
+// INSERT/UPDATE policy yo'q (037-migratsiya), shuning uchun so'rovchi statusni
+// o'zi "approved" qilib qo'ya olmaydi va 2 soatlik sovish muddati serverda
+// (client soatiga ishonmasdan) tekshiriladi.
+const TELEGRAM_REQUEST_COOLDOWN_MS = 2 * 60 * 60 * 1000
+
+export type TelegramRequestStatus = 'none' | 'pending' | 'approved' | 'cooldown'
+
 export async function getTelegramRequestStatus(
   requesterId: string,
   targetId: string
-): Promise<'none' | 'pending' | 'approved'> {
+): Promise<{ status: TelegramRequestStatus; retryAt?: string }> {
   const { data } = await supabase
     .from('telegram_requests')
-    .select('status')
+    .select('status, updated_at')
     .eq('requester_id', requesterId)
     .eq('target_id', targetId)
     .maybeSingle()
-  return (data?.status as 'pending' | 'approved') || 'none'
+  if (!data) return { status: 'none' }
+  if (data.status === 'rejected') {
+    const retryAtMs = new Date(data.updated_at).getTime() + TELEGRAM_REQUEST_COOLDOWN_MS
+    if (Date.now() < retryAtMs) return { status: 'cooldown', retryAt: new Date(retryAtMs).toISOString() }
+    return { status: 'none' }
+  }
+  return { status: data.status as 'pending' | 'approved' }
 }
 
-export async function sendTelegramRequest(
-  requesterId: string,
-  targetId: string,
-  fromName: string,
-  fromUsername: string
-) {
-  const { data: req, error } = await supabase
-    .from('telegram_requests')
-    .upsert(
-      { requester_id: requesterId, target_id: targetId, status: 'pending' },
-      { onConflict: 'requester_id,target_id' }
-    )
-    .select()
-    .single()
+export async function sendTelegramRequest(targetId: string) {
+  const { data, error } = await supabase.rpc('send_telegram_request', { p_target_id: targetId })
   if (error) throw error
-  await supabase.from('notifications').insert({
-    user_id: targetId,
-    title: "Telegram aloqa so'rovi",
-    body: `@${fromUsername} (${fromName}) siz bilan Telegramda aloqa o'rnatmoqchi`,
-    type: 'telegram_request',
-    link: `telegram_request:${req.id}`,
-  })
-  return req
+  return data
 }
 
-export async function approveTelegramRequest(requestId: string, approverId: string) {
-  const { data: req } = await supabase
-    .from('telegram_requests')
-    .select('requester_id, target_id')
-    .eq('id', requestId)
-    .eq('target_id', approverId)
-    .single()
-  if (!req) throw new Error('Request not found')
-  const { error: updateErr } = await supabase.from('telegram_requests').update({ status: 'approved' }).eq('id', requestId)
-  if (updateErr) throw updateErr
-  const { data: approver } = await supabase
-    .from('profiles')
-    .select('telegram_username, display_name')
-    .eq('id', approverId)
-    .single()
-  await supabase.from('notifications').insert({
-    user_id: req.requester_id,
-    title: "Telegram so'rovingiz qabul qilindi! 🎉",
-    body: `Endi @${approver?.telegram_username} ning telegramiga o'ta olasiz`,
-    type: 'telegram_approved',
-    link: null,
-  })
-}
-
-export async function rejectTelegramRequest(requestId: string, approverId: string) {
-  const { error } = await supabase
-    .from('telegram_requests')
-    .update({ status: 'rejected' })
-    .eq('id', requestId)
-    .eq('target_id', approverId)
+export async function respondTelegramRequest(requestId: string, status: 'approved' | 'rejected') {
+  const { error } = await supabase.rpc('respond_telegram_request', { p_request_id: requestId, p_status: status })
   if (error) throw error
 }
 

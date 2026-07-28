@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import {
-  X, Star, Flame, Loader2, Check,
+  X, Star, Flame, Loader2, Check, Lock,
   Send, UserPlus, UserCheck, Crown, Instagram,
 } from "lucide-react";
 import {
@@ -50,7 +50,8 @@ export function PublicProfileModal({ isDark, viewingId, myProfile, onClose }: Pu
   const [isFollowing, setIsFollowing] = useState(false);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState("");
-  const [tgStatus, setTgStatus] = useState<'none' | 'pending' | 'approved'>('none');
+  const [tgStatus, setTgStatus] = useState<'none' | 'pending' | 'approved' | 'cooldown'>('none');
+  const [tgRetryAt, setTgRetryAt] = useState<string | null>(null);
   const [tgLoading, setTgLoading] = useState(false);
   const backdropRef = useRef<HTMLDivElement>(null);
 
@@ -71,8 +72,9 @@ export function PublicProfileModal({ isDark, viewingId, myProfile, onClose }: Pu
         setFollowCounts(fc);
         setIsFollowing(following as boolean);
         if (!isSelf && s?.profile?.telegram_private && s?.profile?.telegram_username) {
-          const status = await getTelegramRequestStatus(myProfile.id, viewingId);
+          const { status, retryAt } = await getTelegramRequestStatus(myProfile.id, viewingId);
           setTgStatus(status);
+          setTgRetryAt(retryAt || null);
         }
       } catch (e: any) {
         setLoadError(e?.message || t('err_loading'));
@@ -102,12 +104,30 @@ export function PublicProfileModal({ isDark, viewingId, myProfile, onClose }: Pu
     if (tgLoading) return;
     setTgLoading(true);
     try {
-      await sendTelegramRequest(myProfile.id, viewingId, myProfile.display_name, myProfile.username);
+      await sendTelegramRequest(viewingId);
       setTgStatus('pending');
+      setTgRetryAt(null);
     } catch (e: any) {
-      alert(e?.message || t('err_loading'));
+      if (e?.message === 'COOLDOWN') {
+        const { status, retryAt } = await getTelegramRequestStatus(myProfile.id, viewingId);
+        setTgStatus(status);
+        setTgRetryAt(retryAt || null);
+      } else {
+        alert(e?.message || t('err_loading'));
+      }
     }
     setTgLoading(false);
+  }
+
+  function formatCooldown(retryAt: string | null): string {
+    const ms = retryAt ? new Date(retryAt).getTime() - Date.now() : 0;
+    if (ms <= 0) return t('pp_request_cooldown_m').replace('{m}', '0');
+    const totalMins = Math.ceil(ms / 60000);
+    const h = Math.floor(totalMins / 60);
+    const m = totalMins % 60;
+    return h > 0
+      ? t('pp_request_cooldown_hm').replace('{h}', String(h)).replace('{m}', String(m))
+      : t('pp_request_cooldown_m').replace('{m}', String(m));
   }
 
   if (loading || !data) {
@@ -336,6 +356,12 @@ export function PublicProfileModal({ isDark, viewingId, myProfile, onClose }: Pu
                     style={{ background: isDark ? "rgba(74,222,128,0.08)" : "#F0FDF4", color: "#4ADE80", border: "1px solid rgba(74,222,128,0.25)" }}>
                     <Check size={15} />
                     {t('pp_request_sent')}
+                  </div>
+                ) : tgStatus === 'cooldown' ? (
+                  <div className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-2xl text-sm font-medium text-center"
+                    style={{ background: isDark ? "rgba(248,113,113,0.08)" : "#FEF2F2", color: "#F87171", border: "1px solid rgba(248,113,113,0.25)" }}>
+                    <Lock size={15} />
+                    {formatCooldown(tgRetryAt)}
                   </div>
                 ) : (
                   <button type="button" onClick={handleTelegramRequest} disabled={tgLoading}

@@ -371,7 +371,7 @@ export default function App() {
               {/* Oxirida — shu bilan uning ochiladigan menyusi (absolute right-0)
                   ekranning haqiqiy o'ng chetiga yaqin joylashadi va mobil
                   ekranlarda chapga chiqib ketmaydi (340px kenglik) */}
-              <NotificationBell isDark={isDark} profile={profile} onNavigate={setActiveTab} />
+              <NotificationBell isDark={isDark} profile={profile} onNavigate={setActiveTab} onUserClick={handleUserClick} />
             </div>
           </header>
 

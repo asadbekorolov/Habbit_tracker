@@ -606,6 +606,8 @@ const uz = {
   pp_badge_10: "10+ bajarildi",
   pp_request_sent: "So'rov yuborildi",
   pp_request_btn: "🔒 So'rov yuborish",
+  pp_request_cooldown_hm: "{h} soat {m} daqiqadan so'ng qayta urining",
+  pp_request_cooldown_m: "{m} daqiqadan so'ng qayta urining",
   pp_self_view_hint: "Bu sizning profilingiz — boshqa foydalanuvchilar shu ko'rinishni ko'radi",
 
   // ── App Shell ────────────────────────────────────────────────
@@ -1449,6 +1451,8 @@ const ru: typeof uz = {
   pp_badge_10: "10+ выполнено",
   pp_request_sent: "Запрос отправлен",
   pp_request_btn: "🔒 Отправить запрос",
+  pp_request_cooldown_hm: "Повторите через {h} ч {m} мин",
+  pp_request_cooldown_m: "Повторите через {m} мин",
   pp_self_view_hint: "Это ваш профиль — другие пользователи видят именно такой вид",
 
   // ── App Shell ────────────────────────────────────────────────
@@ -2292,6 +2296,8 @@ const en: typeof uz = {
   pp_badge_10: "10+ completed",
   pp_request_sent: "Request sent",
   pp_request_btn: "🔒 Send request",
+  pp_request_cooldown_hm: "Try again in {h}h {m}m",
+  pp_request_cooldown_m: "Try again in {m}m",
   pp_self_view_hint: "This is your profile — other users see this same view",
 
   // ── App Shell ────────────────────────────────────────────────

@@ -2,13 +2,14 @@ import { useState, useEffect, useRef } from "react";
 import { useLang } from "../store/LangContext";
 import { Bell, Check, Trash2, X, CheckCheck } from "lucide-react";
 import { supabase } from "../services/supabase";
-import { approveTelegramRequest, rejectTelegramRequest } from "../services/db";
+import { respondTelegramRequest } from "../services/db";
 import type { Profile } from "../services/supabase";
 
 interface NotificationBellProps {
   isDark: boolean;
   profile: Profile;
   onNavigate?: (tab: string) => void;
+  onUserClick?: (userId: string) => void;
 }
 
 interface Notification {
@@ -26,6 +27,7 @@ const TYPE_CONFIG: Record<string, { icon: string; color: string; bg: string }> =
   telegram_request:      { icon: '📨', color: '#60A5FA', bg: 'rgba(96,165,250,0.15)' },
   telegram_approved:     { icon: '✅', color: '#4ADE80', bg: 'rgba(74,222,128,0.12)' },
   telegram_request_done: { icon: '✓',  color: '#4ADE80', bg: 'rgba(74,222,128,0.12)' },
+  telegram_rejected:     { icon: '🔒', color: '#F87171', bg: 'rgba(248,113,113,0.13)' },
   contact_request:       { icon: '👋', color: '#60A5FA', bg: 'rgba(96,165,250,0.15)' },
   follow:                { icon: '👥', color: '#A78BFA', bg: 'rgba(167,139,250,0.13)' },
   group_approval:        { icon: '🎯', color: '#34D399', bg: 'rgba(52,211,153,0.12)' },
@@ -52,7 +54,7 @@ function triggerBrowserNotif(title: string, body: string, type: string) {
   } catch {}
 }
 
-export function NotificationBell({ isDark, profile, onNavigate }: NotificationBellProps) {
+export function NotificationBell({ isDark, profile, onNavigate, onUserClick }: NotificationBellProps) {
   const { t } = useLang();
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [isOpen, setIsOpen] = useState(false);
@@ -102,7 +104,10 @@ export function NotificationBell({ isDark, profile, onNavigate }: NotificationBe
     // bo'lsa ham keyingi fetchNotifications() haqiqiy holatni tiklaydi
     supabase.from("notifications").update({ is_read: true }).eq("id", id).then(() => {});
     setNotifications((prev) => prev.map((n) => n.id === id ? { ...n, is_read: true } : n));
-    if (link && onNavigate && !link.includes(':')) {
+    if (link?.startsWith("profile:") && onUserClick) {
+      onUserClick(link.replace("profile:", ""));
+      setIsOpen(false);
+    } else if (link && onNavigate && !link.includes(':')) {
       onNavigate(link);
       setIsOpen(false);
     }
@@ -126,7 +131,7 @@ export function NotificationBell({ isDark, profile, onNavigate }: NotificationBe
     setActioningId(n.id);
     setActionError("");
     try {
-      await approveTelegramRequest(n.link.replace("telegram_request:", ""), profile.id);
+      await respondTelegramRequest(n.link.replace("telegram_request:", ""), "approved");
       setNotifications((prev) => prev.map((x) => x.id === n.id ? { ...x, is_read: true, type: "telegram_request_done" } : x));
     } catch (e: any) { setActionError(e?.message || t('err_loading')); }
     finally { setActioningId(null); }
@@ -136,7 +141,7 @@ export function NotificationBell({ isDark, profile, onNavigate }: NotificationBe
     setActioningId(n.id);
     setActionError("");
     try {
-      await rejectTelegramRequest(n.link.replace("telegram_request:", ""), profile.id);
+      await respondTelegramRequest(n.link.replace("telegram_request:", ""), "rejected");
       setNotifications((prev) => prev.filter((x) => x.id !== n.id));
     } catch (e: any) { setActionError(e?.message || t('err_loading')); }
     finally { setActioningId(null); }

@@ -42,6 +42,16 @@ Migratsiya: `035_fix_group_approval_reward_date_bug.sql`.
 
 Migratsiya: `036_log_group_habit_rpc.sql`.
 
+### 6. Telegram aloqa so'rovi (Public Profile)
+- [x] **`telegram_requests` jadvali yo'qligi:** `PublicProfileModal.tsx`/`NotificationBell.tsx` allaqachon `telegram_requests` jadvaliga ishonib yozilgan edi (`getTelegramRequestStatus`, `sendTelegramRequest`, tasdiqlash/rad etish UI), lekin jadvalning o'zi hech qachon yaratilmagan (003-migratsiya faqat `to_regclass(...) IS NOT NULL` sharti bilan RLS qo'yishga harakat qilgan — jadval yo'qligi sabab hech narsa qo'yilmagan). Natijada "Could not find the table 'public.telegram_requests'" xatosi. Endi jadval to'liq yaratildi: `requester_id`, `target_id`, `status` ('pending'/'approved'/'rejected'), `created_at`, `updated_at`, `UNIQUE(requester_id, target_id)`.
+- [x] **Xavfsiz yozish (RPC orqali):** jadvalda client uchun to'g'ridan-to'g'ri INSERT/UPDATE policy yo'q — aks holda so'rovchi statusni o'zi "approved" qilib qo'ya olardi. Yozish ikkita SECURITY DEFINER RPC orqali: `send_telegram_request(target_id)` (yuborish/qayta yuborish + bildirishnoma) va `respond_telegram_request(request_id, status)` (tasdiqlash/rad etish + bildirishnoma, ikkalasi ham `auth.uid()`ni serverda tekshiradi).
+- [x] **2 soatlik sovish muddati:** rad etilgan so'rov uchun serverda (`updated_at + 2 soat`) tekshiriladi — client soatiga ishonilmaydi. Muddat o'tmagan bo'lsa `send_telegram_request` `'COOLDOWN'` xatosini qaytaradi, frontend buni ushlab holatni "cooldown" qilib ko'rsatadi (qolgan vaqt bilan: "{h} soat {m} daqiqadan so'ng qayta urining").
+- [x] **`getTelegramRequestStatus` to'liq holat qaytaradi:** endi `'none' | 'pending' | 'approved' | 'cooldown'` (+ `retryAt`) — avvalgi versiya faqat `'none'/'pending'/'approved'`ni bilardi, rad etilganini "none" deb ko'rsatib, sovish muddatisiz darhol qayta so'rovga yo'l qo'yardi.
+- [x] **Rad etilganda bildirishnoma:** avval `rejectTelegramRequest` so'rovchiga hech qanday xabar yubormasdi. Endi rad etilganda ham bildirishnoma boradi ("2 soatdan so'ng qayta urinib ko'rishingiz mumkin").
+- [x] **Tasdiqlangan bildirishnomani bosish profilni ochadi:** tasdiqlash bildirishnomasi endi `link: 'profile:<approver_id>'` bilan keladi; `NotificationBell` bu naqshni tanib, bosilganda `PublicProfileModal`ni to'g'ridan-to'g'ri o'sha foydalanuvchining profili bilan ochadi (u yerda endi "Telegramga o'tish" tugmasi to'g'ridan-to'g'ri ishlaydi) — buning uchun `NotificationBell`ga yangi `onUserClick` prop qo'shildi (`App.tsx`dagi mavjud `handleUserClick` bilan bog'landi).
+
+Migratsiya: `037_telegram_requests.sql`.
+
 ---
 
 ## 🛠 Admin Monitoring & Health-Check (avvalgi vazifa)
