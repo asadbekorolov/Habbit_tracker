@@ -338,6 +338,7 @@ function GroupDetail({
   const [subteams, setSubteams] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [loadError, setLoadError] = useState("");
   const [copied, setCopied] = useState(false);
   const [downloading, setDownloading] = useState(false);
   const statsRef = useRef<HTMLDivElement>(null);
@@ -426,39 +427,51 @@ function GroupDetail({
 
   async function loadAll() {
     setLoading(true);
-    try {
-      const [mem, hab, lb, logs, pending, stats, teams] = await Promise.all([
-        getGroupMembers(group.id),
-        getGroupHabits(group.id),
-        getGroupLeaderboard(group.id),
-        getTodayGroupLogs(group.id, profile.id),
-        isAdmin ? getPendingGroupApprovals(group.id) : Promise.resolve([]),
-        getGroupMembersMonthlyStats(group.id),
-        getGroupSubteams(group.id),
-      ]);
-      setMembers(mem || []);
-      setHabits(hab || []);
-      setLeaderboard(lb || []);
-      setPendingApprovals(pending || []);
-      setMonthlyStats(stats || []);
-      setSubteams(teams || []);
+    setLoadError("");
+    // allSettled — bitta so'rov (masalan oylik statistika) xato bersa ham,
+    // qolganlari (a'zolar, odatlar...) bo'sh holatga tushib qolmasin.
+    // Har bir muvaffaqiyatsiz qism o'z nomi bilan konsolda va bannerda
+    // ko'rinadi, shuning uchun kelajakda sababini topish oson bo'ladi.
+    const [memR, habR, lbR, logsR, pendingR, statsR, teamsR] = await Promise.allSettled([
+      getGroupMembers(group.id),
+      getGroupHabits(group.id),
+      getGroupLeaderboard(group.id),
+      getTodayGroupLogs(group.id, profile.id),
+      isAdmin ? getPendingGroupApprovals(group.id) : Promise.resolve([]),
+      getGroupMembersMonthlyStats(group.id),
+      getGroupSubteams(group.id),
+    ]);
 
-      const logMap: Record<string, LogState> = {};
-      for (const l of (logs || [])) {
-        logMap[l.group_habit_id] = {
-          id: l.id,
-          completed: l.completed,
-          status: l.approval_status || "auto",
-          proofNote: l.proof_note || "",
-          rejectReason: l.reject_reason || "",
-        };
-      }
-      setTodayLogs(logMap);
-    } catch {
-      setError(t('groups_err_load_data'));
-    } finally {
-      setLoading(false);
+    const failedParts: string[] = [];
+    const unwrap = <T,>(r: PromiseSettledResult<T>, label: string, fallback: T): T => {
+      if (r.status === "fulfilled") return r.value ?? fallback;
+      console.error(`GroupDetail loadAll: ${label} failed`, r.reason);
+      failedParts.push(label);
+      return fallback;
+    };
+
+    setMembers(unwrap(memR, "members", []));
+    setHabits(unwrap(habR, "habits", []));
+    setLeaderboard(unwrap(lbR, "leaderboard", []));
+    setPendingApprovals(unwrap(pendingR, "approvals", []));
+    setMonthlyStats(unwrap(statsR, "stats", []));
+    setSubteams(unwrap(teamsR, "teams", []));
+
+    const logs = unwrap(logsR, "logs", [] as any[]);
+    const logMap: Record<string, LogState> = {};
+    for (const l of logs) {
+      logMap[l.group_habit_id] = {
+        id: l.id,
+        completed: l.completed,
+        status: l.approval_status || "auto",
+        proofNote: l.proof_note || "",
+        rejectReason: l.reject_reason || "",
+      };
     }
+    setTodayLogs(logMap);
+
+    if (failedParts.length > 0) setLoadError(t('groups_err_load_data'));
+    setLoading(false);
   }
 
   async function submitHabit() {
@@ -863,6 +876,10 @@ function GroupDetail({
           </button>
         ))}
       </div>
+
+      {loadError && (
+        <p className="text-xs px-1 mb-3" style={{ color: "var(--coral-red)" }}>⚠ {loadError}</p>
+      )}
 
       {/* Proof note modal */}
       {proofHabitId && (() => {
