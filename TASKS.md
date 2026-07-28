@@ -60,6 +60,14 @@ Migratsiya: `037_telegram_requests.sql`.
 
 Fayl: `src/App.tsx`, `src/features/dashboard/Dashboard.tsx` — SQL migratsiya kerak emas.
 
+### 8. Admin Monitoring: DAU "0" va "Eng ommabop odatlar — hali ma'lumot yo'q"
+- [x] **Xato butunlay yashiringan edi:** `AdminPanel.tsx`ning `loadMonitoring()` funksiyasi `get_admin_monitoring_stats()` RPC xato bersa, uni faqat brauzer konsoliga yozib qo'yardi (`console.error`) — ekranda esa shunchaki "0" va "Hali ma'lumot yo'q" ko'rinardi, xuddi haqiqatan ham ma'lumot yo'qdek. Endi xato matni interfeysda (qizil banner) ham ko'rsatiladi — shu bilan bu shu sessiyada bir necha marta uchragan "migratsiya yozilgan-u, lekin Supabase'da hech qachon ishga tushirilmagan" holatimi yoki haqiqatan ham ma'lumot yo'qligimi darhol bilinadi.
+- [x] **005-migratsiya obyektlari qaytadan xavfsiz tasdiqlandi:** `last_seen_at` ustuni, `touch_last_seen()` va `get_admin_monitoring_stats()` — barchasi `IF NOT EXISTS`/`CREATE OR REPLACE` bilan qayta yozildi (avvalgisi bilan bir xil, ishga tushirish xavfsiz — allaqachon mavjud bo'lsa ham hech narsa buzilmaydi).
+- [x] **"Eng ommabop odatlar" endi haqiqatan "hozirgi" ko'rsatkich:** avval BUTUN TARIX bo'yicha (sana chegarasisiz) hisoblanardi — bu "hamma vaqtdagi eng ko'p yozilgan" edi, "hozir ommabop" emas. Endi so'nggi 30 kun bilan chegaralandi.
+- DAU (`now() - interval '24 hours'`) hisoblash mantig'ining o'zi to'g'ri edi — `timestamptz` mutlaq vaqt bo'lgani uchun bu yerda avvalgi sessiyalarda uchragan vaqt-zonasi (`CURRENT_DATE`) turidagi xato yo'q edi.
+
+Migratsiya: `038_admin_monitoring_fix.sql`.
+
 ---
 
 ## 🛠 Admin Monitoring & Health-Check (avvalgi vazifa)

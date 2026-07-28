@@ -41,6 +41,7 @@ export function AdminPanel({ isDark, profile }: AdminPanelProps) {
 
   const [monitoring, setMonitoring] = useState<AdminMonitoringStats | null>(null);
   const [monitoringLoading, setMonitoringLoading] = useState(true);
+  const [monitoringError, setMonitoringError] = useState("");
   const [inactiveGroups, setInactiveGroups] = useState<InactiveGroup[]>([]);
   const [healthLoading, setHealthLoading] = useState(true);
   const [deletingGroupId, setDeletingGroupId] = useState<string | null>(null);
@@ -173,11 +174,13 @@ export function AdminPanel({ isDark, profile }: AdminPanelProps) {
 
   async function loadMonitoring() {
     setMonitoringLoading(true);
+    setMonitoringError("");
     try {
       const data = await getAdminMonitoringStats();
       setMonitoring(data);
-    } catch (e) {
+    } catch (e: any) {
       console.error("Monitoring ma'lumotlarini yuklashda xatolik:", e);
+      setMonitoringError(e?.message || String(e));
     } finally {
       setMonitoringLoading(false);
     }
@@ -714,6 +717,9 @@ export function AdminPanel({ isDark, profile }: AdminPanelProps) {
 
       {activeTab === "monitoring" && (
         <>
+          {monitoringError && (
+            <p className="text-xs px-1" style={{ color: "var(--coral-red)" }}>⚠ {monitoringError}</p>
+          )}
           <div style={cardStyle} className="flex flex-col">
             <div className="w-9 h-9 rounded-xl flex items-center justify-center mb-3" style={{ background: "rgba(74,222,128,0.12)" }}>
               <Activity size={18} style={{ color: "#4ADE80" }} />
