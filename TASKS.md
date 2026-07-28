@@ -76,6 +76,15 @@ Migratsiya: `038_admin_monitoring_fix.sql`.
 
 Migratsiya: `039_admin_analytics_dashboard.sql`.
 
+### 10. Kengaytirilgan Foydalanuvchilarni Boshqarish (Admin Panel)
+- **Eslatma:** `is_banned` ustuni va bloklash/blokdan chiqarish (`toggle_user_ban`) allaqachon mavjud edi (setup.sql/004-migratsiya) — bu vazifa ularni takrorlamadi, faqat yetishmayotgan imkoniyatlarni qo'shdi.
+- [x] **Jadval kengaytirildi:** Ism+Username (avatar + xarid qilingan ramka bilan), Holat (Faol/Bloklangan belgisi), Rol (Admin/Foydalanuvchi), Balans (🪙 tanga + ⭐ ball), Samaradorlik % (so'nggi 30 kunlik), Qo'shilgan sana.
+- [x] **`get_admin_users_efficiency()` RPC:** har bir foydalanuvchi uchun samaradorlik foizini (bajarilgan/(faol odatlar×kunlar)×100, `get_leaderboard()`dagi bilan bir xil formula) BITTA so'rovda qaytaradi — jadvaldagi har bir qator uchun alohida so'rov yubormaslik uchun (N+1 muammosining oldini olish).
+- [x] **Bonus tanga/ball berish:** yangi `admin_grant_balance()` RPC + modal — admin istagan foydalanuvchiga tanga va/yoki ball qo'sha (yoki kamaytira) oladi, natija hech qachon manfiy bo'lmaydi.
+- [x] **"Batafsil ko'rish" modali:** foydalanuvchining barcha faol odatlari (turi bilan) va umumiy statistikasi (tanga, ball, samaradorlik, jami bajarilgan) — mavjud `getUserHabitsAdmin`/`getAllTimeLogs` funksiyalaridan foydalanadi.
+
+Migratsiya: `040_admin_user_management.sql`.
+
 ---
 
 ## 🛠 Admin Monitoring & Health-Check (avvalgi vazifa)

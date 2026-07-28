@@ -258,6 +258,36 @@ export async function toggleUserBan(userId: string, isBanned: boolean) {
   if (error) throw error;
 }
 
+// Har bir a'zo uchun samaradorlik foizini BITTA so'rovda oladi (N+1 emas) —
+// { user_id: efficiency_pct } shaklidagi lookup jadvaliga aylantirib qaytaradi.
+export async function getAdminUsersEfficiency(): Promise<Record<string, number>> {
+  const { data, error } = await supabase.rpc('get_admin_users_efficiency');
+  if (error) throw error;
+  const map: Record<string, number> = {};
+  for (const row of (data || []) as { user_id: string; efficiency_pct: number }[]) {
+    map[row.user_id] = row.efficiency_pct;
+  }
+  return map;
+}
+
+export async function adminGrantBalance(userId: string, coinsDelta: number, scoreDelta: number) {
+  const { error } = await supabase.rpc('admin_grant_balance', {
+    p_user_id: userId, p_coins_delta: coinsDelta, p_score_delta: scoreDelta,
+  });
+  if (error) throw error;
+}
+
+export async function getUserHabitsAdmin(userId: string) {
+  const { data, error } = await supabase
+    .from('habits')
+    .select('id, name, emoji, type, target_value, unit, is_active, created_at')
+    .eq('user_id', userId)
+    .eq('is_active', true)
+    .order('created_at', { ascending: false });
+  if (error) throw error;
+  return data || [];
+}
+
 // ─── USER FEEDBACK ──────────────────────────────────────────
 export async function submitFeedback(userId: string, content: string) {
   const { error } = await supabase.from('user_feedback').insert({ user_id: userId, content });

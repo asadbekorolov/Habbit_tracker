@@ -1,15 +1,17 @@
 import { useState, useEffect } from "react";
-import { Users, ListChecks, ShieldAlert, Loader2, Ban, ShieldCheck, Search, AlertTriangle, Trash2, Megaphone, Check, X, ClipboardCheck, Activity, HeartPulse, Flame, MessageSquare, Download, TrendingUp, UserPlus, Coins, Sparkles, Palette, UsersRound, Clock, CheckCircle2 } from "lucide-react";
+import { Users, ListChecks, ShieldAlert, Loader2, Ban, ShieldCheck, Search, AlertTriangle, Trash2, Megaphone, Check, X, ClipboardCheck, Activity, HeartPulse, Flame, MessageSquare, Download, TrendingUp, UserPlus, Coins, Sparkles, Palette, UsersRound, Clock, CheckCircle2, Gift, Eye, Crown } from "lucide-react";
 import {
   getGlobalStats, getAllProfiles, toggleUserBan, resetAllData, sendGlobalNotification,
   getAllPendingApprovals, approveGroupLog, rejectGroupLog,
   getAdminMonitoringStats, getInactiveGroups, adminDeleteGroup,
   getAllFeedback, getAllHabitsAdmin, getAnalyticsSummary, getAdminAnalyticsDashboard,
+  getAdminUsersEfficiency, adminGrantBalance, getUserHabitsAdmin, getAllTimeLogs,
   type AdminMonitoringStats, type InactiveGroup, type FeedbackEntry, type AnalyticsSummaryRow, type AdminAnalyticsDashboard,
 } from "../../services/db";
 import type { Profile } from "../../services/supabase";
 import { useLang } from "../../store/LangContext";
 import { downloadCsv } from "../../utils/csv";
+import { AvatarFrame } from "../../components/AvatarFrame";
 
 interface AdminPanelProps {
   isDark: boolean;
@@ -29,6 +31,20 @@ export function AdminPanel({ isDark, profile }: AdminPanelProps) {
   const [error, setError] = useState<string | null>(null);
   const [banningId, setBanningId] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
+  const [efficiencyMap, setEfficiencyMap] = useState<Record<string, number>>({});
+
+  // Bonus tanga/ball berish modali
+  const [bonusUserId, setBonusUserId] = useState<string | null>(null);
+  const [bonusCoins, setBonusCoins] = useState("0");
+  const [bonusScore, setBonusScore] = useState("0");
+  const [grantingBonus, setGrantingBonus] = useState(false);
+  const [bonusError, setBonusError] = useState("");
+
+  // "Batafsil" — foydalanuvchining faol odatlari va statistikasi modali
+  const [detailsUserId, setDetailsUserId] = useState<string | null>(null);
+  const [detailsLoading, setDetailsLoading] = useState(false);
+  const [detailsHabits, setDetailsHabits] = useState<any[]>([]);
+  const [detailsCompleted, setDetailsCompleted] = useState(0);
   const [resetting, setResetting] = useState(false);
   const [pushTitle, setPushTitle] = useState("");
   const [pushBody, setPushBody] = useState("");
@@ -81,6 +97,7 @@ export function AdminPanel({ isDark, profile }: AdminPanelProps) {
     loadModeration();
     loadMonitoring();
     loadHealth();
+    loadEfficiency();
     loadFeedback();
     loadAnalytics();
     loadDashboard();
@@ -270,6 +287,61 @@ export function AdminPanel({ isDark, profile }: AdminPanelProps) {
       console.error("Bloklashda xatolik:", e);
     } finally {
       setBanningId(null);
+    }
+  }
+
+  async function loadEfficiency() {
+    try {
+      const map = await getAdminUsersEfficiency();
+      setEfficiencyMap(map);
+    } catch (e) {
+      console.error("Samaradorlik ma'lumotlarini yuklashda xatolik:", e);
+    }
+  }
+
+  function openBonusModal(userId: string) {
+    setBonusUserId(userId);
+    setBonusCoins("0");
+    setBonusScore("0");
+    setBonusError("");
+  }
+
+  async function handleGrantBonus() {
+    if (!bonusUserId) return;
+    const coinsDelta = parseInt(bonusCoins, 10) || 0;
+    const scoreDelta = parseInt(bonusScore, 10) || 0;
+    if (coinsDelta === 0 && scoreDelta === 0) { setBonusError(t('admin_bonus_zero')); return; }
+    setGrantingBonus(true);
+    setBonusError("");
+    try {
+      await adminGrantBalance(bonusUserId, coinsDelta, scoreDelta);
+      setUsers(users.map(u => u.id === bonusUserId
+        ? { ...u, coins: Math.max(0, (u.coins || 0) + coinsDelta), score: Math.max(0, (u.score || 0) + scoreDelta) }
+        : u));
+      setBonusUserId(null);
+    } catch (e: any) {
+      setBonusError(e?.message || t('err_loading'));
+    } finally {
+      setGrantingBonus(false);
+    }
+  }
+
+  async function openDetailsModal(userId: string) {
+    setDetailsUserId(userId);
+    setDetailsLoading(true);
+    setDetailsHabits([]);
+    setDetailsCompleted(0);
+    try {
+      const [habits, logs] = await Promise.all([
+        getUserHabitsAdmin(userId),
+        getAllTimeLogs(userId),
+      ]);
+      setDetailsHabits(habits);
+      setDetailsCompleted((logs || []).length);
+    } catch (e) {
+      console.error("Foydalanuvchi tafsilotlarini yuklashda xatolik:", e);
+    } finally {
+      setDetailsLoading(false);
     }
   }
 
@@ -592,10 +664,10 @@ export function AdminPanel({ isDark, profile }: AdminPanelProps) {
           </div>
 
           <div className="overflow-x-auto">
-            <table className="w-full border-collapse" style={{ minWidth: 560 }}>
+            <table className="w-full border-collapse" style={{ minWidth: 860 }}>
               <thead>
                 <tr style={{ borderBottom: `1px solid ${isDark ? "rgba(255,255,255,0.08)" : "rgba(0,0,0,0.08)"}` }}>
-                  {[t('admin_col_name'), t('admin_col_username'), t('admin_col_score'), t('admin_col_joined'), t('admin_col_last_seen'), ""].map((h, i) => (
+                  {[t('admin_col_name'), t('admin_col_status'), t('admin_col_role'), t('admin_col_balance'), t('admin_col_efficiency'), t('admin_col_joined'), ""].map((h, i) => (
                     <th key={i} className="text-left pb-2 pr-3" style={{ fontSize: 10, color: "var(--muted-foreground)", fontFamily: "'Geist Mono', monospace", textTransform: "uppercase" }}>
                       {h}
                     </th>
@@ -619,38 +691,77 @@ export function AdminPanel({ isDark, profile }: AdminPanelProps) {
                     >
                       <td className="py-2.5 pr-3">
                         <div className="flex items-center gap-2 min-w-0">
-                          <div
-                            className="w-7 h-7 rounded-full flex items-center justify-center text-[10px] font-bold shrink-0"
-                            style={{ background: u.avatar_color || "#4ADE80", color: "#000" }}
-                          >
-                            {u.display_name.split(" ").map((n) => n[0]).join("").toUpperCase().slice(0, 2)}
+                          <AvatarFrame frameId={u.active_frame} radius={9999}>
+                            <div
+                              className="w-7 h-7 rounded-full flex items-center justify-center text-[10px] font-bold shrink-0 overflow-hidden"
+                              style={{ background: u.avatar_color || "#4ADE80", color: "#000" }}
+                            >
+                              {u.avatar_url ? (
+                                <img src={u.avatar_url} alt="" className="w-7 h-7 object-cover" />
+                              ) : (
+                                u.display_name.split(" ").map((n) => n[0]).join("").toUpperCase().slice(0, 2)
+                              )}
+                            </div>
+                          </AvatarFrame>
+                          <div className="min-w-0">
+                            <p className="text-xs font-medium truncate" style={{ color: "var(--foreground)" }}>{u.display_name}</p>
+                            <p className="text-[10px] truncate" style={{ color: "var(--muted-foreground)", fontFamily: "'Geist Mono', monospace" }}>@{u.username}</p>
                           </div>
-                          <span className="text-xs font-medium truncate" style={{ color: "var(--foreground)" }}>
-                            {u.display_name}
-                            {u.is_admin && <span className="text-[9px] ml-1 bg-red-100 text-red-600 px-1 py-0.5 rounded">{t('admin_badge_admin')}</span>}
-                            {u.is_banned && <span className="text-[9px] ml-1 bg-gray-600 text-white px-1 py-0.5 rounded">{t('admin_badge_banned')}</span>}
-                          </span>
                         </div>
                       </td>
-                      <td className="py-2.5 pr-3 text-xs" style={{ color: "var(--muted-foreground)", fontFamily: "'Geist Mono', monospace" }}>@{u.username}</td>
-                      <td className="py-2.5 pr-3 text-xs font-semibold" style={{ color: "var(--foreground)", fontFamily: "'Geist Mono', monospace" }}>{u.score || 0}</td>
+                      <td className="py-2.5 pr-3">
+                        <span className="text-[10px] px-1.5 py-0.5 rounded-full font-semibold"
+                          style={u.is_banned
+                            ? { background: "rgba(248,113,113,0.12)", color: "#F87171" }
+                            : { background: "rgba(74,222,128,0.12)", color: "#4ADE80" }}>
+                          {u.is_banned ? t('admin_status_banned') : t('admin_status_active')}
+                        </span>
+                      </td>
+                      <td className="py-2.5 pr-3">
+                        {u.is_admin ? (
+                          <span className="flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded-full font-semibold w-fit" style={{ background: "rgba(251,191,36,0.12)", color: "#FBBF24" }}>
+                            <Crown size={10} /> {t('admin_role_admin')}
+                          </span>
+                        ) : (
+                          <span className="text-[10px]" style={{ color: "var(--muted-foreground)" }}>{t('admin_role_user')}</span>
+                        )}
+                      </td>
+                      <td className="py-2.5 pr-3 text-xs" style={{ color: "var(--foreground)", fontFamily: "'Geist Mono', monospace" }}>
+                        🪙{u.coins || 0} · ⭐{u.score || 0}
+                      </td>
+                      <td className="py-2.5 pr-3 text-xs font-semibold" style={{ color: (efficiencyMap[u.id] ?? 0) >= 50 ? "#4ADE80" : "var(--muted-foreground)", fontFamily: "'Geist Mono', monospace" }}>
+                        {efficiencyMap[u.id] ?? 0}%
+                      </td>
                       <td className="py-2.5 pr-3 text-xs" style={{ color: "var(--muted-foreground)", fontFamily: "'Geist Mono', monospace" }}>
                         {new Date(u.created_at).toLocaleDateString(DATE_LOCALE[lang] || "uz-UZ")}
                       </td>
-                      <td className="py-2.5 pr-3 text-xs" style={{ color: "var(--muted-foreground)", fontFamily: "'Geist Mono', monospace" }}>
-                        {u.last_seen_at ? new Date(u.last_seen_at).toLocaleDateString(DATE_LOCALE[lang] || "uz-UZ") : "—"}
-                      </td>
                       <td className="py-2.5">
-                        {u.id !== profile.id && (
+                        <div className="flex items-center gap-1">
                           <button
-                            onClick={() => handleToggleBan(u.id, !!u.is_banned)}
-                            disabled={banningId === u.id}
-                            className="min-w-[32px] min-h-[32px] flex items-center justify-center rounded-lg transition-colors hover:bg-gray-200 dark:hover:bg-gray-800 shrink-0"
-                            title={u.is_banned ? t('admin_unban') : t('admin_ban')}
+                            onClick={() => openDetailsModal(u.id)}
+                            className="min-w-[30px] min-h-[30px] flex items-center justify-center rounded-lg transition-colors hover:bg-gray-200 dark:hover:bg-gray-800 shrink-0"
+                            title={t('admin_view_details')}
                           >
-                            {banningId === u.id ? <Loader2 size={14} className="animate-spin text-gray-500" /> : u.is_banned ? <ShieldCheck size={14} className="text-green-500" /> : <Ban size={14} className="text-red-500" />}
+                            <Eye size={14} style={{ color: "#60A5FA" }} />
                           </button>
-                        )}
+                          <button
+                            onClick={() => openBonusModal(u.id)}
+                            className="min-w-[30px] min-h-[30px] flex items-center justify-center rounded-lg transition-colors hover:bg-gray-200 dark:hover:bg-gray-800 shrink-0"
+                            title={t('admin_grant_bonus')}
+                          >
+                            <Gift size={14} style={{ color: "#A78BFA" }} />
+                          </button>
+                          {u.id !== profile.id && (
+                            <button
+                              onClick={() => handleToggleBan(u.id, !!u.is_banned)}
+                              disabled={banningId === u.id}
+                              className="min-w-[30px] min-h-[30px] flex items-center justify-center rounded-lg transition-colors hover:bg-gray-200 dark:hover:bg-gray-800 shrink-0"
+                              title={u.is_banned ? t('admin_unban') : t('admin_ban')}
+                            >
+                              {banningId === u.id ? <Loader2 size={14} className="animate-spin text-gray-500" /> : u.is_banned ? <ShieldCheck size={14} className="text-green-500" /> : <Ban size={14} className="text-red-500" />}
+                            </button>
+                          )}
+                        </div>
                       </td>
                     </tr>
                   ))}
@@ -659,6 +770,106 @@ export function AdminPanel({ isDark, profile }: AdminPanelProps) {
           </div>
         </div>
       )}
+
+      {/* ── Bonus tanga/ball berish modali ── */}
+      {bonusUserId && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: "rgba(0,0,0,0.6)", backdropFilter: "blur(4px)" }}
+          onClick={(e) => { if (e.target === e.currentTarget) setBonusUserId(null); }}>
+          <div className="w-full max-w-sm rounded-2xl p-5" style={{ background: isDark ? "#161B22" : "#fff", border: `1px solid ${isDark ? "rgba(255,255,255,0.08)" : "rgba(0,0,0,0.08)"}` }}>
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="font-semibold text-sm flex items-center gap-2" style={{ color: "var(--foreground)" }}>
+                <Gift size={15} style={{ color: "#A78BFA" }} /> {t('admin_grant_bonus')}
+              </h3>
+              <button onClick={() => setBonusUserId(null)} className="w-7 h-7 rounded-full flex items-center justify-center" style={{ color: "var(--muted-foreground)" }}>
+                <X size={14} />
+              </button>
+            </div>
+            <p className="text-[11px] mb-1" style={{ color: "var(--muted-foreground)" }}>{t('admin_bonus_hint')}</p>
+            <div className="flex flex-col gap-3 mt-3">
+              <div>
+                <label className="text-[11px] font-medium block mb-1" style={{ color: "var(--muted-foreground)" }}>🪙 {t('admin_bonus_coins')}</label>
+                <input type="number" value={bonusCoins} onChange={(e) => setBonusCoins(e.target.value)}
+                  className="w-full px-3 py-2 rounded-xl text-sm outline-none"
+                  style={{ background: isDark ? "rgba(255,255,255,0.05)" : "#F3F4F6", border: `1px solid ${isDark ? "rgba(255,255,255,0.1)" : "rgba(0,0,0,0.1)"}`, color: "var(--foreground)" }} />
+              </div>
+              <div>
+                <label className="text-[11px] font-medium block mb-1" style={{ color: "var(--muted-foreground)" }}>⭐ {t('admin_bonus_score')}</label>
+                <input type="number" value={bonusScore} onChange={(e) => setBonusScore(e.target.value)}
+                  className="w-full px-3 py-2 rounded-xl text-sm outline-none"
+                  style={{ background: isDark ? "rgba(255,255,255,0.05)" : "#F3F4F6", border: `1px solid ${isDark ? "rgba(255,255,255,0.1)" : "rgba(0,0,0,0.1)"}`, color: "var(--foreground)" }} />
+              </div>
+            </div>
+            {bonusError && <p className="text-xs mt-2" style={{ color: "var(--coral-red)" }}>⚠ {bonusError}</p>}
+            <button
+              onClick={handleGrantBonus}
+              disabled={grantingBonus}
+              className="w-full mt-4 py-2.5 rounded-xl text-sm font-semibold flex items-center justify-center gap-2"
+              style={{ background: "var(--neon-green)", color: "#0E1117", opacity: grantingBonus ? 0.7 : 1 }}
+            >
+              {grantingBonus ? <Loader2 size={15} className="animate-spin" /> : <Gift size={15} />}
+              {t('admin_bonus_submit')}
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* ── Foydalanuvchi tafsilotlari modali ── */}
+      {detailsUserId && (() => {
+        const u = users.find((x) => x.id === detailsUserId);
+        if (!u) return null;
+        return (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: "rgba(0,0,0,0.6)", backdropFilter: "blur(4px)" }}
+            onClick={(e) => { if (e.target === e.currentTarget) setDetailsUserId(null); }}>
+            <div className="w-full max-w-sm rounded-2xl p-5" style={{ background: isDark ? "#161B22" : "#fff", border: `1px solid ${isDark ? "rgba(255,255,255,0.08)" : "rgba(0,0,0,0.08)"}`, maxHeight: "80vh", overflowY: "auto" }}>
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="font-semibold text-sm flex items-center gap-2" style={{ color: "var(--foreground)" }}>
+                  <Eye size={15} style={{ color: "#60A5FA" }} /> {u.display_name}
+                </h3>
+                <button onClick={() => setDetailsUserId(null)} className="w-7 h-7 rounded-full flex items-center justify-center" style={{ color: "var(--muted-foreground)" }}>
+                  <X size={14} />
+                </button>
+              </div>
+              {detailsLoading ? (
+                <div className="flex justify-center py-8"><Loader2 size={20} className="animate-spin" style={{ color: "var(--neon-green)" }} /></div>
+              ) : (
+                <>
+                  <div className="grid grid-cols-3 gap-2 mb-4">
+                    {[
+                      { label: t('an_economy_coins'), value: `🪙${u.coins || 0}` },
+                      { label: t('admin_col_score'), value: `⭐${u.score || 0}` },
+                      { label: t('admin_col_efficiency'), value: `${efficiencyMap[u.id] ?? 0}%` },
+                    ].map((s) => (
+                      <div key={s.label} className="rounded-xl p-2.5 text-center" style={{ background: isDark ? "rgba(255,255,255,0.03)" : "#F9FAFB", border: `1px solid ${isDark ? "rgba(255,255,255,0.05)" : "rgba(0,0,0,0.05)"}` }}>
+                        <p className="text-sm font-bold" style={{ color: "var(--foreground)", fontFamily: "'Geist Mono', monospace" }}>{s.value}</p>
+                        <p className="text-[9px] mt-1" style={{ color: "var(--muted-foreground)" }}>{s.label}</p>
+                      </div>
+                    ))}
+                  </div>
+                  <p className="text-[11px] mb-2" style={{ color: "var(--muted-foreground)" }}>
+                    {t('admin_details_total_completed')}: <span style={{ color: "var(--foreground)", fontFamily: "'Geist Mono', monospace" }}>{detailsCompleted}</span>
+                  </p>
+                  <p className="text-xs font-semibold mb-2" style={{ color: "var(--foreground)" }}>{t('admin_details_active_habits')} ({detailsHabits.length})</p>
+                  {detailsHabits.length === 0 ? (
+                    <p className="text-xs text-center py-4" style={{ color: "var(--muted-foreground)" }}>{t('admin_details_no_habits')}</p>
+                  ) : (
+                    <div className="flex flex-col gap-1.5">
+                      {detailsHabits.map((h) => (
+                        <div key={h.id} className="flex items-center gap-2 px-2.5 py-2 rounded-lg" style={{ background: isDark ? "rgba(255,255,255,0.03)" : "#F9FAFB" }}>
+                          <span className="text-sm">{h.emoji}</span>
+                          <span className="text-xs flex-1 truncate" style={{ color: "var(--foreground)" }}>{h.name}</span>
+                          <span className="text-[9px] px-1.5 py-0.5 rounded-full" style={{ background: h.type === "negative" ? "rgba(248,113,113,0.12)" : "rgba(74,222,128,0.12)", color: h.type === "negative" ? "#F87171" : "#4ADE80" }}>
+                            {h.type === "negative" ? t('an_habits_negative') : t('an_habits_positive')}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </>
+              )}
+            </div>
+          </div>
+        );
+      })()}
 
       {activeTab === "feedback" && (
         <div style={cardStyle}>
