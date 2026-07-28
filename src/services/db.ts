@@ -544,6 +544,7 @@ export type LeaderboardEntry = {
   avatar_color: string
   avatar_url: string | null
   score: number
+  efficiency_pct: number
   is_private: boolean
   has_star: boolean
 }
@@ -560,13 +561,9 @@ export async function getLeaderboard(): Promise<LeaderboardEntry[]> {
 }
 
 export async function getUserRank(userId: string): Promise<number> {
-  const { data } = await supabase
-    .from('profiles')
-    .select('id, score')
-    .order('score', { ascending: false })
-  if (!data) return 0
-  const idx = data.findIndex((p) => p.id === userId)
-  return idx >= 0 ? idx + 1 : 0
+  const { data, error } = await supabase.rpc('get_user_rank_efficiency', { p_user_id: userId })
+  if (error) return 0
+  return data || 0
 }
 
 export async function getAllTimeLogs(userId: string) {

@@ -325,7 +325,7 @@ const uz = {
 
   // ── Leaderboard ──────────────────────────────────────────────
   lb_title: "Global Reyting",
-  lb_sub: "Eng ko'p ochko to'plagan foydalanuvchilar",
+  lb_sub: "So'nggi 30 kunlik bajarish foizi bo'yicha (odat soniga qaramay adolatli)",
   lb_your_rank: "sizning o'rningiz",
   lb_empty: "Hali hech kim ochko to'plamadi",
   lb_you: "(Siz)",
@@ -1115,7 +1115,7 @@ const ru: typeof uz = {
 
   // ── Leaderboard ──────────────────────────────────────────────
   lb_title: "Глобальный Рейтинг",
-  lb_sub: "Пользователи с наибольшим количеством очков",
+  lb_sub: "По проценту выполнения за последние 30 дней (справедливо, независимо от числа привычек)",
   lb_your_rank: "ваше место",
   lb_empty: "Никто ещё не набрал очки",
   lb_you: "(Вы)",
@@ -1905,7 +1905,7 @@ const en: typeof uz = {
 
   // ── Leaderboard ──────────────────────────────────────────────
   lb_title: "Global Leaderboard",
-  lb_sub: "Users with most points",
+  lb_sub: "By 30-day completion rate (fair, regardless of habit count)",
   lb_your_rank: "your rank",
   lb_empty: "Nobody has scored points yet",
   lb_you: "(You)",

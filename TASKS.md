@@ -7,7 +7,7 @@
 - [x] **Daraja (Level) balansini qayta ko'rib chiqish:** 5 tadan 10 ta darajaga o'tkazildi, eksponensial formula `round(N^1.5 * 100)` bilan (0/283/520/800/1118/1470/1852/2263/2700/3162). Client (`levels.ts`) va server (`calculate_level()` SQL, migration 024) ikkalasi ham yangilandi.
 
 ### 2. Adolatli reyting (Global Reyting / Tahlil)
-- [ ] **Samaradorlikka asoslangan reyting:** Kam sonli odati bor foydalanuvchilarni jazolamaydigan qilib reyting logikasini tuzatish — xom sondan emas, **Bajarish foizi / Samaradorlik** asosida hisoblash: `(Bajarilgan odatlar / Jami rejalashtirilgan odatlar) * 100`.
+- [x] **Samaradorlikka asoslangan reyting:** `get_leaderboard()` va yangi `get_user_rank_efficiency()` endi so'nggi 30 kunlik `(bajarilgan / faol odatlar soni * kunlar) * 100` samaradorlik foiziga qarab tartiblanadi (xom ball emas). Reyting sahifasida foiz asosiy ko'rsatkich, ball kichik ikkinchi darajali statistika sifatida qoladi.
 
 ### 3. Coin Do'kon va Monetizatsiya
 - [ ] **Do'konni kengaytirish:** Coin do'koniga yangi buyumlar qo'shish (masalan: maxsus temalar, profil ramkalari, avatar sozlash, seriya muzlatish).

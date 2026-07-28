@@ -117,12 +117,9 @@ export function GlobalLeaderboardPage({ isDark, profile, onUserClick }: GlobalLe
                   className="w-full flex flex-col items-center justify-center rounded-t-xl pt-2"
                   style={{ height: heights[podiumIdx], background: colors[podiumIdx], border: `1px solid ${borderColors[podiumIdx]}` }}
                 >
-                  <div className="flex items-center gap-1">
-                    <Star size={11} fill="#FBBF24" style={{ color: "#FBBF24" }} />
-                    <span className="text-sm font-bold" style={{ color: "var(--foreground)", fontFamily: "'Geist Mono', monospace" }}>
-                      {user.score ?? 0}
-                    </span>
-                  </div>
+                  <span className="text-sm font-bold" style={{ color: "var(--foreground)", fontFamily: "'Geist Mono', monospace" }}>
+                    {user.efficiency_pct ?? 0}%
+                  </span>
                   <span className="text-[10px]" style={{ color: "var(--muted-foreground)" }}>#{rank}</span>
                 </div>
               </div>
@@ -186,12 +183,15 @@ export function GlobalLeaderboardPage({ isDark, profile, onUserClick }: GlobalLe
                     </p>
                   </div>
 
-                  <div className="flex items-center gap-1 shrink-0">
-                    <Star size={13} fill="#FBBF24" style={{ color: "#FBBF24" }} />
+                  <div className="flex flex-col items-end shrink-0">
                     <span
                       className="text-sm font-bold"
                       style={{ color: isMe ? "#4ADE80" : "var(--foreground)", fontFamily: "'Geist Mono', monospace" }}
                     >
+                      {user.efficiency_pct ?? 0}%
+                    </span>
+                    <span className="text-[10px] flex items-center gap-1" style={{ color: "var(--muted-foreground)", fontFamily: "'Geist Mono', monospace" }}>
+                      <Star size={9} fill="#FBBF24" style={{ color: "#FBBF24" }} />
                       {user.score ?? 0}
                     </span>
                   </div>
