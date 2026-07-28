@@ -38,6 +38,7 @@ export type Habit = {
   name: string
   emoji: string
   type: 'positive' | 'negative'
+  description?: string
   target_value?: number
   unit?: string
   scheduled_start?: string | null

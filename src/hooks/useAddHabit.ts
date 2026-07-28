@@ -12,6 +12,7 @@ interface NewHabitArgs {
   unit?: string;
   scheduledStart?: string;
   scheduledEnd?: string;
+  description?: string;
 }
 
 export const useAddHabit = () => {
@@ -27,7 +28,8 @@ export const useAddHabit = () => {
         args.target_value ?? 1,
         args.unit ?? '',
         args.scheduledStart,
-        args.scheduledEnd
+        args.scheduledEnd,
+        args.description ?? ''
       );
       return data;
     },
@@ -45,6 +47,7 @@ export const useAddHabit = () => {
         name: newHabit.name,
         emoji: newHabit.emoji,
         type: newHabit.type,
+        description: newHabit.description ?? '',
         target_value: newHabit.target_value ?? 1,
         unit: newHabit.unit ?? '',
         scheduled_start: newHabit.scheduledStart ?? null,

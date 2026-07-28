@@ -121,6 +121,7 @@ export function HabitsManager({ isDark, profile }: HabitsManagerProps) {
   const [newUnit, setNewUnit] = useState("");
   const [newStartTime, setNewStartTime] = useState("");
   const [newEndTime, setNewEndTime] = useState("");
+  const [newDescription, setNewDescription] = useState("");
   // Odat nomi endi faqat quyidagi katalogdan tanlanadi — spam/axlat odat
   // nomlarini oldini olish uchun erkin matn kiritish maydoni olib
   // tashlandi. selectedTemplateKey tanlangan bandni vizual belgilash uchun.
@@ -140,6 +141,7 @@ export function HabitsManager({ isDark, profile }: HabitsManagerProps) {
   const [editUnit, setEditUnit] = useState("");
   const [editStartTime, setEditStartTime] = useState("");
   const [editEndTime, setEditEndTime] = useState("");
+  const [editDescription, setEditDescription] = useState("");
   const [editSaving, setEditSaving] = useState(false);
   const [editError, setEditError] = useState("");
 
@@ -191,11 +193,12 @@ export function HabitsManager({ isDark, profile }: HabitsManagerProps) {
         unit: unitVal,
         scheduledStart: newStartTime || undefined,
         scheduledEnd: newEndTime || undefined,
+        description: newDescription.trim() || undefined,
       });
       trackEvent('habit_created', { type: newType, metric: metricType }, profile.id);
 
       setNewName(""); setMetricType("check"); setNewTarget(1); setNewUnit("");
-      setNewStartTime(""); setNewEndTime(""); setSelectedTemplateKey(null);
+      setNewStartTime(""); setNewEndTime(""); setSelectedTemplateKey(null); setNewDescription("");
       setNewEmoji(newType === "positive" ? "🌅" : "📱");
       setShowForm(false);
     } catch (e: any) { setAddError(e?.message || t('habits_add_error')); }
@@ -259,6 +262,7 @@ export function HabitsManager({ isDark, profile }: HabitsManagerProps) {
     else { setEditMetricType("check"); setEditTarget(1); setEditUnit(""); }
     setEditStartTime((h.scheduled_start || "").slice(0, 5));
     setEditEndTime((h.scheduled_end || "").slice(0, 5));
+    setEditDescription(h.description || "");
     setEditError("");
   }
 
@@ -268,7 +272,7 @@ export function HabitsManager({ isDark, profile }: HabitsManagerProps) {
     if (!editName.trim()) return;
     setEditSaving(true); setEditError("");
     try {
-      const updates: Record<string, unknown> = { name: editName.trim(), emoji: editEmoji };
+      const updates: Record<string, unknown> = { name: editName.trim(), emoji: editEmoji, description: editDescription.trim() };
       if (editMetricType === "count") { updates.target_value = editTarget; updates.unit = editUnit.trim(); }
       else if (editMetricType === "time") { updates.target_value = editTarget; updates.unit = "daqiqa"; }
       else { updates.target_value = 1; updates.unit = ""; }
@@ -376,10 +380,9 @@ export function HabitsManager({ isDark, profile }: HabitsManagerProps) {
         </div>
       </div>
 
-      {/* Add form — odat nomi endi FAQAT quyidagi katalogdan tanlanadi;
-          spam/axlat nom kiritishning oldini olish uchun erkin matn maydoni
-          butunlay olib tashlangan (faqat mavjud odatni tahrirlashda nom
-          hali ham o'zgartirilishi mumkin, chunki bu yaratish emas). */}
+      {/* Add form — katalog tezkor boshlanish uchun (bosilsa nom/emoji/
+          o'lchovni to'ldiradi), lekin foydalanuvchi pastda nom, emoji va
+          tavsifni istagancha o'zgartira yoki to'liq o'zi kirita oladi. */}
       {showForm && (
         <div style={{ ...card, border: "1px solid rgba(74,222,128,0.2)", background: isDark ? "rgba(74,222,128,0.04)" : "#F0FDF4" }}>
           <div className="flex items-center gap-2 mb-3">
@@ -452,25 +455,37 @@ export function HabitsManager({ isDark, profile }: HabitsManagerProps) {
               >{typ === "positive" ? t('habits_positive_tab') : t('habits_negative_tab')}</button>
             ))}
           </div>
-          {/* Tanlangan odat ko'rinishi — nom/emoji/o'lchov endi faqat
-              yuqoridagi katalog orqali belgilanadi */}
+          {/* Katalogdan tanlash — nom/emoji/o'lchovni tez to'ldiradi, lekin
+              foydalanuvchi pastda ularni erkin o'zgartira oladi. */}
+          <div className="mb-4 flex flex-wrap gap-1">
+            {(newType === "positive" ? EMOJIS_POSITIVE : EMOJIS_NEGATIVE).map((e) => (
+              <button key={e} type="button" onClick={() => setNewEmoji(e)}
+                className="w-8 h-8 rounded-lg text-base flex items-center justify-center transition-all"
+                style={{
+                  background: newEmoji === e ? (isDark ? "rgba(74,222,128,0.18)" : "#DCFCE7") : isDark ? "rgba(255,255,255,0.06)" : "#fff",
+                  border: `1px solid ${newEmoji === e ? "rgba(74,222,128,0.6)" : isDark ? "rgba(255,255,255,0.1)" : "rgba(0,0,0,0.09)"}`,
+                }}>{e}</button>
+            ))}
+          </div>
           <div className="mb-4">
-            {selectedTemplateKey ? (
-              <div
-                className="flex items-center gap-2.5 px-3.5 py-3 rounded-xl"
-                style={{ background: isDark ? "rgba(74,222,128,0.1)" : "#DCFCE7", border: "1px solid rgba(74,222,128,0.3)" }}
-              >
-                <span style={{ fontSize: 22 }}>{newEmoji}</span>
-                <span className="text-sm font-semibold" style={{ color: "var(--foreground)" }}>{newName}</span>
-              </div>
-            ) : (
-              <p
-                className="text-xs px-3.5 py-3 rounded-xl text-center"
-                style={{ background: isDark ? "rgba(255,255,255,0.04)" : "#F3F4F6", color: "var(--muted-foreground)" }}
-              >
-                {t('habits_catalog_select_hint')}
-              </p>
-            )}
+            <label className="text-xs font-medium mb-1.5 block" style={{ color: "var(--muted-foreground)" }}>{t('habits_custom_name')}</label>
+            <input style={inputStyle} placeholder={t('habits_custom_name_ph')} value={newName}
+              onChange={(e) => { setNewName(e.target.value); setSelectedTemplateKey(null); }} />
+          </div>
+          <div className="mb-4">
+            <label className="text-xs font-medium mb-1.5 block" style={{ color: "var(--muted-foreground)" }}>{t('habits_description')}</label>
+            <textarea style={{ ...inputStyle, resize: "vertical", minHeight: 60 }} placeholder={t('habits_description_ph')}
+              value={newDescription} onChange={(e) => setNewDescription(e.target.value)} />
+          </div>
+          <div className="flex gap-2 mb-4">
+            {([{ v: "check", label: t('habits_simple') }, { v: "count", label: t('habits_count') }, { v: "time", label: t('habits_time_m') }] as const).map(({ v, label }) => (
+              <button key={v} type="button" onClick={() => setMetricType(v)} className="flex-1 py-1.5 rounded-lg text-xs font-medium transition-all"
+                style={{
+                  background: metricType === v ? (isDark ? "rgba(74,222,128,0.15)" : "#DCFCE7") : isDark ? "rgba(255,255,255,0.04)" : "#F3F4F6",
+                  border: `1px solid ${metricType === v ? "rgba(74,222,128,0.35)" : "transparent"}`,
+                  color: metricType === v ? "#4ADE80" : "var(--muted-foreground)",
+                }}>{label}</button>
+            ))}
           </div>
           {metricType === "count" && (
             <div className="flex gap-3 mb-4">
@@ -513,7 +528,7 @@ export function HabitsManager({ isDark, profile }: HabitsManagerProps) {
               style={{ background: saving || !newName.trim() ? "rgba(74,222,128,0.3)" : "var(--neon-green)", color: "#0E1117" }}>
               {saving ? <Loader2 size={14} className="animate-spin" /> : <Plus size={14} />} {t('add')}
             </button>
-            <button onClick={() => { setShowForm(false); setNewName(""); setSelectedTemplateKey(null); }} className="px-4 py-2.5 rounded-xl text-sm font-medium transition-all"
+            <button onClick={() => { setShowForm(false); setNewName(""); setSelectedTemplateKey(null); setNewDescription(""); }} className="px-4 py-2.5 rounded-xl text-sm font-medium transition-all"
               style={{ background: isDark ? "rgba(255,255,255,0.05)" : "#F3F4F6", color: "var(--muted-foreground)" }}>{t('cancel_short')}</button>
           </div>
         </div>
@@ -654,11 +669,11 @@ export function HabitsManager({ isDark, profile }: HabitsManagerProps) {
                 <HabitRow key={h.id} habit={h} isDark={isDark} inputStyle={inputStyle}
                   editingId={editingId} editName={editName} editEmoji={editEmoji} editMetricType={editMetricType}
                   editTarget={editTarget} editUnit={editUnit} editStartTime={editStartTime} editEndTime={editEndTime}
-                  editSaving={editSaving} editError={editError}
+                  editDescription={editDescription} editSaving={editSaving} editError={editError}
                   onStartEdit={startEditing} onCancelEdit={cancelEdit} onSaveEdit={handleEditSave} onDelete={handleDelete}
                   setEditName={setEditName} setEditEmoji={setEditEmoji} setEditMetricType={setEditMetricType}
                   setEditTarget={setEditTarget} setEditUnit={setEditUnit}
-                  setEditStartTime={setEditStartTime} setEditEndTime={setEditEndTime}
+                  setEditStartTime={setEditStartTime} setEditEndTime={setEditEndTime} setEditDescription={setEditDescription}
                   accentColor="rgba(74,222,128" rowBg={isDark ? "rgba(74,222,128,0.04)" : "#F0FDF4"} rowBorder="rgba(74,222,128,0.1)"
                   emojis={EMOJIS_POSITIVE} {...dragProps} />
               ))}
@@ -684,11 +699,11 @@ export function HabitsManager({ isDark, profile }: HabitsManagerProps) {
                 <HabitRow key={h.id} habit={h} isDark={isDark} inputStyle={inputStyle}
                   editingId={editingId} editName={editName} editEmoji={editEmoji} editMetricType={editMetricType}
                   editTarget={editTarget} editUnit={editUnit} editStartTime={editStartTime} editEndTime={editEndTime}
-                  editSaving={editSaving} editError={editError}
+                  editDescription={editDescription} editSaving={editSaving} editError={editError}
                   onStartEdit={startEditing} onCancelEdit={cancelEdit} onSaveEdit={handleEditSave} onDelete={handleDelete}
                   setEditName={setEditName} setEditEmoji={setEditEmoji} setEditMetricType={setEditMetricType}
                   setEditTarget={setEditTarget} setEditUnit={setEditUnit}
-                  setEditStartTime={setEditStartTime} setEditEndTime={setEditEndTime}
+                  setEditStartTime={setEditStartTime} setEditEndTime={setEditEndTime} setEditDescription={setEditDescription}
                   accentColor="rgba(248,113,113" rowBg={isDark ? "rgba(248,113,113,0.04)" : "#FFF5F5"} rowBorder="rgba(248,113,113,0.1)"
                   emojis={EMOJIS_NEGATIVE} {...dragProps} />
               ))}
@@ -712,6 +727,7 @@ interface HabitRowProps {
   editUnit: string;
   editStartTime: string;
   editEndTime: string;
+  editDescription: string;
   editSaving: boolean;
   editError: string;
   onStartEdit: (h: Habit) => void;
@@ -725,6 +741,7 @@ interface HabitRowProps {
   setEditUnit: (v: string) => void;
   setEditStartTime: (v: string) => void;
   setEditEndTime: (v: string) => void;
+  setEditDescription: (v: string) => void;
   accentColor: string;
   rowBg: string;
   rowBorder: string;
@@ -740,9 +757,9 @@ interface HabitRowProps {
 
 function HabitRow({
   habit, isDark, inputStyle, editingId, editName, editEmoji, editMetricType,
-  editTarget, editUnit, editStartTime, editEndTime, editSaving, editError,
+  editTarget, editUnit, editStartTime, editEndTime, editDescription, editSaving, editError,
   onStartEdit, onCancelEdit, onSaveEdit, onDelete, setEditName, setEditEmoji,
-  setEditMetricType, setEditTarget, setEditUnit, setEditStartTime, setEditEndTime,
+  setEditMetricType, setEditTarget, setEditUnit, setEditStartTime, setEditEndTime, setEditDescription,
   accentColor, rowBg, rowBorder, emojis, onDragStart, onDragOver, onDrop, onDragEnd, dragId, dragOverId, onMove,
 }: HabitRowProps) {
   const { t } = useLang();
@@ -766,6 +783,8 @@ function HabitRow({
         </div>
         <input style={inputStyle} value={editName} onChange={(e) => setEditName(e.target.value)}
           onKeyDown={(e) => { if (e.key === "Enter") onSaveEdit(); if (e.key === "Escape") onCancelEdit(); }} autoFocus />
+        <textarea style={{ ...inputStyle, resize: "vertical", minHeight: 50 }} placeholder={t('habits_description_ph')}
+          value={editDescription} onChange={(e) => setEditDescription(e.target.value)} />
         <div className="flex gap-2">
           {([{ v: "check", label: t('habits_simple') }, { v: "count", label: t('habits_count') }, { v: "time", label: t('habits_time_m') }] as const).map(({ v, label }) => (
             <button key={v} onClick={() => setEditMetricType(v)} className="flex-1 py-1.5 rounded-lg text-xs font-medium transition-all"
@@ -853,19 +872,24 @@ function HabitRow({
       </div>
 
       <span className="text-lg">{habit.emoji}</span>
-      <span className="flex-1 text-sm font-medium" style={{ color: "var(--foreground)" }}>
-        {habit.name}
-        {habit.target_value && habit.target_value > 1 && (
-          <span className="ml-2 text-xs" style={{ color: "var(--muted-foreground)" }}>
-            ({habit.target_value} {habit.unit})
-          </span>
+      <div className="flex-1 min-w-0">
+        <span className="text-sm font-medium" style={{ color: "var(--foreground)" }}>
+          {habit.name}
+          {habit.target_value && habit.target_value > 1 && (
+            <span className="ml-2 text-xs" style={{ color: "var(--muted-foreground)" }}>
+              ({habit.target_value} {habit.unit})
+            </span>
+          )}
+          {habit.scheduled_start && (
+            <span className="ml-2 text-[10px] px-1.5 py-0.5 rounded-md font-medium" style={{ background: "rgba(74,222,128,0.12)", color: "var(--neon-green)", fontFamily: "'Geist Mono', monospace" }}>
+              ⏰ {habit.scheduled_start.slice(0, 5)}{habit.scheduled_end ? ` — ${habit.scheduled_end.slice(0, 5)}` : ""}
+            </span>
+          )}
+        </span>
+        {habit.description && (
+          <p className="text-xs mt-0.5 truncate" style={{ color: "var(--muted-foreground)" }}>{habit.description}</p>
         )}
-        {habit.scheduled_start && (
-          <span className="ml-2 text-[10px] px-1.5 py-0.5 rounded-md font-medium" style={{ background: "rgba(74,222,128,0.12)", color: "var(--neon-green)", fontFamily: "'Geist Mono', monospace" }}>
-            ⏰ {habit.scheduled_start.slice(0, 5)}{habit.scheduled_end ? ` — ${habit.scheduled_end.slice(0, 5)}` : ""}
-          </span>
-        )}
-      </span>
+      </div>
       {/* md:opacity-0 + hover — faqat sichqoncha bilan ishlaydigan desktopda; teginish
           ekranlarida hover holati bo'lmagani uchun mobil'da doim ko'rinadi */}
       <div className="flex items-center gap-1 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-all">
