@@ -89,7 +89,7 @@ export function DailyQuestsCard({ isDark, profile, completedToday, totalHabits, 
               </div>
               {claimed ? (
                 <span className="text-[11px] font-semibold flex items-center gap-1 shrink-0" style={{ color: "#4ADE80" }}>
-                  <Check size={12} /> {t('shop_purchased')}
+                  <Check size={12} /> {t('quest_claimed')}
                 </span>
               ) : met ? (
                 <button
