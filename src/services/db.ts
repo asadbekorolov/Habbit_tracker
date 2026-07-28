@@ -316,6 +316,19 @@ export async function getAnalyticsSummary(days = 30): Promise<AnalyticsSummaryRo
   return data || [];
 }
 
+export type AdminAnalyticsDashboard = {
+  users: { total: number; new_today: number; new_week: number; banned: number }
+  habits: { active_total: number; positive_count: number; negative_count: number; completion_rate_pct: number; logs_last_30d: number }
+  economy: { total_coins: number; total_xp: number; active_frames: number }
+  groups: { total_groups: number; avg_members: number; pending_proofs: number; approved_proofs: number }
+}
+
+export async function getAdminAnalyticsDashboard(): Promise<AdminAnalyticsDashboard> {
+  const { data, error } = await supabase.rpc('get_admin_analytics_dashboard');
+  if (error) throw error;
+  return data as AdminAnalyticsDashboard;
+}
+
 export async function resetAllData() {
   const { error } = await supabase.rpc('reset_all_data');
   if (error) throw error;

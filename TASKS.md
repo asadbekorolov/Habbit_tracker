@@ -68,6 +68,14 @@ Fayl: `src/App.tsx`, `src/features/dashboard/Dashboard.tsx` — SQL migratsiya k
 
 Migratsiya: `038_admin_monitoring_fix.sql`.
 
+### 9. To'liq Admin Analitika paneli
+- [x] **Eski holat:** "Analitika" tabi faqat `analytics_events` jadvalidagi 4 ta xom hodisa qatorini ko'rsatardi — foydalanuvchi o'sishi, odat/gamifikatsiya/guruh ko'rsatkichlari umuman yo'q edi.
+- [x] **Yangi `get_admin_analytics_dashboard()` RPC:** bitta chaqiruvda 4 blokni qaytaradi — **Foydalanuvchilar** (jami, bugun/shu hafta yangi, bloklangan), **Odatlar** (faol soni, so'nggi 30 kunlik bajarish foizi, ijobiy/salbiy taqsimoti), **Gamifikatsiya iqtisodiyoti** (jami tangalar, jami XP, hozir faol ramkalar — muddati tugagan ramkalar hisobga olinmaydi, `get_leaderboard()`dagi bilan bir xil qoida), **Guruhlar** (faol guruhlar soni, o'rtacha a'zolar soni, kutilayotgan/tasdiqlangan isbotlar).
+- [x] **`AdminPanel.tsx` Analitika tabi to'liq qayta qurildi:** endi zamonaviy ko'rsatkichlar to'ri (4 blok, har biri kartalar+progress-bar bilan), eski xom hodisalar jadvali esa pastda "Batafsil hodisalar" sifatida saqlanib qoldi. Ikkalasi ham qorong'i/yorug' rejimda ishlaydigan mavjud `cardStyle`/CSS o'zgaruvchilari orqali qurilgan.
+- [x] Xato sodir bo'lsa (masalan RPC hali ishga tushirilmagan bo'lsa) konsolga emas, interfeysga (qizil banner) chiqariladi — 038dagi bilan bir xil naqsh.
+
+Migratsiya: `039_admin_analytics_dashboard.sql`.
+
 ---
 
 ## 🛠 Admin Monitoring & Health-Check (avvalgi vazifa)
