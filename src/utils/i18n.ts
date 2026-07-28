@@ -508,8 +508,14 @@ const uz = {
   shop_section_colors: "Maxsus avatar ranglari",
   shop_equipped: "Faol",
   shop_equip: "Faollashtirish",
+  shop_unequip: "O'chirish",
   shop_owned: "Sizda bor",
   shop_colors_hint: "Sotib olingan ranglarni \"Profilni tahrirlash\" sahifasida tanlang",
+  shop_days_left: "kun qoldi",
+  shop_expired: "Muddati tugagan",
+  shop_section_glow: "Maxsus effektlar",
+  shop_item_glow_name: "Yaltiroq ism",
+  shop_item_glow_desc: "Ismingiz profilda, reytingda va hamma joyda yaltirab turadi",
 
   // ── LevelUp Toast ────────────────────────────────────────────
   levelup_title: "Yangi Daraja!",
@@ -1304,8 +1310,14 @@ const ru: typeof uz = {
   shop_section_colors: "Особые цвета аватара",
   shop_equipped: "Активно",
   shop_equip: "Активировать",
+  shop_unequip: "Снять",
   shop_owned: "Есть у вас",
   shop_colors_hint: "Выберите купленные цвета на странице \"Редактировать профиль\"",
+  shop_days_left: "дней осталось",
+  shop_expired: "Истёк срок",
+  shop_section_glow: "Особые эффекты",
+  shop_item_glow_name: "Светящееся имя",
+  shop_item_glow_desc: "Ваше имя будет светиться в профиле, рейтинге и везде",
 
   // ── LevelUp Toast ────────────────────────────────────────────
   levelup_title: "Новый Уровень!",
@@ -2100,8 +2112,14 @@ const en: typeof uz = {
   shop_section_colors: "Exclusive avatar colors",
   shop_equipped: "Active",
   shop_equip: "Equip",
+  shop_unequip: "Unequip",
   shop_owned: "You own this",
   shop_colors_hint: "Pick purchased colors on the \"Edit Profile\" page",
+  shop_days_left: "days left",
+  shop_expired: "Expired",
+  shop_section_glow: "Special effects",
+  shop_item_glow_name: "Glowing username",
+  shop_item_glow_desc: "Your name glows in your profile, leaderboard and everywhere",
 
   // ── LevelUp Toast ────────────────────────────────────────────
   levelup_title: "New Level!",

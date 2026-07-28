@@ -10,11 +10,12 @@ import {
   getLast30DaysLogs, getHabits, getUserRank, getAllTimeLogs,
   getProfileById, getFollowCounts, getFollowersList, getFollowingList,
   searchUsers, followUser, checkFollowing, updateUserPassword,
-  unlinkTelegramBot, isStarActive,
+  unlinkTelegramBot, isStarActive, cleanupExpiredFrame,
 } from "../../services/db";
 import { CoinShopModal } from "./CoinShopModal";
 import { DeleteAccountModal } from "../../components/DeleteAccountModal";
 import { getLevel } from "../../utils/levels";
+import { getUsernameGlowStyle } from "../../utils/cosmetics";
 import type { Profile } from "../../services/supabase";
 import { UserBadge } from "../../components/UserBadge";
 import { AvatarFrame } from "../../components/AvatarFrame";
@@ -107,7 +108,8 @@ export function ProfilePage({ isDark, profile, onNavigate, onUserClick, onLogout
       getUserRank(profile.id),
       getProfileById(profile.id),
       getFollowCounts(profile.id),
-    ]).then(([l30, lAll, h, r, freshProfile, fc]) => {
+      cleanupExpiredFrame(profile.id),
+    ]).then(([l30, lAll, h, r, freshProfile, fc, effectiveFrame]) => {
       setLogs30(l30 || []);
       setAllLogs(lAll || []);
       setHabits(h || []);
@@ -117,6 +119,12 @@ export function ProfilePage({ isDark, profile, onNavigate, onUserClick, onLogout
       setTgBotLinked(!!(freshProfile as any).telegram_chat_id);
       setFollowCounts(fc);
       setStarExpiresAt(freshProfile.star_expires_at ?? null);
+      // 30 kunlik ramka muddati o'tgan bo'lsa, cleanupExpiredFrame serverda
+      // avtomatik yechadi — natija profile.active_frame'dan farq qilsa,
+      // App darajasidagi holatni ham shunga moslaymiz.
+      if (effectiveFrame !== (profile.active_frame ?? null)) {
+        onProfileUpdate?.({ ...freshProfile, active_frame: effectiveFrame });
+      }
     }).finally(() => setLoading(false));
   }, [profile.id]);
 
@@ -289,7 +297,7 @@ export function ProfilePage({ isDark, profile, onNavigate, onUserClick, onLogout
           </div>
 
           <div className="flex-1 min-w-0">
-            <h2 className="text-xl font-bold leading-tight flex items-center gap-1.5" style={{ color: "var(--foreground)" }}>
+            <h2 className="text-xl font-bold leading-tight flex items-center gap-1.5" style={{ color: "var(--foreground)", ...(profile.username_glow ? getUsernameGlowStyle(isDark) : {}) }}>
               {profile.display_name}
               <UserBadge active={isStarActive({ has_star: true, star_expires_at: starExpiresAt })} size={16} />
             </h2>

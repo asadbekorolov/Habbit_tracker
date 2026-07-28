@@ -140,6 +140,7 @@ export async function updateUserProfile(
     bio?: string | null; telegram_username?: string | null;
     instagram_username?: string | null; telegram_private?: boolean;
     profile_private?: boolean; avatar_color?: string; active_frame?: string | null;
+    username_glow?: boolean;
   }
 ): Promise<Profile> {
   const { data, error } = await supabase
@@ -538,6 +539,7 @@ export type LeaderboardEntry = {
   avatar_color: string
   avatar_url: string | null
   active_frame: string | null
+  username_glow: boolean
   score: number
   efficiency_pct: number
   is_private: boolean
@@ -1374,6 +1376,33 @@ export async function getOwnedItemIds(userId: string): Promise<Set<string>> {
     .select('item_id')
     .eq('user_id', userId)
   return new Set((data || []).map((r) => r.item_id))
+}
+
+// Ramkalar 30 kunga sotib olinadi (doimiy emas) — har bir frame_* item_id
+// uchun ENG SO'NGGI xarid sanasini qaytaradi, shundan CoinShopModal muddat
+// tugash sanasini hisoblaydi va "sizda bor" holatini shunga qarab ko'rsatadi.
+export async function getFramePurchases(userId: string): Promise<Map<string, string>> {
+  const { data } = await supabase
+    .from('coin_purchases')
+    .select('item_id, purchased_at')
+    .eq('user_id', userId)
+    .in('item_id', ['frame_bronze', 'frame_silver', 'frame_gold'])
+    .order('purchased_at', { ascending: false })
+  const map = new Map<string, string>()
+  for (const row of data || []) {
+    if (!map.has(row.item_id)) map.set(row.item_id, row.purchased_at)
+  }
+  return map
+}
+
+// Foydalanuvchi kirganda yoki do'konni ochganda chaqiriladi — agar hozir
+// faollashtirilgan ramkaning xaridi 30 kundan oshgan bo'lsa, serverda
+// avtomatik yechib tashlaydi (profiles.active_frame = null) va joriy
+// (yechilgandan keyingi) qiymatni qaytaradi.
+export async function cleanupExpiredFrame(userId: string): Promise<string | null> {
+  const { data, error } = await supabase.rpc('cleanup_expired_frame', { uid: userId })
+  if (error) return null
+  return data as string | null
 }
 
 // ─── STAR STATUS (30 kunlik obuna, 500 tanga) ─────────────────

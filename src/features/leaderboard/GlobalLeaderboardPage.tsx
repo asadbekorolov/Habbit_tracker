@@ -5,6 +5,7 @@ import type { Profile } from "../../services/supabase";
 import { useLang } from "../../store/LangContext";
 import { UserBadge } from "../../components/UserBadge";
 import { AvatarFrame } from "../../components/AvatarFrame";
+import { getUsernameGlowStyle } from "../../utils/cosmetics";
 
 interface GlobalLeaderboardPageProps {
   isDark: boolean;
@@ -112,7 +113,7 @@ export function GlobalLeaderboardPage({ isDark, profile, onUserClick }: GlobalLe
                     </div>
                   )}
                 </AvatarFrame>
-                <p className="text-xs font-semibold text-center truncate w-full flex items-center justify-center gap-1" style={{ color: isMe ? "#4ADE80" : "var(--foreground)" }}>
+                <p className="text-xs font-semibold text-center truncate w-full flex items-center justify-center gap-1" style={{ color: isMe ? "#4ADE80" : "var(--foreground)", ...(user.username_glow ? getUsernameGlowStyle(isDark) : {}) }}>
                   {isMe ? t('you_short') : user.display_label}
                   <UserBadge active={user.has_star} size={10} />
                 </p>
@@ -178,7 +179,7 @@ export function GlobalLeaderboardPage({ isDark, profile, onUserClick }: GlobalLe
                   </AvatarFrame>
 
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium truncate flex items-center gap-1.5" style={{ color: isMe ? "#4ADE80" : "var(--foreground)" }}>
+                    <p className="text-sm font-medium truncate flex items-center gap-1.5" style={{ color: isMe ? "#4ADE80" : "var(--foreground)", ...(user.username_glow ? getUsernameGlowStyle(isDark) : {}) }}>
                       {user.display_label} {isMe && <span className="text-xs">{t('lb_you')}</span>}
                       <UserBadge active={user.has_star} size={12} />
                       {!canView && <Lock size={11} style={{ color: "var(--muted-foreground)" }} />}

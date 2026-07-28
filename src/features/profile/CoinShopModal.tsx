@@ -1,7 +1,10 @@
 import { useState, useEffect } from "react";
-import { X, Check, Loader2, Lock } from "lucide-react";
-import { purchaseCoinItem, buyStar, isStarActive, getOwnedItemIds, updateUserProfile } from "../../services/db";
-import { FRAMES, PREMIUM_AVATAR_COLORS } from "../../utils/cosmetics";
+import { X, Check, Loader2, Lock, Sparkles } from "lucide-react";
+import {
+  purchaseCoinItem, buyStar, isStarActive, getOwnedItemIds, updateUserProfile,
+  getFramePurchases, cleanupExpiredFrame,
+} from "../../services/db";
+import { FRAMES, FRAME_DURATION_DAYS, PREMIUM_AVATAR_COLORS, USERNAME_GLOW_ID, USERNAME_GLOW_PRICE, getUsernameGlowStyle } from "../../utils/cosmetics";
 import { AvatarFrame } from "../../components/AvatarFrame";
 import type { Profile } from "../../services/supabase";
 import { useLang } from "../../store/LangContext";
@@ -29,10 +32,34 @@ export function CoinShopModal({ isDark, profile, coins, onClose, onCoinsChange, 
   const [ownedIds, setOwnedIds] = useState<Set<string>>(new Set());
   const [activeFrame, setActiveFrame] = useState<string | null>(profile.active_frame ?? null);
   const [equipping, setEquipping] = useState<string | null>(null);
+  const [framePurchases, setFramePurchases] = useState<Map<string, string>>(new Map());
 
   useEffect(() => {
     getOwnedItemIds(profile.id).then(setOwnedIds).catch(() => {});
+    getFramePurchases(profile.id).then(setFramePurchases).catch(() => {});
+    // Do'kon ochilganda: agar faol ramkaning 30 kunlik muddati o'tgan bo'lsa,
+    // serverda avtomatik yechiladi — natija (yechilgan bo'lsa null) bilan
+    // lokal holatni va App darajasidagi profilni sinxronlaymiz.
+    cleanupExpiredFrame(profile.id).then((frame) => {
+      setActiveFrame(frame);
+      if (frame !== (profile.active_frame ?? null)) {
+        onProfileUpdate?.({ ...profile, active_frame: frame });
+      }
+    }).catch(() => {});
   }, [profile.id]);
+
+  function frameExpiresAt(frameId: string): Date | null {
+    const purchasedAt = framePurchases.get(frameId);
+    if (!purchasedAt) return null;
+    return new Date(new Date(purchasedAt).getTime() + FRAME_DURATION_DAYS * 24 * 60 * 60 * 1000);
+  }
+
+  function frameDaysLeft(frameId: string): number | null {
+    const exp = frameExpiresAt(frameId);
+    if (!exp) return null;
+    const days = Math.ceil((exp.getTime() - Date.now()) / (24 * 60 * 60 * 1000));
+    return days > 0 ? days : null;
+  }
 
   async function handleEquipFrame(frameId: string) {
     const next = activeFrame === frameId ? null : frameId;
@@ -114,6 +141,27 @@ export function CoinShopModal({ isDark, profile, coins, onClose, onCoinsChange, 
       onCoinsChange(newBalance);
       setOwnedIds((prev) => new Set(prev).add(itemId));
       setSuccess(itemId);
+      setTimeout(() => setSuccess(null), 2500);
+    } catch (e: any) {
+      setError(e.message || t('shop_error_generic'));
+    } finally {
+      setBuying(null);
+    }
+  }
+
+  async function handleBuyGlow() {
+    if (currentCoins < USERNAME_GLOW_PRICE || ownedIds.has(USERNAME_GLOW_ID)) return;
+    setBuying(USERNAME_GLOW_ID);
+    setError("");
+    setSuccess(null);
+    try {
+      const newBalance = await purchaseCoinItem(profile.id, USERNAME_GLOW_ID, USERNAME_GLOW_PRICE);
+      setCurrentCoins(newBalance);
+      onCoinsChange(newBalance);
+      setOwnedIds((prev) => new Set(prev).add(USERNAME_GLOW_ID));
+      const updated = await updateUserProfile(profile.id, { username_glow: true });
+      onProfileUpdate?.(updated);
+      setSuccess(USERNAME_GLOW_ID);
       setTimeout(() => setSuccess(null), 2500);
     } catch (e: any) {
       setError(e.message || t('shop_error_generic'));
@@ -262,7 +310,8 @@ export function CoinShopModal({ isDark, profile, coins, onClose, onCoinsChange, 
           </p>
           <div className="grid grid-cols-3 gap-2">
             {FRAMES.map((frame) => {
-              const owned = ownedIds.has(frame.id);
+              const daysLeft = frameDaysLeft(frame.id);
+              const owned = daysLeft !== null;
               const isActive = activeFrame === frame.id;
               const canAfford = currentCoins >= frame.price;
               const busy = buying === frame.id || equipping === frame.id;
@@ -288,9 +337,19 @@ export function CoinShopModal({ isDark, profile, coins, onClose, onCoinsChange, 
                   {busy ? (
                     <Loader2 size={11} className="animate-spin" style={{ color: "var(--muted-foreground)" }} />
                   ) : isActive ? (
-                    <span className="text-[10px] font-semibold flex items-center gap-0.5" style={{ color: "#4ADE80" }}><Check size={10} /> {t('shop_equipped')}</span>
+                    <div className="flex flex-col items-center gap-0.5">
+                      <span className="text-[10px] font-semibold flex items-center gap-0.5" style={{ color: "#4ADE80" }}><Check size={10} /> {t('shop_unequip')}</span>
+                      {daysLeft !== null && (
+                        <span className="text-[9px]" style={{ color: "var(--muted-foreground)" }}>{daysLeft} {t('shop_days_left')}</span>
+                      )}
+                    </div>
                   ) : owned ? (
-                    <span className="text-[10px]" style={{ color: "var(--muted-foreground)" }}>{t('shop_equip')}</span>
+                    <div className="flex flex-col items-center gap-0.5">
+                      <span className="text-[10px]" style={{ color: "var(--muted-foreground)" }}>{t('shop_equip')}</span>
+                      {daysLeft !== null && (
+                        <span className="text-[9px]" style={{ color: "var(--muted-foreground)" }}>{daysLeft} {t('shop_days_left')}</span>
+                      )}
+                    </div>
                   ) : (
                     <span className="text-[10px] font-bold flex items-center gap-1" style={{ color: canAfford ? "#A78BFA" : "var(--muted-foreground)", fontFamily: "'Geist Mono', monospace" }}>
                       {!canAfford && <Lock size={9} />} 🪙{frame.price}
@@ -339,6 +398,56 @@ export function CoinShopModal({ isDark, profile, coins, onClose, onCoinsChange, 
             })}
           </div>
           <p className="text-[10px] text-center" style={{ color: "var(--muted-foreground)" }}>{t('shop_colors_hint')}</p>
+
+          {/* Maxsus effektlar — Yaltiroq ism */}
+          <p className="text-[11px] font-semibold uppercase tracking-wide pt-1" style={{ color: "var(--muted-foreground)" }}>
+            {t('shop_section_glow')}
+          </p>
+          {(() => {
+            const glowOwned = ownedIds.has(USERNAME_GLOW_ID);
+            const canAfford = currentCoins >= USERNAME_GLOW_PRICE;
+            const busy = buying === USERNAME_GLOW_ID;
+            const isSuccess = success === USERNAME_GLOW_ID;
+            return (
+              <button
+                type="button"
+                disabled={glowOwned || busy || !canAfford}
+                onClick={handleBuyGlow}
+                className="w-full flex items-center gap-3 p-3 rounded-2xl transition-all"
+                style={{
+                  background: isDark ? "rgba(255,255,255,0.03)" : "#F9FAFB",
+                  border: `1px solid ${isDark ? "rgba(255,255,255,0.07)" : "rgba(0,0,0,0.07)"}`,
+                  opacity: !glowOwned && !canAfford ? 0.5 : 1,
+                }}
+              >
+                <div
+                  className="w-11 h-11 rounded-xl flex items-center justify-center text-xl shrink-0"
+                  style={{ background: isDark ? "rgba(0,0,0,0.2)" : "rgba(255,255,255,0.7)" }}
+                >
+                  <Sparkles size={20} style={{ color: "#4ADE80" }} />
+                </div>
+                <div className="flex-1 min-w-0 text-left">
+                  <p className="text-sm font-semibold" style={getUsernameGlowStyle(isDark)}>
+                    {profile.display_name || t('shop_item_glow_name')}
+                  </p>
+                  <p className="text-[11px] mt-0.5 leading-relaxed" style={{ color: "var(--muted-foreground)" }}>
+                    {t('shop_item_glow_desc')}
+                  </p>
+                </div>
+                <div className="shrink-0">
+                  {busy ? (
+                    <Loader2 size={14} className="animate-spin" style={{ color: "var(--muted-foreground)" }} />
+                  ) : isSuccess || glowOwned ? (
+                    <span className="text-[10px] font-semibold flex items-center gap-0.5" style={{ color: "#4ADE80" }}><Check size={11} /> {t('shop_owned')}</span>
+                  ) : (
+                    <span className="text-xs font-bold flex items-center gap-1" style={{ color: canAfford ? "#A78BFA" : "var(--muted-foreground)", fontFamily: "'Geist Mono', monospace" }}>
+                      {!canAfford && <Lock size={10} />} 🪙{USERNAME_GLOW_PRICE}
+                    </span>
+                  )}
+                </div>
+              </button>
+            );
+          })()}
         </div>
 
         {/* Footer hint */}

@@ -13,6 +13,7 @@ export type Profile = {
   avatar_color: string
   avatar_url?: string | null
   active_frame?: string | null
+  username_glow?: boolean
   phone?: string
   is_admin?: boolean
   score?: number

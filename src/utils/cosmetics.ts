@@ -20,12 +20,27 @@ export const PREMIUM_AVATAR_COLORS: ShopColorItem[] = [
 
 export type ShopFrameItem = { id: string; name: string; price: number; emoji: string; border: string; shadow: string };
 export const FRAMES: ShopFrameItem[] = [
-  { id: "frame_bronze", name: "Bronza ramka", price: 15, emoji: "🥉", border: "3px solid #CD7F32", shadow: "0 0 10px rgba(205,127,50,0.5)" },
-  { id: "frame_silver", name: "Kumush ramka", price: 30, emoji: "🥈", border: "3px solid #C0C0C0", shadow: "0 0 12px rgba(192,192,192,0.6)" },
-  { id: "frame_gold", name: "Oltin ramka", price: 60, emoji: "👑", border: "3px solid #FBBF24", shadow: "0 0 16px rgba(251,191,36,0.7)" },
+  { id: "frame_bronze", name: "Bronza ramka", price: 8, emoji: "🥉", border: "3px solid #CD7F32", shadow: "0 0 10px rgba(205,127,50,0.5)" },
+  { id: "frame_silver", name: "Kumush ramka", price: 20, emoji: "🥈", border: "3px solid #C0C0C0", shadow: "0 0 12px rgba(192,192,192,0.6)" },
+  { id: "frame_gold", name: "Oltin ramka", price: 50, emoji: "👑", border: "3px solid #FBBF24", shadow: "0 0 16px rgba(251,191,36,0.7)" },
 ];
+
+// Ramkalar 30 kunlik xarid — coin_purchases.purchased_at + shu muddat orqali
+// hisoblanadi, alohida "expires_at" ustuni shart emas (028-migratsiya).
+export const FRAME_DURATION_DAYS = 30;
 
 export function getFrameStyle(frameId: string | null | undefined): { border: string; boxShadow: string } | null {
   const f = FRAMES.find((x) => x.id === frameId);
   return f ? { border: f.border, boxShadow: f.shadow } : null;
+}
+
+// "Yaltiroq ism" — doimiy (muddatsiz) kosmetika, profiles.username_glow
+// bayrog'i orqali saqlanadi.
+export const USERNAME_GLOW_ID = "username_glow";
+export const USERNAME_GLOW_PRICE = 40;
+
+export function getUsernameGlowStyle(isDark: boolean): { textShadow: string } {
+  return isDark
+    ? { textShadow: "0 0 6px #4ADE80, 0 0 14px rgba(74,222,128,0.65), 0 0 22px rgba(74,222,128,0.35)" }
+    : { textShadow: "0 0 3px rgba(22,163,74,0.55), 0 0 8px rgba(22,163,74,0.35)" };
 }

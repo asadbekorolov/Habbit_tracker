@@ -9,6 +9,7 @@ import {
   getTelegramRequestStatus, sendTelegramRequest, isStarActive,
 } from "../services/db";
 import { getLevel } from "../utils/levels";
+import { getUsernameGlowStyle } from "../utils/cosmetics";
 import type { Profile } from "../services/supabase";
 import { useLang } from "../store/LangContext";
 import type { T } from "../store/LangContext";
@@ -190,7 +191,7 @@ export function PublicProfileModal({ isDark, viewingId, myProfile, onClose }: Pu
             {/* Info */}
             <div className="flex-1 min-w-0 pt-1">
               <div className="flex items-center gap-2">
-                <h2 className="text-lg font-bold leading-tight" style={{ color: "var(--foreground)" }}>
+                <h2 className="text-lg font-bold leading-tight" style={{ color: "var(--foreground)", ...(profile.username_glow ? getUsernameGlowStyle(isDark) : {}) }}>
                   {profile.display_name}
                 </h2>
                 <UserBadge active={isStarActive(profile)} size={14} />

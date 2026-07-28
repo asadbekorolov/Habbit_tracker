@@ -11,6 +11,7 @@
 
 ### 3. Coin Do'kon va Monetizatsiya
 - [x] **Do'konni kengaytirish:** Profil ramkalari (bronza/kumush/oltin — sotib olib "Faollashtirish" bilan tanlanadi, avatar ko'rinadigan hamma joyda: Profil, Reyting, boshqa profil) va maxsus avatar gradientlari (3 ta, Profilni tahrirlashda tanlanadi) qo'shildi. Egalik `coin_purchases` jadvali orqali umumiy tarzda kuzatiladi.
+- [x] **Ramka muddati (30 kun) + narx balansi + Yaltiroq ism:** Ramkalar endi 30 kunlik xarid (`cleanup_expired_frame()` RPC — kirganda/do'kon ochilganda avtomatik yechadi, reytingda ham mustaqil tekshiriladi). Aniq "Faollashtirish"/"O'chirish" tugmasi va "N kun qoldi" ko'rsatkichi qo'shildi. Narxlar qayta balanslandi: Bronza 8, Kumush 20, Oltin 50 (avval 15/30/60). Yangi doimiy kosmetika: "Yaltiroq ism" (40🪙, `profiles.username_glow`) — Profil, boshqa profil va Reytingda ismi yaltirab ko'rinadi, dark/light rejimga moslashadi. Migratsiya: `028_frame_expiry_and_username_glow.sql`.
 - [~] **Monetizatsiya integratsiyasi:** Arxitektura tayyorlandi — `docs/Monetization_Architecture.md` (Click/Payme oqimi, `payment_transactions` jadvali, xavfsizlik nazorat ro'yxati). Kod hali yozilmagan — merchant hisobi va API kalitlari kutilmoqda.
 
 ---
