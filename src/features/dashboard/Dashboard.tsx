@@ -564,7 +564,7 @@ export function Dashboard({ isDark, profile, completedToday, totalHabits, onNavi
               }}
             >
               {Array.from(doneIds).filter(id => todayHabits.some(h => h.id === id)).length
-                + negativeHabits.filter(h => negLoggedIds.has(h.id) && !negBrokeIds.has(h.id)).length}
+                + negativeHabits.filter(h => negKeptIds.has(h.id)).length}
               /{todayHabits.length + negativeHabits.length}
             </span>
           </div>
