@@ -72,7 +72,7 @@ export function Achievements({ isDark, profile }: AchievementsProps) {
     { id: "consistency_7", title: t('ach_badge_consistency7_title'), desc: t('ach_badge_consistency7_desc'), icon: Flame, color: "#F97316", unlocked: bestStreak >= 7 },
     { id: "consistency_30", title: t('ach_badge_consistency30_title'), desc: t('ach_badge_consistency30_desc'), icon: Flame, color: "#EF4444", unlocked: bestStreak >= 30 },
     { id: "score_100", title: t('ach_badge_score100_title'), desc: t('ach_badge_score100_desc'), icon: Star, color: "#3B82F6", unlocked: score >= 100 },
-    { id: "score_500", title: t('level_5'), desc: t('ach_badge_score500_desc'), icon: Crown, color: "#8B5CF6", unlocked: score >= 500 },
+    { id: "score_500", title: t('ach_badge_score500_title'), desc: t('ach_badge_score500_desc'), icon: Crown, color: "#8B5CF6", unlocked: score >= 500 },
     { id: "habit_100", title: t('ach_badge_habit100_title'), desc: t('ach_badge_habit100_desc'), icon: Target, color: "#EC4899", unlocked: totalCompleted >= 100 },
   ];
 
@@ -82,7 +82,7 @@ export function Achievements({ isDark, profile }: AchievementsProps) {
 
   const unlockedCount = BADGES.filter(b => b.unlocked).length;
   const lv = getLevel(score);
-  const LEVEL_LABELS = ["", "level_1", "level_2", "level_3", "level_4", "level_5"] as const;
+  const LEVEL_LABELS = ["", "level_1", "level_2", "level_3", "level_4", "level_5", "level_6", "level_7", "level_8", "level_9", "level_10"] as const;
 
   return (
     <div className="max-w-3xl">
@@ -126,10 +126,10 @@ export function Achievements({ isDark, profile }: AchievementsProps) {
             </div>
           </div>
 
-          {/* All 5 levels */}
+          {/* All 10 levels */}
           <div className="hidden sm:flex items-center gap-1">
-            {[1, 2, 3, 4, 5].map((lvNum) => {
-              const icons = ["🌱", "⚡", "🔥", "💎", "👑"];
+            {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((lvNum) => {
+              const icons = ["🌱", "⚡", "💪", "🔥", "🎯", "💎", "🧠", "🏆", "⭐", "👑"];
               const active = lv.level >= lvNum;
               return (
                 <div

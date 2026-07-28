@@ -560,9 +560,14 @@ const uz = {
   // ── Levels (shared) ──────────────────────────────────────────
   level_1: "Yangi",
   level_2: "Izlanuvchi",
-  level_3: "Barqaror",
-  level_4: "Usta",
-  level_5: "Chempion",
+  level_3: "Qat'iyatli",
+  level_4: "Barqaror",
+  level_5: "Mohir",
+  level_6: "Usta",
+  level_7: "Ekspert",
+  level_8: "Chempion",
+  level_9: "Afsonaviy",
+  level_10: "Titan",
 
   // ── Public Profile Modal ─────────────────────────────────────
   pp_points: "Ochko",
@@ -697,6 +702,7 @@ const uz = {
   ach_badge_consistency30_desc: "30 kunlik seriya yig'dingiz",
   ach_badge_score100_title: "Odat Ustasi",
   ach_badge_score100_desc: "100 dan ortiq ochko to'pladingiz",
+  ach_badge_score500_title: "Chempion",
   ach_badge_score500_desc: "500 dan ortiq ochko to'pladingiz",
   ach_badge_habit100_title: "Muntazam",
   ach_badge_habit100_desc: "Umumiy 100 marta odat bajardingiz",
@@ -717,7 +723,7 @@ const uz = {
 
   // ── ProfilePage extras ───────────────────────────────────────
   profile_next_level_full: "{icon} Lv.{n} ({name}) ga {points} ochko qoldi",
-  profile_max_level_champion: "👑 Maksimal daraja — Chempion!",
+  profile_max_level_champion: "👑 Maksimal daraja — Titan!",
   profile_lang_selected: "Tanlangan til",
   profile_change_btn: "O'zgartirish",
   profile_telegram_bot_title: "Telegram Bot",
@@ -1344,9 +1350,14 @@ const ru: typeof uz = {
   // ── Levels (shared) ──────────────────────────────────────────
   level_1: "Новичок",
   level_2: "Искатель",
-  level_3: "Стабильный",
-  level_4: "Мастер",
-  level_5: "Чемпион",
+  level_3: "Целеустремлённый",
+  level_4: "Стабильный",
+  level_5: "Умелый",
+  level_6: "Мастер",
+  level_7: "Эксперт",
+  level_8: "Чемпион",
+  level_9: "Легендарный",
+  level_10: "Титан",
 
   // ── Public Profile Modal ─────────────────────────────────────
   pp_points: "Очков",
@@ -1481,6 +1492,7 @@ const ru: typeof uz = {
   ach_badge_consistency30_desc: "Набрали серию 30 дней",
   ach_badge_score100_title: "Мастер Привычек",
   ach_badge_score100_desc: "Набрали более 100 очков",
+  ach_badge_score500_title: "Чемпион",
   ach_badge_score500_desc: "Набрали более 500 очков",
   ach_badge_habit100_title: "Постоянство",
   ach_badge_habit100_desc: "Выполнили привычки 100 раз",
@@ -1501,7 +1513,7 @@ const ru: typeof uz = {
 
   // ── ProfilePage extras ───────────────────────────────────────
   profile_next_level_full: "{icon} Lv.{n} ({name}) — осталось {points} очков",
-  profile_max_level_champion: "👑 Максимальный уровень — Чемпион!",
+  profile_max_level_champion: "👑 Максимальный уровень — Титан!",
   profile_lang_selected: "Выбранный язык",
   profile_change_btn: "Изменить",
   profile_telegram_bot_title: "Telegram Бот",
@@ -2128,9 +2140,14 @@ const en: typeof uz = {
   // ── Levels (shared) ──────────────────────────────────────────
   level_1: "Newbie",
   level_2: "Seeker",
-  level_3: "Consistent",
-  level_4: "Master",
-  level_5: "Champion",
+  level_3: "Determined",
+  level_4: "Consistent",
+  level_5: "Skilled",
+  level_6: "Master",
+  level_7: "Expert",
+  level_8: "Champion",
+  level_9: "Legendary",
+  level_10: "Titan",
 
   // ── Public Profile Modal ─────────────────────────────────────
   pp_points: "Points",
@@ -2265,6 +2282,7 @@ const en: typeof uz = {
   ach_badge_consistency30_desc: "Reached a 30-day streak",
   ach_badge_score100_title: "Habit Master",
   ach_badge_score100_desc: "Earned over 100 points",
+  ach_badge_score500_title: "Champion",
   ach_badge_score500_desc: "Earned over 500 points",
   ach_badge_habit100_title: "Regular",
   ach_badge_habit100_desc: "Completed habits 100 times total",
@@ -2285,7 +2303,7 @@ const en: typeof uz = {
 
   // ── ProfilePage extras ───────────────────────────────────────
   profile_next_level_full: "{icon} Lv.{n} ({name}) — {points} points left",
-  profile_max_level_champion: "👑 Maximum level — Champion!",
+  profile_max_level_champion: "👑 Maximum level — Titan!",
   profile_lang_selected: "Selected language",
   profile_change_btn: "Change",
   profile_telegram_bot_title: "Telegram Bot",

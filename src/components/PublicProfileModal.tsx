@@ -18,10 +18,8 @@ interface Badge { emoji: string; label: string; color: string }
 
 function computeBadges(totalCompleted: number, score: number, t: T): Badge[] {
   const b: Badge[] = [];
-  if (score >= 500) b.push({ emoji: "👑", label: t('level_5'), color: "#8B5CF6" });
-  else if (score >= 300) b.push({ emoji: "💎", label: t('level_4'), color: "#3B82F6" });
-  else if (score >= 150) b.push({ emoji: "🔥", label: t('level_3'), color: "#F97316" });
-  else if (score >= 50) b.push({ emoji: "⚡", label: t('level_2'), color: "#FBBF24" });
+  const lv = getLevel(score);
+  if (lv.level >= 2) b.push({ emoji: lv.emoji, label: t(`level_${lv.level}` as any), color: lv.color });
 
   if (totalCompleted >= 100) b.push({ emoji: "🏆", label: t('pp_badge_100'), color: "#FBBF24" });
   else if (totalCompleted >= 50) b.push({ emoji: "🎯", label: t('pp_badge_50'), color: "#4ADE80" });
@@ -37,7 +35,7 @@ interface PublicProfileModalProps {
   onClose: () => void;
 }
 
-const LEVEL_LABELS = ["", "level_1", "level_2", "level_3", "level_4", "level_5"] as const;
+const LEVEL_LABELS = ["", "level_1", "level_2", "level_3", "level_4", "level_5", "level_6", "level_7", "level_8", "level_9", "level_10"] as const;
 
 export function PublicProfileModal({ isDark, viewingId, myProfile, onClose }: PublicProfileModalProps) {
   const { t } = useLang();

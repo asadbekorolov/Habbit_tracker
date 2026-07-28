@@ -1,6 +1,21 @@
 # Traccer — Vazifalar ro'yxati
 
-## 🛠 Admin Monitoring & Health-Check (joriy vazifa)
+## 🔴 Roadmap & Backlog (joriy ustuvorlik)
+
+### 1. Yuqori ustuvorlik va xato tuzatishlar
+- [x] **Admin fikr-mulohaza ko'rish/eksport:** Kod allaqachon to'liq mavjud edi (AdminPanel → Fikr-mulohaza tab, CSV eksport). Email o'rniga shu tanlandi. Faqat production deploy qilinishini kutmoqda (Vercel webhook muammosi tufayli).
+- [x] **Daraja (Level) balansini qayta ko'rib chiqish:** 5 tadan 10 ta darajaga o'tkazildi, eksponensial formula `round(N^1.5 * 100)` bilan (0/283/520/800/1118/1470/1852/2263/2700/3162). Client (`levels.ts`) va server (`calculate_level()` SQL, migration 024) ikkalasi ham yangilandi.
+
+### 2. Adolatli reyting (Global Reyting / Tahlil)
+- [ ] **Samaradorlikka asoslangan reyting:** Kam sonli odati bor foydalanuvchilarni jazolamaydigan qilib reyting logikasini tuzatish — xom sondan emas, **Bajarish foizi / Samaradorlik** asosida hisoblash: `(Bajarilgan odatlar / Jami rejalashtirilgan odatlar) * 100`.
+
+### 3. Coin Do'kon va Monetizatsiya
+- [ ] **Do'konni kengaytirish:** Coin do'koniga yangi buyumlar qo'shish (masalan: maxsus temalar, profil ramkalari, avatar sozlash, seriya muzlatish).
+- [ ] **Monetizatsiya integratsiyasi:** Tangalarni real daromad manbaiga aylantirish uchun haqiqiy to'lov tizimlari (Click/Payme) orqali coin/premium sotib olish arxitekturasini loyihalash.
+
+---
+
+## 🛠 Admin Monitoring & Health-Check (avvalgi vazifa)
 
 1. [x] `touch_last_seen()` integratsiyasi App.tsx'ga (sessiya init va login paytida chaqiriladi)
 2. [x] "Monitoring" tab UI — DAU stat kartasi (last_seen_at asosida) + top 5 odat chart (get_admin_monitoring_stats)

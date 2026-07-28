@@ -36,7 +36,7 @@ const BADGE_DEFS = [
   { id: "consistency_7", titleKey: "ach_badge_consistency7_title",    icon: Flame,  color: "#F97316", check: (_s: number, str: number) => str >= 7 },
   { id: "consistency_30",titleKey: "ach_badge_consistency30_title",         icon: Flame,  color: "#EF4444", check: (_s: number, str: number) => str >= 30 },
   { id: "score_100",     titleKey: "ach_badge_score100_title",    icon: Star,   color: "#3B82F6", check: (s: number) => s >= 100 },
-  { id: "score_500",     titleKey: "level_5",       icon: Crown,  color: "#8B5CF6", check: (s: number) => s >= 500 },
+  { id: "score_500",     titleKey: "ach_badge_score500_title",       icon: Crown,  color: "#8B5CF6", check: (s: number) => s >= 500 },
   { id: "habit_100",     titleKey: "ach_badge_habit100_title",       icon: Target, color: "#EC4899", check: (_s: number, _str: number, total: number) => total >= 100 },
 ] as const;
 
@@ -190,8 +190,8 @@ export function ProfilePage({ isDark, profile, onNavigate, onUserClick, onLogout
 
   const score = freshScore !== null ? freshScore : (profile.score || 0);
   const lv = getLevel(score);
-  const LEVEL_LABELS = ["", "level_1", "level_2", "level_3", "level_4", "level_5"] as const;
-  const lvIcons = ["", "🌱", "⚡", "🔥", "💎", "👑"];
+  const LEVEL_LABELS = ["", "level_1", "level_2", "level_3", "level_4", "level_5", "level_6", "level_7", "level_8", "level_9", "level_10"] as const;
+  const lvIcons = ["", "🌱", "⚡", "💪", "🔥", "🎯", "💎", "🧠", "🏆", "⭐", "👑"];
 
   const totalCompleted = allLogs.filter((l: any) => l.habits?.type === "positive").length;
 
