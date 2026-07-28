@@ -31,6 +31,10 @@ Migratsiya: `031_group_membership_management.sql`.
 
 Migratsiya: `033_group_personal_habit_integration.sql` (+ `032_group_habit_logs_approval_columns.sql`, `034_group_habit_link_dedupe.sql`).
 
+- [x] **`approval_status` ustuni PostgREST embed ziddiyati:** 032-migratsiya `approved_by` (profiles'ga FK) qo'shgandan keyin `group_habit_logs`dan `profiles(...)` so'ralganda PostgREST ikkita FK (`user_id` va `approved_by`) orasida ziddiyatga tushib "more than one relationship was found" xatosini berdi. `profiles!user_id(...)` aniq hint bilan tuzatildi (`getPendingGroupApprovals`, `getAllPendingApprovals`, `getRecentRejections`, `getGroupMembersMonthlyStats`).
+- [x] **Guruh "Tahlil" bo'limini kengaytirish:** oldingi versiya faqat a'zolar bo'yicha oddiy tasdiqlangan/kutilayotgan/rad etilgan foizini ko'rsatardi va ma'lumot bo'lmasa butunlay bo'sh edi. Endi shaxsiy "Tahlil" sahifasiga o'xshab: 4 ta KPI karta (jami bajarildi, faol a'zolar, kutilayotgan, o'rtacha bajarish %), kunlik faollik trend grafigi (recharts), odat kesimida taqsimot (qaysi odat ko'p bajarilyapti + necha kishi), va a'zolar reytingi (medal + profil rasmi bilan). Ma'lumot yo'q holatlar uchun alohida tushunarli xabar.
+- [x] **Guruh reyting/haftalik musobaqada profil rasmi:** `getGroupLeaderboard`/`getGroupWeeklyLeaderboard` `avatar_url`ni umuman qaytarmasdi, shu sabab "Reyting" va "Shu hafta" bo'limlari haqiqiy rasmi bor a'zolarda ham faqat bosh harf-doira ko'rsatardi (A'zolar tabidan farqli). Ikkalasiga ham `avatarUrl` qo'shilib, mavjud bo'lsa `<img>` ko'rsatiladigan bo'ldi.
+
 ---
 
 ## 🛠 Admin Monitoring & Health-Check (avvalgi vazifa)

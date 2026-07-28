@@ -1,13 +1,15 @@
 import { useState, useEffect, useRef } from "react";
 import { useLang } from "../../store/LangContext";
 import html2canvas from "html2canvas";
+import { ResponsiveContainer, ComposedChart, Area, XAxis, YAxis, CartesianGrid, Tooltip } from "recharts";
 import {
   Users, Plus, LogIn, ArrowLeft, Copy, Check, Crown,
   Loader2, Trophy, Trash2, CheckCircle2, Circle, UserPlus,
   Clock, X, ChevronRight, BarChart3, ShieldCheck, AlertCircle,
-  MessageSquare, Download, Send, Pencil, UsersRound,
+  MessageSquare, Download, Send, Pencil, UsersRound, Target,
   Settings, LogOut, UserMinus, Shield, ArrowRightLeft,
 } from "lucide-react";
+import { toDateStr } from "../../utils/date";
 import {
   createGroup, joinGroup, getMyGroups, getGroupMembers,
   getGroupHabits, addGroupHabit, updateGroupHabit, deleteGroupHabit,
@@ -800,13 +802,14 @@ function GroupDetail({
   }
 
   // Monthly stats by member
-  const memberStatsMap: Record<string, { name: string; color: string; approved: number; pending: number; rejected: number; total: number }> = {};
+  const memberStatsMap: Record<string, { name: string; color: string; avatarUrl: string | null; approved: number; pending: number; rejected: number; total: number }> = {};
   for (const row of monthlyStats) {
     if (!row.user_id) continue;
     if (!memberStatsMap[row.user_id]) {
       memberStatsMap[row.user_id] = {
         name: row.profiles?.display_name || "?",
         color: row.profiles?.avatar_color || "#4ADE80",
+        avatarUrl: row.profiles?.avatar_url || null,
         approved: 0, pending: 0, rejected: 0, total: 0,
       };
     }
@@ -815,6 +818,58 @@ function GroupDetail({
     else if (row.approval_status === "pending") memberStatsMap[row.user_id].pending++;
     else if (row.approval_status === "rejected") memberStatsMap[row.user_id].rejected++;
   }
+  const rankedMemberStats = Object.entries(memberStatsMap).sort((a, b) => b[1].approved - a[1].approved);
+
+  // Kunlik trend: shu oy boshidan buguni gacha, guruh bo'yicha tasdiqlangan
+  // (approved/auto) loglar soni — bo'sh kunlar ham 0 bilan chizilishi uchun
+  // to'liq sana ro'yxati generatsiya qilinadi (faqat log bo'lgan kunlar emas).
+  const uzMonthsShort = ["Yan", "Fev", "Mar", "Apr", "May", "Iyn", "Iyl", "Avg", "Sen", "Okt", "Noy", "Dek"];
+  const nowForStats = new Date();
+  const daysElapsed = nowForStats.getDate();
+  const dailyTrendMap: Record<string, number> = {};
+  for (const row of monthlyStats) {
+    if (row.approval_status === "approved" || row.approval_status === "auto") {
+      dailyTrendMap[row.log_date] = (dailyTrendMap[row.log_date] || 0) + 1;
+    }
+  }
+  const dailyTrend = Array.from({ length: daysElapsed }, (_, i) => {
+    const d = new Date(nowForStats.getFullYear(), nowForStats.getMonth(), i + 1);
+    const ds = toDateStr(d);
+    return { label: `${d.getDate()} ${uzMonthsShort[d.getMonth()]}`, count: dailyTrendMap[ds] || 0 };
+  });
+
+  // Odat kesimida statistika — qaysi guruh odati eng ko'p bajarilyapti
+  const habitStatsMap: Record<string, { name: string; emoji: string; approved: number; participants: Set<string> }> = {};
+  for (const row of monthlyStats) {
+    if (!row.group_habit_id) continue;
+    if (!habitStatsMap[row.group_habit_id]) {
+      habitStatsMap[row.group_habit_id] = {
+        name: row.group_habits?.name || "?",
+        emoji: row.group_habits?.emoji || "🎯",
+        approved: 0,
+        participants: new Set(),
+      };
+    }
+    if (row.approval_status === "approved" || row.approval_status === "auto") {
+      habitStatsMap[row.group_habit_id].approved++;
+      habitStatsMap[row.group_habit_id].participants.add(row.user_id);
+    }
+  }
+  const habitBreakdown = Object.values(habitStatsMap)
+    .map((h) => ({ name: h.name, emoji: h.emoji, approved: h.approved, participants: h.participants.size }))
+    .sort((a, b) => b.approved - a.approved);
+  const maxHabitApproved = Math.max(1, ...habitBreakdown.map((h) => h.approved));
+
+  // Umumiy guruh KPI'lari
+  const totalApprovedMonth = Object.values(dailyTrendMap).reduce((s, v) => s + v, 0);
+  const activeMembersCount = new Set(
+    monthlyStats.filter((r) => r.approval_status === "approved" || r.approval_status === "auto").map((r) => r.user_id)
+  ).size;
+  const pendingCount = monthlyStats.filter((r) => r.approval_status === "pending").length;
+  const maxPossibleCompletions = habits.length * members.length * daysElapsed;
+  const groupAvgPct = maxPossibleCompletions > 0
+    ? Math.min(100, Math.round((totalApprovedMonth / maxPossibleCompletions) * 100))
+    : 0;
 
   return (
     <div className="max-w-2xl">
@@ -1493,7 +1548,7 @@ function GroupDetail({
                 <p className="text-xs" style={{ color: "var(--muted-foreground)" }}>
                   {t('groups_month_all_stats').replace('{date}', new Date().toLocaleDateString(DATE_LOCALE[lang], { month: 'long', year: 'numeric' }))}
                 </p>
-                {Object.entries(memberStatsMap).length > 0 && (
+                {rankedMemberStats.length > 0 && (
                   <button
                     onClick={handleDownloadStats}
                     disabled={downloading}
@@ -1511,62 +1566,159 @@ function GroupDetail({
                 )}
               </div>
 
-              {Object.entries(memberStatsMap).length === 0 ? (
-                <div style={card} className="p-8 flex flex-col items-center gap-2">
-                  <BarChart3 size={28} style={{ color: "var(--muted-foreground)" }} />
-                  <p className="text-sm" style={{ color: "var(--muted-foreground)" }}>{t('groups_no_month_results')}</p>
-                </div>
-              ) : (
-                <div ref={statsRef} className="flex flex-col gap-3 rounded-2xl p-4"
-                  style={{ background: isDark ? "#0D1117" : "#F9FAFB" }}>
-                  {/* Report header (visible in downloaded image) */}
-                  <div className="flex items-center justify-between mb-1">
-                    <div>
-                      <p className="text-sm font-bold" style={{ color: "var(--foreground)" }}>👥 {group.name}</p>
-                      <p className="text-xs" style={{ color: "var(--muted-foreground)" }}>
-                        {new Date().toLocaleDateString(DATE_LOCALE[lang], { month: 'long', year: 'numeric' })} {t('groups_month_report_suffix')}
-                      </p>
-                    </div>
-                    <p className="text-[10px] px-2 py-0.5 rounded-lg font-medium"
-                      style={{ background: "rgba(74,222,128,0.12)", color: "#4ADE80" }}>
-                      traccer.app
+              <div ref={statsRef} className="flex flex-col gap-4 rounded-2xl p-4"
+                style={{ background: isDark ? "#0D1117" : "#F9FAFB" }}>
+                {/* Report header (visible in downloaded image) */}
+                <div className="flex items-center justify-between mb-1">
+                  <div>
+                    <p className="text-sm font-bold" style={{ color: "var(--foreground)" }}>👥 {group.name}</p>
+                    <p className="text-xs" style={{ color: "var(--muted-foreground)" }}>
+                      {new Date().toLocaleDateString(DATE_LOCALE[lang], { month: 'long', year: 'numeric' })} {t('groups_month_report_suffix')}
                     </p>
                   </div>
-                  {Object.entries(memberStatsMap).map(([uid, s]) => {
-                    const total = s.approved + s.pending + s.rejected || 1;
-                    const approvedPct = Math.round((s.approved / total) * 100);
-                    const isMe = uid === profile.id;
-                    return (
-                      <div key={uid} className="p-4 rounded-xl"
-                        style={{
-                          background: isDark ? "rgba(22,27,34,0.85)" : "#ffffff",
-                          border: `1px solid ${isDark ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.07)"}`,
-                        }}>
-                        <div className="flex items-center gap-2 mb-3">
-                          <div className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold shrink-0"
-                            style={{ background: s.color, color: "#0E1117" }}>
-                            {s.name.split(" ").map((n: string) => n[0]).join("").toUpperCase().slice(0, 2)}
-                          </div>
-                          <div>
-                            <p className="text-sm font-semibold" style={{ color: isMe ? "#4ADE80" : "var(--foreground)" }}>
-                              {s.name} {isMe && t('lb_you')}
-                            </p>
-                            <p className="text-[11px]" style={{ color: "var(--muted-foreground)" }}>
-                              {s.approved} {t('groups_approved')} · {s.pending} {t('pending')} · {s.rejected} {t('rejected')}
-                            </p>
-                          </div>
-                          <div className="ml-auto text-sm font-bold" style={{ color: "#4ADE80", fontFamily: "'Geist Mono', monospace" }}>
-                            {approvedPct}%
-                          </div>
-                        </div>
-                        <div className="w-full h-2 rounded-full overflow-hidden" style={{ background: isDark ? "rgba(255,255,255,0.07)" : "rgba(0,0,0,0.07)" }}>
-                          <div className="h-full rounded-full" style={{ width: `${approvedPct}%`, background: "#4ADE80" }} />
+                  <p className="text-[10px] px-2 py-0.5 rounded-lg font-medium"
+                    style={{ background: "rgba(74,222,128,0.12)", color: "#4ADE80" }}>
+                    traccer.app
+                  </p>
+                </div>
+
+                {/* KPI grid */}
+                <div className="grid grid-cols-2 gap-3">
+                  {[
+                    { icon: CheckCircle2, label: t('groups_stats_total_approved'), value: String(totalApprovedMonth), color: "#4ADE80" },
+                    { icon: Users, label: t('groups_stats_active_members'), value: `${activeMembersCount}/${members.length}`, color: "#60A5FA" },
+                    { icon: Clock, label: t('groups_stats_pending'), value: String(pendingCount), color: "#FBBF24" },
+                    { icon: Target, label: t('groups_stats_avg'), value: `${groupAvgPct}%`, color: "#A78BFA" },
+                  ].map((kpi) => (
+                    <div key={kpi.label} className="rounded-xl p-3.5"
+                      style={{
+                        background: isDark ? "rgba(255,255,255,0.03)" : "#ffffff",
+                        border: `1px solid ${isDark ? "rgba(255,255,255,0.05)" : "rgba(0,0,0,0.06)"}`,
+                      }}>
+                      <div className="w-7 h-7 rounded-lg flex items-center justify-center mb-2.5" style={{ background: `${kpi.color}20` }}>
+                        <kpi.icon size={14} style={{ color: kpi.color }} />
+                      </div>
+                      <p className="text-lg font-bold leading-none" style={{ color: "var(--foreground)", fontFamily: "'Geist Mono', monospace" }}>
+                        {kpi.value}
+                      </p>
+                      <p className="text-[11px] mt-1.5 font-medium" style={{ color: "var(--muted-foreground)" }}>
+                        {kpi.label}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+
+                {totalApprovedMonth === 0 ? (
+                  <div className="p-8 flex flex-col items-center gap-2 rounded-xl"
+                    style={{ background: isDark ? "rgba(255,255,255,0.03)" : "#ffffff", border: `1px solid ${isDark ? "rgba(255,255,255,0.05)" : "rgba(0,0,0,0.06)"}` }}>
+                    <BarChart3 size={28} style={{ color: "var(--muted-foreground)" }} />
+                    <p className="text-sm text-center" style={{ color: "var(--muted-foreground)" }}>{t('groups_stats_no_activity')}</p>
+                  </div>
+                ) : (
+                  <>
+                    {/* Daily trend chart */}
+                    <div className="rounded-xl p-4"
+                      style={{ background: isDark ? "rgba(255,255,255,0.03)" : "#ffffff", border: `1px solid ${isDark ? "rgba(255,255,255,0.05)" : "rgba(0,0,0,0.06)"}` }}>
+                      <p className="text-sm font-semibold" style={{ color: "var(--foreground)" }}>{t('groups_stats_trend_title')}</p>
+                      <p className="text-[11px] mt-0.5 mb-3" style={{ color: "var(--muted-foreground)" }}>{t('groups_stats_trend_sub')}</p>
+                      <div style={{ height: 160, marginLeft: -12 }}>
+                        <ResponsiveContainer width="100%" height="100%">
+                          <ComposedChart data={dailyTrend} margin={{ top: 8, right: 12, left: 0, bottom: 0 }}>
+                            <CartesianGrid vertical={false} stroke={isDark ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.06)"} />
+                            <XAxis dataKey="label" tick={{ fontSize: 9, fill: isDark ? "#8B949E" : "#6B7280" }}
+                              interval={Math.max(0, Math.ceil(dailyTrend.length / 7) - 1)} axisLine={false} tickLine={false} />
+                            <YAxis allowDecimals={false} tick={{ fontSize: 9, fill: isDark ? "#8B949E" : "#6B7280" }} axisLine={false} tickLine={false} width={24} />
+                            <Tooltip
+                              contentStyle={{ background: isDark ? "#161B22" : "#ffffff", border: `1px solid ${isDark ? "rgba(255,255,255,0.1)" : "rgba(0,0,0,0.1)"}`, borderRadius: 10, fontSize: 11 }}
+                              labelStyle={{ color: isDark ? "#8B949E" : "#6B7280" }}
+                              formatter={(value: number) => [value, t('groups_stats_total_approved')]}
+                            />
+                            <Area type="monotone" dataKey="count" stroke="#4ADE80" strokeWidth={2} fill="#4ADE80" fillOpacity={0.15} />
+                          </ComposedChart>
+                        </ResponsiveContainer>
+                      </div>
+                    </div>
+
+                    {/* Per-habit breakdown */}
+                    {habitBreakdown.length > 0 && (
+                      <div className="rounded-xl p-4"
+                        style={{ background: isDark ? "rgba(255,255,255,0.03)" : "#ffffff", border: `1px solid ${isDark ? "rgba(255,255,255,0.05)" : "rgba(0,0,0,0.06)"}` }}>
+                        <p className="text-sm font-semibold" style={{ color: "var(--foreground)" }}>{t('groups_stats_habit_breakdown_title')}</p>
+                        <p className="text-[11px] mt-0.5 mb-3" style={{ color: "var(--muted-foreground)" }}>{t('groups_stats_habit_breakdown_sub')}</p>
+                        <div className="flex flex-col gap-3">
+                          {habitBreakdown.map((h) => {
+                            const pct = Math.round((h.approved / maxHabitApproved) * 100);
+                            return (
+                              <div key={h.name}>
+                                <div className="flex items-center justify-between mb-1.5">
+                                  <div className="flex items-center gap-2 min-w-0">
+                                    <span className="text-base shrink-0">{h.emoji}</span>
+                                    <span className="text-sm font-medium truncate" style={{ color: "var(--foreground)" }}>{h.name}</span>
+                                  </div>
+                                  <span className="text-xs shrink-0" style={{ color: "var(--muted-foreground)", fontFamily: "'Geist Mono', monospace" }}>
+                                    {h.approved} ta · {h.participants} {t('groups_stats_participants_suffix')}
+                                  </span>
+                                </div>
+                                <div className="w-full h-1.5 rounded-full overflow-hidden" style={{ background: isDark ? "rgba(255,255,255,0.07)" : "rgba(0,0,0,0.07)" }}>
+                                  <div className="h-full rounded-full" style={{ width: `${pct}%`, background: "#4ADE80" }} />
+                                </div>
+                              </div>
+                            );
+                          })}
                         </div>
                       </div>
-                    );
-                  })}
-                </div>
-              )}
+                    )}
+                  </>
+                )}
+
+                {/* Per-member ranking */}
+                {rankedMemberStats.length > 0 && (
+                  <div>
+                    <p className="text-sm font-semibold px-1 mb-2" style={{ color: "var(--foreground)" }}>{t('groups_stats_members_title')}</p>
+                    <div className="flex flex-col gap-3">
+                      {rankedMemberStats.map(([uid, s], i) => {
+                        const total = s.approved + s.pending + s.rejected || 1;
+                        const approvedPct = Math.round((s.approved / total) * 100);
+                        const isMe = uid === profile.id;
+                        const medals = ["🥇", "🥈", "🥉"];
+                        return (
+                          <div key={uid} className="p-4 rounded-xl"
+                            style={{
+                              background: isDark ? "rgba(22,27,34,0.85)" : "#ffffff",
+                              border: `1px solid ${isDark ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.07)"}`,
+                            }}>
+                            <div className="flex items-center gap-2 mb-3">
+                              {medals[i] && <span className="text-sm shrink-0">{medals[i]}</span>}
+                              <div className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold shrink-0 overflow-hidden"
+                                style={{ background: s.color, color: "#0E1117" }}>
+                                {s.avatarUrl ? (
+                                  <img src={s.avatarUrl} alt="" className="w-8 h-8 object-cover" />
+                                ) : (
+                                  s.name.split(" ").map((n: string) => n[0]).join("").toUpperCase().slice(0, 2)
+                                )}
+                              </div>
+                              <div>
+                                <p className="text-sm font-semibold" style={{ color: isMe ? "#4ADE80" : "var(--foreground)" }}>
+                                  {s.name} {isMe && t('lb_you')}
+                                </p>
+                                <p className="text-[11px]" style={{ color: "var(--muted-foreground)" }}>
+                                  {s.approved} {t('groups_approved')} · {s.pending} {t('pending')} · {s.rejected} {t('rejected')}
+                                </p>
+                              </div>
+                              <div className="ml-auto text-sm font-bold" style={{ color: "#4ADE80", fontFamily: "'Geist Mono', monospace" }}>
+                                {approvedPct}%
+                              </div>
+                            </div>
+                            <div className="w-full h-2 rounded-full overflow-hidden" style={{ background: isDark ? "rgba(255,255,255,0.07)" : "rgba(0,0,0,0.07)" }}>
+                              <div className="h-full rounded-full" style={{ width: `${approvedPct}%`, background: "#4ADE80" }} />
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+              </div>
             </div>
           )}
 
