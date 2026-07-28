@@ -27,7 +27,9 @@ Migratsiya: `031_group_membership_management.sql`.
 - [x] **Guruh odatini tahrirlash:** Admin/co-admin endi mavjud guruh odatini (nom/emoji/tur/maqsad/birlik) o'chirib-qayta yaratmasdan tahrirlay oladi.
 - [x] **Guruh ↔ shaxsiy odatlarni integratsiyalash ("Avtomatik nusxa"):** Admin guruhga odat qo'shganda, har bir a'zoning shaxsiy "Odatlar" ro'yxatiga ham bog'langan nusxa avtomatik yaratiladi (`group_habit_links`). Yangi a'zo qo'shilganda mavjud guruh odatlariga ham avtomatik bog'lanadi (trigger). Guruhda bajarib sardor tasdiqlasa — bog'langan shaxsiy odat ham `completed=true` bo'ladi va bugungi kun uchun ball/tanga/XP avtomatik beriladi (`approve_group_log` yangilandi) — endi bitta ishni ikki marta belgilash shart emas. Guruh odatini tahrirlash/o'chirish ham bog'langan barcha shaxsiy nusxalarga tarqaladi.
 
-Migratsiya: `033_group_personal_habit_integration.sql` (+ `032_group_habit_logs_approval_columns.sql` — yetishmayotgan tasdiqlash ustunlari tuzatildi).
+- [x] **Bog'lashda dublikatning oldini olish:** 033 dastlab har doim YANGI shaxsiy odat yaratardi — a'zoda nomi bir xil odat ALLAQACHON bo'lsa ham. Endi avval mavjud faol odatlar orasidan nomi mos kelganini qidiradi va o'shanga bog'lanadi; allaqachon yaratilgan dublikatlar ham bitta migratsiyada tozalanadi (eskisi asosiy sifatida qoladi, loglar ko'chiriladi).
+
+Migratsiya: `033_group_personal_habit_integration.sql` (+ `032_group_habit_logs_approval_columns.sql`, `034_group_habit_link_dedupe.sql`).
 
 ---
 
