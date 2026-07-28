@@ -1,4 +1,4 @@
-const CACHE_NAME = "traccer-v2";
+const CACHE_NAME = "traccer-v3";
 const STATIC_ASSETS = ["/", "/index.html"];
 
 self.addEventListener("install", (e) => {
@@ -50,18 +50,18 @@ self.addEventListener("fetch", (e) => {
   // Supabase API va external requestlarni cache qilmaymiz
   if (url.hostname !== self.location.hostname) return;
 
+  // Network-first: always try to serve the latest deployed build; only
+  // fall back to the cache when offline. The old cache-first strategy
+  // served stale JS/HTML after every deploy until a second reload.
   e.respondWith(
-    caches.match(e.request).then((cached) => {
-      const network = fetch(e.request)
-        .then((res) => {
-          if (res.ok) {
-            const clone = res.clone();
-            caches.open(CACHE_NAME).then((cache) => cache.put(e.request, clone));
-          }
-          return res;
-        })
-        .catch(() => cached);
-      return cached || network;
-    })
+    fetch(e.request)
+      .then((res) => {
+        if (res.ok) {
+          const clone = res.clone();
+          caches.open(CACHE_NAME).then((cache) => cache.put(e.request, clone));
+        }
+        return res;
+      })
+      .catch(() => caches.match(e.request))
   );
 });
