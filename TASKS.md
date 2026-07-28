@@ -11,7 +11,7 @@
 
 ### 3. Coin Do'kon va Monetizatsiya
 - [x] **Do'konni kengaytirish:** Profil ramkalari (bronza/kumush/oltin — sotib olib "Faollashtirish" bilan tanlanadi, avatar ko'rinadigan hamma joyda: Profil, Reyting, boshqa profil) va maxsus avatar gradientlari (3 ta, Profilni tahrirlashda tanlanadi) qo'shildi. Egalik `coin_purchases` jadvali orqali umumiy tarzda kuzatiladi.
-- [ ] **Monetizatsiya integratsiyasi:** Tangalarni real daromad manbaiga aylantirish uchun haqiqiy to'lov tizimlari (Click/Payme) orqali coin/premium sotib olish arxitekturasini loyihalash.
+- [~] **Monetizatsiya integratsiyasi:** Arxitektura tayyorlandi — `docs/Monetization_Architecture.md` (Click/Payme oqimi, `payment_transactions` jadvali, xavfsizlik nazorat ro'yxati). Kod hali yozilmagan — merchant hisobi va API kalitlari kutilmoqda.
 
 ---
 
