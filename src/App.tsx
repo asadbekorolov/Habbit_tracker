@@ -678,7 +678,7 @@ export default function App() {
             </div>
           )} />
           <Route path="/admin" element={renderLayout(profile?.is_admin ? <AdminPanel isDark={isDark} profile={profile} /> : <Navigate to="/dashboard" replace />)} />
-          <Route path="/profile" element={renderLayout(<ProfilePage isDark={isDark} profile={profile!} onNavigate={setActiveTab} onUserClick={handleUserClick} onLogout={handleLogout} onToggleDark={handleToggleDark} lang={lang} onLangChange={handleLangChange} />)} />
+          <Route path="/profile" element={renderLayout(<ProfilePage isDark={isDark} profile={profile!} onNavigate={setActiveTab} onUserClick={handleUserClick} onLogout={handleLogout} onToggleDark={handleToggleDark} lang={lang} onLangChange={handleLangChange} onProfileUpdate={handleProfileUpdate} />)} />
           <Route path="/edit-profile" element={renderLayout(<EditProfilePage isDark={isDark} profile={profile!} onProfileUpdate={handleProfileUpdate} onBack={() => setActiveTab("profile")} />)} />
           <Route path="/leaderboard" element={renderLayout(<GlobalLeaderboardPage isDark={isDark} profile={profile!} onUserClick={handleUserClick} />)} />
           <Route path="/health" element={renderLayout(<HealthPage isDark={isDark} profile={profile!} />)} />

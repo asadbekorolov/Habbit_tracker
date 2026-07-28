@@ -17,6 +17,7 @@ import { DeleteAccountModal } from "../../components/DeleteAccountModal";
 import { getLevel } from "../../utils/levels";
 import type { Profile } from "../../services/supabase";
 import { UserBadge } from "../../components/UserBadge";
+import { AvatarFrame } from "../../components/AvatarFrame";
 
 type Lang = "uz" | "ru" | "en";
 
@@ -29,6 +30,7 @@ interface ProfilePageProps {
   onToggleDark: () => void;
   lang: Lang;
   onLangChange: (l: Lang) => void;
+  onProfileUpdate?: (p: Profile) => void;
 }
 
 const BADGE_DEFS = [
@@ -46,7 +48,7 @@ const LANGS: { id: Lang; flag: string; label: string; code: string }[] = [
   { id: "en", flag: "🇬🇧", label: "English", code: "GB" },
 ];
 
-export function ProfilePage({ isDark, profile, onNavigate, onUserClick, onLogout, onToggleDark, lang, onLangChange }: ProfilePageProps) {
+export function ProfilePage({ isDark, profile, onNavigate, onUserClick, onLogout, onToggleDark, lang, onLangChange, onProfileUpdate }: ProfilePageProps) {
   const { t } = useLang();
   // Profile data
   const [logs30, setLogs30] = useState<any[]>([]);
@@ -269,15 +271,17 @@ export function ProfilePage({ isDark, profile, onNavigate, onUserClick, onLogout
 
         <div className="flex items-start gap-4 relative">
           <div className="shrink-0 relative">
-            {profile.avatar_url ? (
-              <img src={profile.avatar_url} alt="" className="w-20 h-20 rounded-2xl object-cover"
-                style={{ border: `3px solid ${lv.color}55` }} />
-            ) : (
-              <div className="w-20 h-20 rounded-2xl flex items-center justify-center text-2xl font-bold"
-                style={{ background: profile.avatar_color || lv.color, color: "#0E1117", border: `3px solid ${lv.color}55`, boxShadow: `0 0 20px ${lv.color}30` }}>
-                {initials}
-              </div>
-            )}
+            <AvatarFrame frameId={profile.active_frame} radius={16}>
+              {profile.avatar_url ? (
+                <img src={profile.avatar_url} alt="" className="w-20 h-20 rounded-2xl object-cover"
+                  style={{ border: profile.active_frame ? "none" : `3px solid ${lv.color}55` }} />
+              ) : (
+                <div className="w-20 h-20 rounded-2xl flex items-center justify-center text-2xl font-bold"
+                  style={{ background: profile.avatar_color || lv.color, color: "#0E1117", border: profile.active_frame ? "none" : `3px solid ${lv.color}55`, boxShadow: `0 0 20px ${lv.color}30` }}>
+                  {initials}
+                </div>
+              )}
+            </AvatarFrame>
             <div className="absolute -bottom-2 -right-2 w-7 h-7 rounded-full flex items-center justify-center text-sm font-bold"
               style={{ background: lv.color, color: "#000", border: "2px solid var(--background)" }}>
               {lv.level}
@@ -792,6 +796,7 @@ export function ProfilePage({ isDark, profile, onNavigate, onUserClick, onLogout
           onClose={() => setShowShop(false)}
           onCoinsChange={(n) => setFreshCoins(n)}
           onStarPurchased={(newExpiry) => setStarExpiresAt(newExpiry)}
+          onProfileUpdate={onProfileUpdate}
         />
       )}
 

@@ -4,6 +4,7 @@ import { getLeaderboard, type LeaderboardEntry } from "../../services/db";
 import type { Profile } from "../../services/supabase";
 import { useLang } from "../../store/LangContext";
 import { UserBadge } from "../../components/UserBadge";
+import { AvatarFrame } from "../../components/AvatarFrame";
 
 interface GlobalLeaderboardPageProps {
   isDark: boolean;
@@ -99,16 +100,18 @@ export function GlobalLeaderboardPage({ isDark, profile, onUserClick }: GlobalLe
                 style={{ width: 90 }}
               >
                 <span className="text-2xl">{medals[podiumIdx]}</span>
-                {user.avatar_url ? (
-                  <img src={user.avatar_url} alt="" className="w-12 h-12 rounded-full object-cover" style={{ border: `2px solid ${borderColors[podiumIdx]}` }} />
-                ) : (
-                  <div
-                    className="w-12 h-12 rounded-full flex items-center justify-center text-sm font-bold"
-                    style={{ background: user.avatar_color || "#4ADE80", color: "#0E1117", border: `2px solid ${borderColors[podiumIdx]}` }}
-                  >
-                    {initials}
-                  </div>
-                )}
+                <AvatarFrame frameId={user.active_frame}>
+                  {user.avatar_url ? (
+                    <img src={user.avatar_url} alt="" className="w-12 h-12 rounded-full object-cover" style={{ border: user.active_frame ? "none" : `2px solid ${borderColors[podiumIdx]}` }} />
+                  ) : (
+                    <div
+                      className="w-12 h-12 rounded-full flex items-center justify-center text-sm font-bold"
+                      style={{ background: user.avatar_color || "#4ADE80", color: "#0E1117", border: user.active_frame ? "none" : `2px solid ${borderColors[podiumIdx]}` }}
+                    >
+                      {initials}
+                    </div>
+                  )}
+                </AvatarFrame>
                 <p className="text-xs font-semibold text-center truncate w-full flex items-center justify-center gap-1" style={{ color: isMe ? "#4ADE80" : "var(--foreground)" }}>
                   {isMe ? t('you_short') : user.display_label}
                   <UserBadge active={user.has_star} size={10} />
@@ -161,16 +164,18 @@ export function GlobalLeaderboardPage({ isDark, profile, onUserClick }: GlobalLe
                     }
                   </div>
 
-                  {user.avatar_url ? (
-                    <img src={user.avatar_url} alt="" className="w-9 h-9 rounded-full object-cover shrink-0" />
-                  ) : (
-                    <div
-                      className="w-9 h-9 rounded-full flex items-center justify-center text-xs font-bold shrink-0"
-                      style={{ background: user.avatar_color || "#4ADE80", color: "#0E1117" }}
-                    >
-                      {initials}
-                    </div>
-                  )}
+                  <AvatarFrame frameId={user.active_frame}>
+                    {user.avatar_url ? (
+                      <img src={user.avatar_url} alt="" className="w-9 h-9 rounded-full object-cover shrink-0" />
+                    ) : (
+                      <div
+                        className="w-9 h-9 rounded-full flex items-center justify-center text-xs font-bold shrink-0"
+                        style={{ background: user.avatar_color || "#4ADE80", color: "#0E1117" }}
+                      >
+                        {initials}
+                      </div>
+                    )}
+                  </AvatarFrame>
 
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-medium truncate flex items-center gap-1.5" style={{ color: isMe ? "#4ADE80" : "var(--foreground)" }}>

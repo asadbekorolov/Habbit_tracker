@@ -10,7 +10,7 @@
 - [x] **Samaradorlikka asoslangan reyting:** `get_leaderboard()` va yangi `get_user_rank_efficiency()` endi so'nggi 30 kunlik `(bajarilgan / faol odatlar soni * kunlar) * 100` samaradorlik foiziga qarab tartiblanadi (xom ball emas). Reyting sahifasida foiz asosiy ko'rsatkich, ball kichik ikkinchi darajali statistika sifatida qoladi.
 
 ### 3. Coin Do'kon va Monetizatsiya
-- [ ] **Do'konni kengaytirish:** Coin do'koniga yangi buyumlar qo'shish (masalan: maxsus temalar, profil ramkalari, avatar sozlash, seriya muzlatish).
+- [x] **Do'konni kengaytirish:** Profil ramkalari (bronza/kumush/oltin — sotib olib "Faollashtirish" bilan tanlanadi, avatar ko'rinadigan hamma joyda: Profil, Reyting, boshqa profil) va maxsus avatar gradientlari (3 ta, Profilni tahrirlashda tanlanadi) qo'shildi. Egalik `coin_purchases` jadvali orqali umumiy tarzda kuzatiladi.
 - [ ] **Monetizatsiya integratsiyasi:** Tangalarni real daromad manbaiga aylantirish uchun haqiqiy to'lov tizimlari (Click/Payme) orqali coin/premium sotib olish arxitekturasini loyihalash.
 
 ---

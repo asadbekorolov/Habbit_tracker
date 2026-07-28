@@ -504,6 +504,12 @@ const uz = {
   shop_error_generic: "Xatolik yuz berdi",
   shop_hint_before: "💡 Har bir ijobiy odat bajarilganda",
   shop_hint_after: "tanga topasiz",
+  shop_section_frames: "Profil ramkalari",
+  shop_section_colors: "Maxsus avatar ranglari",
+  shop_equipped: "Faol",
+  shop_equip: "Faollashtirish",
+  shop_owned: "Sizda bor",
+  shop_colors_hint: "Sotib olingan ranglarni \"Profilni tahrirlash\" sahifasida tanlang",
 
   // ── LevelUp Toast ────────────────────────────────────────────
   levelup_title: "Yangi Daraja!",
@@ -1294,6 +1300,12 @@ const ru: typeof uz = {
   shop_error_generic: "Произошла ошибка",
   shop_hint_before: "💡 За каждую выполненную положительную привычку вы получаете",
   shop_hint_after: "монету",
+  shop_section_frames: "Рамки профиля",
+  shop_section_colors: "Особые цвета аватара",
+  shop_equipped: "Активно",
+  shop_equip: "Активировать",
+  shop_owned: "Есть у вас",
+  shop_colors_hint: "Выберите купленные цвета на странице \"Редактировать профиль\"",
 
   // ── LevelUp Toast ────────────────────────────────────────────
   levelup_title: "Новый Уровень!",
@@ -2084,6 +2096,12 @@ const en: typeof uz = {
   shop_error_generic: "An error occurred",
   shop_hint_before: "💡 You earn",
   shop_hint_after: "for every positive habit completed",
+  shop_section_frames: "Profile frames",
+  shop_section_colors: "Exclusive avatar colors",
+  shop_equipped: "Active",
+  shop_equip: "Equip",
+  shop_owned: "You own this",
+  shop_colors_hint: "Pick purchased colors on the \"Edit Profile\" page",
 
   // ── LevelUp Toast ────────────────────────────────────────────
   levelup_title: "New Level!",

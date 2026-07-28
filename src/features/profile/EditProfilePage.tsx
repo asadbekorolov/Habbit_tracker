@@ -1,7 +1,8 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useLang } from "../../store/LangContext";
-import { Save, Loader2, Camera, ArrowLeft, User, Send, Instagram, Lock, Unlock } from "lucide-react";
-import { updateUserProfile, uploadAvatar } from "../../services/db";
+import { Save, Loader2, Camera, ArrowLeft, User, Send, Instagram, Lock, Unlock, Check } from "lucide-react";
+import { updateUserProfile, uploadAvatar, getOwnedItemIds } from "../../services/db";
+import { FREE_AVATAR_COLORS, PREMIUM_AVATAR_COLORS } from "../../utils/cosmetics";
 import type { Profile } from "../../services/supabase";
 
 interface EditProfilePageProps {
@@ -30,12 +31,18 @@ export function EditProfilePage({ isDark, profile, onProfileUpdate, onBack }: Ed
   const [profilePrivate, setProfilePrivate] = useState(profile.profile_private ?? false);
   const [avatarFile, setAvatarFile] = useState<File | null>(null);
   const [avatarPreview, setAvatarPreview] = useState<string | null>(profile.avatar_url || null);
+  const [avatarColor, setAvatarColor] = useState(profile.avatar_color || FREE_AVATAR_COLORS[0]);
+  const [ownedColorIds, setOwnedColorIds] = useState<Set<string>>(new Set());
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
 
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    getOwnedItemIds(profile.id).then(setOwnedColorIds).catch(() => {});
+  }, [profile.id]);
 
   const cardStyle: React.CSSProperties = {
     background: isDark ? "rgba(22,27,34,0.85)" : "var(--card)",
@@ -81,6 +88,7 @@ export function EditProfilePage({ isDark, profile, onProfileUpdate, onBack }: Ed
       const updatedProfile = await updateUserProfile(profile.id, {
         display_name: displayName.trim(),
         avatar_url,
+        avatar_color: avatarColor,
         bio: bio.trim() || null,
         telegram_username: telegram.trim() || null,
         instagram_username: instagram.trim() || null,
@@ -124,7 +132,7 @@ export function EditProfilePage({ isDark, profile, onProfileUpdate, onBack }: Ed
                 style={{ border: "3px solid rgba(74,222,128,0.3)" }} />
             ) : (
               <div className="w-28 h-28 rounded-2xl flex items-center justify-center text-3xl font-bold"
-                style={{ background: profile.avatar_color || "#4ADE80", color: "#0E1117", border: "3px solid rgba(74,222,128,0.3)" }}>
+                style={{ background: avatarColor, color: "#0E1117", border: "3px solid rgba(74,222,128,0.3)" }}>
                 {initials}
               </div>
             )}
@@ -138,6 +146,31 @@ export function EditProfilePage({ isDark, profile, onProfileUpdate, onBack }: Ed
           </p>
           <input type="file" ref={fileInputRef} onChange={handleAvatarChange}
             accept="image/png, image/jpeg, image/webp" className="hidden" />
+
+          {/* Avatar rangi — faqat rasm yuklanmagan bo'lsa mazmunli, chunki
+              rasm bo'lsa u ustidan ustunlik qiladi */}
+          {!avatarPreview && (
+            <div className="flex flex-wrap items-center justify-center gap-2 mt-1">
+              {FREE_AVATAR_COLORS.map((c) => (
+                <button key={c} type="button" onClick={() => setAvatarColor(c)}
+                  className="w-8 h-8 rounded-full flex items-center justify-center transition-all"
+                  style={{ background: c, border: avatarColor === c ? "2px solid var(--foreground)" : "2px solid transparent" }}>
+                  {avatarColor === c && <Check size={13} color="#0E1117" />}
+                </button>
+              ))}
+              {PREMIUM_AVATAR_COLORS.map((c) => {
+                const owned = ownedColorIds.has(c.id);
+                return (
+                  <button key={c.id} type="button" disabled={!owned} onClick={() => setAvatarColor(c.gradient)}
+                    title={owned ? c.name : `${c.name} — 🪙${c.price}`}
+                    className="w-8 h-8 rounded-full flex items-center justify-center transition-all relative"
+                    style={{ background: c.gradient, border: avatarColor === c.gradient ? "2px solid var(--foreground)" : "2px solid transparent", opacity: owned ? 1 : 0.35 }}>
+                    {avatarColor === c.gradient ? <Check size={13} color="#fff" /> : !owned && <Lock size={10} color="#fff" />}
+                  </button>
+                );
+              })}
+            </div>
+          )}
         </div>
 
         <div className="space-y-4">

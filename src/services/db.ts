@@ -1,6 +1,7 @@
 import { supabase } from './supabase'
 import type { Profile } from './supabase'
 import { toDateStr } from '../utils/date'
+import { FREE_AVATAR_COLORS } from '../utils/cosmetics'
 
 export const HABIT_SUCCESS_COLOR = "#4ADE80"
 export const HABIT_FAILURE_COLOR = "#F87171"
@@ -13,14 +14,7 @@ export function getHabitStatusColor(completed: boolean): string {
   return completed ? HABIT_SUCCESS_COLOR : HABIT_FAILURE_COLOR
 }
 
-const AVATAR_COLORS = [
-  "linear-gradient(135deg, #4ADE80 0%, #22C55E 100%)",
-  "linear-gradient(135deg, #60A5FA 0%, #3B82F6 100%)",
-  "linear-gradient(135deg, #F87171 0%, #EF4444 100%)",
-  "linear-gradient(135deg, #FBBF24 0%, #F59E0B 100%)",
-  "linear-gradient(135deg, #A78BFA 0%, #7C3AED 100%)",
-  "linear-gradient(135deg, #34D399 0%, #059669 100%)",
-]
+const AVATAR_COLORS = FREE_AVATAR_COLORS
 
 // ─── AUTH ──────────────────────────────────────────────────
 export async function signInUser(email: string, password: string): Promise<Profile> {
@@ -145,7 +139,7 @@ export async function updateUserProfile(
     display_name?: string; username?: string; avatar_url?: string | null;
     bio?: string | null; telegram_username?: string | null;
     instagram_username?: string | null; telegram_private?: boolean;
-    profile_private?: boolean;
+    profile_private?: boolean; avatar_color?: string; active_frame?: string | null;
   }
 ): Promise<Profile> {
   const { data, error } = await supabase
@@ -543,6 +537,7 @@ export type LeaderboardEntry = {
   display_label: string
   avatar_color: string
   avatar_url: string | null
+  active_frame: string | null
   score: number
   efficiency_pct: number
   is_private: boolean
@@ -1369,6 +1364,16 @@ export async function hasShopBadge(userId: string, itemId: string): Promise<bool
     .eq('item_id', itemId)
     .maybeSingle()
   return !!data
+}
+
+// Do'kondagi kosmetika (ramka/rang) egaligini bitta so'rovda tekshirish —
+// har bir item uchun alohida hasShopBadge chaqirishdan qochish uchun.
+export async function getOwnedItemIds(userId: string): Promise<Set<string>> {
+  const { data } = await supabase
+    .from('coin_purchases')
+    .select('item_id')
+    .eq('user_id', userId)
+  return new Set((data || []).map((r) => r.item_id))
 }
 
 // ─── STAR STATUS (30 kunlik obuna, 500 tanga) ─────────────────

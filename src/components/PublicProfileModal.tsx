@@ -13,6 +13,7 @@ import type { Profile } from "../services/supabase";
 import { useLang } from "../store/LangContext";
 import type { T } from "../store/LangContext";
 import { UserBadge } from "./UserBadge";
+import { AvatarFrame } from "./AvatarFrame";
 
 interface Badge { emoji: string; label: string; color: string }
 
@@ -169,15 +170,17 @@ export function PublicProfileModal({ isDark, viewingId, myProfile, onClose }: Pu
           <div className="flex items-start gap-4">
             {/* Avatar */}
             <div className="relative shrink-0">
-              {profile.avatar_url ? (
-                <img src={profile.avatar_url} alt="" className="w-20 h-20 rounded-2xl object-cover"
-                  style={{ border: `3px solid ${lv.color}55` }} />
-              ) : (
-                <div className="w-20 h-20 rounded-2xl flex items-center justify-center text-2xl font-bold"
-                  style={{ background: profile.avatar_color || lv.color, color: "#0E1117", border: `3px solid ${lv.color}55` }}>
-                  {initials}
-                </div>
-              )}
+              <AvatarFrame frameId={profile.active_frame} radius={16}>
+                {profile.avatar_url ? (
+                  <img src={profile.avatar_url} alt="" className="w-20 h-20 rounded-2xl object-cover"
+                    style={{ border: profile.active_frame ? "none" : `3px solid ${lv.color}55` }} />
+                ) : (
+                  <div className="w-20 h-20 rounded-2xl flex items-center justify-center text-2xl font-bold"
+                    style={{ background: profile.avatar_color || lv.color, color: "#0E1117", border: profile.active_frame ? "none" : `3px solid ${lv.color}55` }}>
+                    {initials}
+                  </div>
+                )}
+              </AvatarFrame>
               <div className="absolute -bottom-2 -right-2 w-7 h-7 rounded-full flex items-center justify-center text-sm font-bold"
                 style={{ background: lv.color, color: "#000", border: "2px solid var(--background)" }}>
                 {lv.level}
