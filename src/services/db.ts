@@ -712,6 +712,20 @@ export async function addGroupHabit(
   return data
 }
 
+export async function updateGroupHabit(
+  habitId: string,
+  updates: { name?: string; emoji?: string; type?: 'positive' | 'negative'; target_value?: number; unit?: string }
+) {
+  const { data, error } = await supabase
+    .from('group_habits')
+    .update(updates)
+    .eq('id', habitId)
+    .select()
+    .single()
+  if (error) throw error
+  return data
+}
+
 export async function deleteGroupHabit(habitId: string) {
   const { error } = await supabase
     .from('group_habits')

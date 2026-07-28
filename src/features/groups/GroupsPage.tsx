@@ -10,7 +10,7 @@ import {
 } from "lucide-react";
 import {
   createGroup, joinGroup, getMyGroups, getGroupMembers,
-  getGroupHabits, addGroupHabit, deleteGroupHabit,
+  getGroupHabits, addGroupHabit, updateGroupHabit, deleteGroupHabit,
   getGroupLeaderboard, logGroupHabit, getTodayGroupLogs,
   getPendingGroupApprovals, approveGroupLog, rejectGroupLog,
   getGroupMembersMonthlyStats, updateGroupTelegramLink,
@@ -370,8 +370,10 @@ function GroupDetail({
   const [rejectReason, setRejectReason] = useState("");
   const [rejecting, setRejecting] = useState(false);
 
-  // Add habit
+  // Add/Edit habit — bitta modal ikkalasi uchun ham ishlatiladi;
+  // editingHabitId bo'lsa "Saqlash" (update), bo'lmasa "Qo'shish" (insert).
   const [showAddHabit, setShowAddHabit] = useState(false);
+  const [editingHabitId, setEditingHabitId] = useState<string | null>(null);
   const [newHabitName, setNewHabitName] = useState("");
   const [newHabitEmoji, setNewHabitEmoji] = useState("🏃");
   const [newHabitType, setNewHabitType] = useState<"positive" | "negative">("positive");
@@ -541,20 +543,43 @@ function GroupDetail({
     }
   }
 
-  async function handleAddHabit() {
+  function resetHabitForm() {
+    setNewHabitName("");
+    setNewHabitEmoji("🏃");
+    setNewHabitType("positive");
+    setNewMetricType("check");
+    setNewTarget(1);
+    setNewUnit("");
+    setEditingHabitId(null);
+    setShowAddHabit(false);
+  }
+
+  function openEditHabit(h: any) {
+    setEditingHabitId(h.id);
+    setNewHabitName(h.name);
+    setNewHabitEmoji(h.emoji);
+    setNewHabitType(h.type === "negative" ? "negative" : "positive");
+    if (h.unit === "daqiqa") { setNewMetricType("time"); setNewTarget(h.target_value || 1); setNewUnit(""); }
+    else if (h.target_value > 1 || h.unit) { setNewMetricType("count"); setNewTarget(h.target_value || 1); setNewUnit(h.unit || ""); }
+    else { setNewMetricType("check"); setNewTarget(1); setNewUnit(""); }
+    setError("");
+    setShowAddHabit(true);
+  }
+
+  async function handleSaveHabit() {
     if (!newHabitName.trim()) return;
     setAdding(true);
     try {
       const targetValue = newMetricType === "check" ? 1 : newTarget;
       const unit = newMetricType === "time" ? "daqiqa" : newMetricType === "count" ? (newUnit || "ta") : "";
-      const h = await addGroupHabit(group.id, newHabitName.trim(), newHabitEmoji, newHabitType, targetValue, unit);
-      setHabits((prev) => [...prev, h]);
-      setNewHabitName("");
-      setNewHabitType("positive");
-      setNewMetricType("check");
-      setNewTarget(1);
-      setNewUnit("");
-      setShowAddHabit(false);
+      if (editingHabitId) {
+        const h = await updateGroupHabit(editingHabitId, { name: newHabitName.trim(), emoji: newHabitEmoji, type: newHabitType, target_value: targetValue, unit });
+        setHabits((prev) => prev.map((x) => x.id === editingHabitId ? h : x));
+      } else {
+        const h = await addGroupHabit(group.id, newHabitName.trim(), newHabitEmoji, newHabitType, targetValue, unit);
+        setHabits((prev) => [...prev, h]);
+      }
+      resetHabitForm();
     } catch (e: any) {
       setError(e.message);
     } finally {
@@ -841,7 +866,7 @@ function GroupDetail({
           </div>
         </div>
         {isAdmin && (
-          <button onClick={() => { setShowAddHabit(true); setError(""); }}
+          <button onClick={() => { setEditingHabitId(null); setShowAddHabit(true); setError(""); }}
             className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-medium"
             style={{ background: "var(--neon-green)", color: "#0E1117" }}>
             <Plus size={13} /> {t('groups_add_habit_btn')}
@@ -1063,16 +1088,16 @@ function GroupDetail({
         </div>
       )}
 
-      {/* Add habit modal */}
+      {/* Add/Edit habit modal */}
       {showAddHabit && (
         <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4"
           style={{ background: "rgba(0,0,0,0.6)", backdropFilter: "blur(4px)" }}
-          onClick={() => setShowAddHabit(false)}>
+          onClick={resetHabitForm}>
           <div className="w-full sm:max-w-sm rounded-t-3xl sm:rounded-2xl overflow-hidden"
             style={{ background: isDark ? "#161B22" : "#fff", border: `1px solid ${isDark ? "rgba(255,255,255,0.1)" : "rgba(0,0,0,0.1)"}`, maxHeight: "85vh", overflowY: "auto", paddingBottom: "env(safe-area-inset-bottom)" }}
             onClick={(e) => e.stopPropagation()}>
             <div className="p-5 space-y-4">
-              <h3 className="text-sm font-semibold" style={{ color: "var(--foreground)" }}>{t('groups_add_habit')}</h3>
+              <h3 className="text-sm font-semibold" style={{ color: "var(--foreground)" }}>{editingHabitId ? t('groups_edit_habit') : t('groups_add_habit')}</h3>
 
               {/* Odat turi */}
               <div>
@@ -1110,7 +1135,7 @@ function GroupDetail({
                 <p className="text-xs font-medium mb-1.5" style={{ color: "var(--muted-foreground)" }}>{t('groups_habit_name')}</p>
                 <input style={inputStyle} placeholder={t('groups_habit_name_ph')} value={newHabitName}
                   onChange={(e) => setNewHabitName(e.target.value)}
-                  onKeyDown={(e) => e.key === "Enter" && handleAddHabit()} autoFocus />
+                  onKeyDown={(e) => e.key === "Enter" && handleSaveHabit()} autoFocus />
               </div>
 
               {/* O'lchov turi */}
@@ -1167,15 +1192,15 @@ function GroupDetail({
               {error && <p className="text-xs" style={{ color: "var(--coral-red)" }}>⚠ {error}</p>}
 
               <div className="flex gap-2 pt-1">
-                <button type="button" onClick={() => setShowAddHabit(false)} className="flex-1 py-2.5 rounded-xl text-sm font-medium"
+                <button type="button" onClick={resetHabitForm} className="flex-1 py-2.5 rounded-xl text-sm font-medium"
                   style={{ background: isDark ? "rgba(255,255,255,0.06)" : "#F3F4F6", color: "var(--muted-foreground)" }}>
                   {t('cancel_short')}
                 </button>
-                <button type="button" onClick={handleAddHabit} disabled={adding || !newHabitName.trim()}
+                <button type="button" onClick={handleSaveHabit} disabled={adding || !newHabitName.trim()}
                   className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-semibold"
                   style={{ background: "var(--neon-green)", color: "#0E1117", opacity: (adding || !newHabitName.trim()) ? 0.5 : 1 }}>
-                  {adding ? <Loader2 size={15} className="animate-spin" /> : <Plus size={15} />}
-                  {t('add')}
+                  {adding ? <Loader2 size={15} className="animate-spin" /> : editingHabitId ? <Check size={15} /> : <Plus size={15} />}
+                  {editingHabitId ? t('save') : t('add')}
                 </button>
               </div>
             </div>
@@ -1267,11 +1292,18 @@ function GroupDetail({
                           )}
                         </div>
                         {isAdmin && (
-                          <button onClick={() => handleDeleteHabit(habit.id)}
-                            className="p-1.5 rounded-lg opacity-40 hover:opacity-100 transition-opacity shrink-0"
-                            style={{ color: "var(--coral-red)" }}>
-                            <Trash2 size={14} />
-                          </button>
+                          <div className="flex items-center gap-1 shrink-0">
+                            <button onClick={() => openEditHabit(habit)}
+                              className="p-1.5 rounded-lg opacity-40 hover:opacity-100 transition-opacity"
+                              style={{ color: "var(--muted-foreground)" }}>
+                              <Pencil size={14} />
+                            </button>
+                            <button onClick={() => handleDeleteHabit(habit.id)}
+                              className="p-1.5 rounded-lg opacity-40 hover:opacity-100 transition-opacity"
+                              style={{ color: "var(--coral-red)" }}>
+                              <Trash2 size={14} />
+                            </button>
+                          </div>
                         )}
                       </div>
                     </div>
