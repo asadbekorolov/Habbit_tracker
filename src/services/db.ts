@@ -753,6 +753,61 @@ export async function getGroupLeaderboard(groupId: string) {
     .sort((a, b) => b.score - a.score)
 }
 
+// Joriy hafta (Dushanba-Yakshanba) uchun jonli reyting — getGroupLeaderboard
+// bilan bir xil mantiq, faqat log_date shu haftaga cheklangan. Tanga
+// berilmaydi (faqat ko'rish uchun) — mukofot faqat settleGroupWeek() orqali,
+// hafta TUGAGANDA beriladi.
+export async function getGroupWeeklyLeaderboard(groupId: string) {
+  const now = new Date()
+  const day = (now.getDay() + 6) % 7 // 0=Dushanba
+  const weekStart = new Date(now)
+  weekStart.setDate(now.getDate() - day)
+  const weekStartStr = toDateStr(weekStart)
+
+  const members = await getGroupMembers(groupId)
+  const { data: logs } = await supabase
+    .from('group_habit_logs')
+    .select('*, member_goals(current_target)')
+    .eq('group_id', groupId)
+    .gte('log_date', weekStartStr)
+
+  const scores: Record<string, { name: string; color: string; score: number; completed: number; hasStar: boolean }> = {}
+
+  for (const m of members) {
+    scores[m.user_id] = {
+      name: m.profiles.display_name,
+      color: m.profiles.avatar_color,
+      score: 0,
+      completed: 0,
+      hasStar: isStarActive(m.profiles),
+    }
+  }
+
+  for (const log of (logs || [])) {
+    if (!log.completed || !scores[log.user_id]) continue
+    if (log.approval_status && log.approval_status !== 'approved' && log.approval_status !== 'auto') continue
+    scores[log.user_id].completed++
+    const target = log.member_goals?.current_target || 1
+    const points = Math.min(100, Math.round((log.reps / target) * 100))
+    scores[log.user_id].score += points
+  }
+
+  return Object.entries(scores)
+    .map(([userId, s]) => ({ userId, ...s }))
+    .sort((a, b) => b.score - a.score)
+}
+
+export type GroupWeekWinner = { user_id: string; display_name: string; score: number; reward: number; already_settled: boolean }
+
+// O'tgan (tugagan) haftaning g'olibini hisoblab, hali yozilmagan bo'lsa
+// bonus tanga beradi — a'zo guruh sahifasini ochganda chaqiriladi (cron
+// shart emas, cleanup_expired_frame() bilan bir xil o'z-o'zini tuzatish
+// naqshi). Hech kim faol bo'lmagan hafta uchun null qaytaradi.
+export async function settleGroupWeek(groupId: string): Promise<GroupWeekWinner | null> {
+  const { data, error } = await supabase.rpc('settle_group_week', { p_group_id: groupId })
+  if (error) return null
+  return (data && data[0]) || null
+}
 
 // ─── GROUP LOGS ────────────────────────────────────────────
 export async function logGroupHabit(
@@ -1344,6 +1399,26 @@ export async function purchaseCoinItem(userId: string, itemId: string, price: nu
     throw error
   }
   return newBalance as number
+}
+
+// ─── KUNLIK VAZIFALAR (Daily Quests) ────────────────────────
+export async function getTodayQuestClaims(userId: string): Promise<Set<string>> {
+  const today = toDateStr()
+  const { data } = await supabase
+    .from('daily_quest_claims')
+    .select('quest_id')
+    .eq('user_id', userId)
+    .eq('quest_date', today)
+  return new Set((data || []).map((r) => r.quest_id))
+}
+
+// Shart serverda claim_daily_quest() RPC ichida mustaqil qayta tekshiriladi
+// (bu yerdagi hisob-kitob faqat UI uchun) — shuning uchun client hech qachon
+// tekshiruvsiz mukofot ololmaydi.
+export async function claimDailyQuest(userId: string, questId: string): Promise<number> {
+  const { data, error } = await supabase.rpc('claim_daily_quest', { uid: userId, p_quest_id: questId })
+  if (error) throw error
+  return data as number
 }
 
 export async function getExtraFreezeCount(userId: string): Promise<number> {

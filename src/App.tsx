@@ -628,7 +628,7 @@ export default function App() {
         } />
         <Route element={<ProtectedRoute />}>
           <Route path="/" element={<Navigate to="/dashboard" replace />} />
-          <Route path="/dashboard" element={renderLayout(<Dashboard isDark={isDark} profile={profile!} completedToday={completedToday} totalHabits={totalHabits} onNavigate={setActiveTab} onCompletedChange={handleCompletedChange} onUserClick={handleUserClick} />)} />
+          <Route path="/dashboard" element={renderLayout(<Dashboard isDark={isDark} profile={profile!} completedToday={completedToday} totalHabits={totalHabits} onNavigate={setActiveTab} onCompletedChange={handleCompletedChange} onUserClick={handleUserClick} onProfileUpdate={handleProfileUpdate} />)} />
           <Route path="/habits" element={renderLayout(<HabitsManager isDark={isDark} profile={profile!} />)} />
           <Route path="/logs" element={renderLayout(
             <div className="max-w-2xl">

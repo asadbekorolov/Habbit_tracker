@@ -7,6 +7,7 @@ import { toDateStr } from "../../utils/date";
 import type { Habit, Profile } from "../../services/supabase";
 import { useLang } from "../../store/LangContext";
 import { DAYS_SHORT } from "../../utils/i18n";
+import { DailyQuestsCard } from "../../components/DailyQuestsCard";
 
 interface DashboardProps {
   isDark: boolean;
@@ -16,9 +17,10 @@ interface DashboardProps {
   onNavigate: (tab: string) => void;
   onCompletedChange?: (completed: number, total: number) => void;
   onUserClick?: (userId: string) => void;
+  onProfileUpdate?: (p: Profile) => void;
 }
 
-export function Dashboard({ isDark, profile, completedToday, totalHabits, onNavigate, onCompletedChange, onUserClick }: DashboardProps) {
+export function Dashboard({ isDark, profile, completedToday, totalHabits, onNavigate, onCompletedChange, onUserClick, onProfileUpdate }: DashboardProps) {
   const { t, lang } = useLang();
   const [logs, setLogs] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -412,6 +414,15 @@ export function Dashboard({ isDark, profile, completedToday, totalHabits, onNavi
           </div>
         )}
       </div>
+
+      <DailyQuestsCard
+        isDark={isDark}
+        profile={profile}
+        completedToday={completedToday}
+        totalHabits={totalHabits}
+        negativeWin={negativeHabits.some((h) => negKeptIds.has(h.id))}
+        onProfileUpdate={onProfileUpdate}
+      />
 
       {/* Hero */}
       <div

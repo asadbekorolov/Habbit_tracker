@@ -517,6 +517,20 @@ const uz = {
   shop_item_glow_name: "Yaltiroq ism",
   shop_item_glow_desc: "Ismingiz profilda, reytingda va hamma joyda yaltirab turadi",
 
+  // ── Kunlik vazifalar (Daily Quests) ──────────────────────────
+  quests_title: "Kunlik vazifalar",
+  quest_complete3_title: "3 ta odat bajaring",
+  quest_complete3_desc: "Bugun kamida 3 ta odatni belgilang",
+  quest_completeall_title: "Kunni 100% yakunlang",
+  quest_completeall_desc: "Bugungi barcha odatlaringizni bajaring",
+  quest_negwin_title: "Salbiy odatga qarshi turing",
+  quest_negwin_desc: "Bugun kamida bitta salbiy odatni saqlab qoling",
+
+  // ── Guruh haftalik musobaqasi ─────────────────────────────────
+  group_this_week: "Shu hafta",
+  group_week_empty: "Bu hafta hali faollik yo'q",
+  group_week_winner_prefix: "🏆 O'tgan hafta g'olibi:",
+
   // ── LevelUp Toast ────────────────────────────────────────────
   levelup_title: "Yangi Daraja!",
   levelup_body: "Tabriklaymiz! Siz {lvl}-daraja ({name}) ga ko'tarildingiz! Olg'a!",
@@ -1319,6 +1333,20 @@ const ru: typeof uz = {
   shop_item_glow_name: "Светящееся имя",
   shop_item_glow_desc: "Ваше имя будет светиться в профиле, рейтинге и везде",
 
+  // ── Ежедневные задания (Daily Quests) ─────────────────────────
+  quests_title: "Ежедневные задания",
+  quest_complete3_title: "Выполните 3 привычки",
+  quest_complete3_desc: "Отметьте сегодня минимум 3 привычки",
+  quest_completeall_title: "Завершите день на 100%",
+  quest_completeall_desc: "Выполните все свои привычки на сегодня",
+  quest_negwin_title: "Устойте перед вредной привычкой",
+  quest_negwin_desc: "Сегодня удержитесь хотя бы от одной вредной привычки",
+
+  // ── Еженедельное соревнование группы ───────────────────────────
+  group_this_week: "На этой неделе",
+  group_week_empty: "На этой неделе пока нет активности",
+  group_week_winner_prefix: "🏆 Победитель прошлой недели:",
+
   // ── LevelUp Toast ────────────────────────────────────────────
   levelup_title: "Новый Уровень!",
   levelup_body: "Поздравляем! Вы достигли {lvl} уровня ({name})! Вперёд!",
@@ -2120,6 +2148,20 @@ const en: typeof uz = {
   shop_section_glow: "Special effects",
   shop_item_glow_name: "Glowing username",
   shop_item_glow_desc: "Your name glows in your profile, leaderboard and everywhere",
+
+  // ── Daily Quests ────────────────────────────────────────────
+  quests_title: "Daily quests",
+  quest_complete3_title: "Complete 3 habits",
+  quest_complete3_desc: "Check off at least 3 habits today",
+  quest_completeall_title: "Finish the day 100%",
+  quest_completeall_desc: "Complete all of today's habits",
+  quest_negwin_title: "Resist a bad habit",
+  quest_negwin_desc: "Successfully hold off at least one negative habit today",
+
+  // ── Group weekly competition ───────────────────────────────────
+  group_this_week: "This week",
+  group_week_empty: "No activity yet this week",
+  group_week_winner_prefix: "🏆 Last week's winner:",
 
   // ── LevelUp Toast ────────────────────────────────────────────
   levelup_title: "New Level!",

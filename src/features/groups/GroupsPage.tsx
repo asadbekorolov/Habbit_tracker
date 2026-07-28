@@ -20,6 +20,7 @@ import { supabase } from "../../services/supabase";
 import type { Profile } from "../../services/supabase";
 import { trackEvent } from "../../utils/analytics";
 import { UserBadge } from "../../components/UserBadge";
+import { GroupWeeklyCompetition } from "./GroupWeeklyCompetition";
 
 const DATE_LOCALE: Record<string, string> = { uz: "uz-UZ", ru: "ru-RU", en: "en-US" };
 
@@ -1192,6 +1193,7 @@ function GroupDetail({
           {/* ── LEADERBOARD TAB ── */}
           {activeTab === "leaderboard" && (
             <div className="flex flex-col gap-3">
+              <GroupWeeklyCompetition isDark={isDark} groupId={group.id} myUserId={profile.id} card={card} />
               <div className="px-1 pb-1">
                 <p className="text-xs" style={{ color: "var(--muted-foreground)" }}>
                   {t('groups_only_approved_counted')}
