@@ -421,6 +421,8 @@ export function Dashboard({ isDark, profile, completedToday, totalHabits, onNavi
         completedToday={completedToday}
         totalHabits={totalHabits}
         negativeWin={negativeHabits.some((h) => negKeptIds.has(h.id))}
+        hasNegativeHabits={negativeHabits.length > 0}
+        consistencyWin={completedToday > 0 && logs.some((l) => l.log_date === toDateStr(new Date(Date.now() - 86400000)) && l.completed)}
         onProfileUpdate={onProfileUpdate}
       />
 

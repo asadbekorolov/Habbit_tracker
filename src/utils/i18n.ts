@@ -525,6 +525,8 @@ const uz = {
   quest_completeall_desc: "Bugungi barcha odatlaringizni bajaring",
   quest_negwin_title: "Salbiy odatga qarshi turing",
   quest_negwin_desc: "Bugun kamida bitta salbiy odatni saqlab qoling",
+  quest_consistency_title: "Faollikni davom ettiring",
+  quest_consistency_desc: "Kecha ham, bugun ham kamida bitta odatni bajaring",
 
   // ── Guruh haftalik musobaqasi ─────────────────────────────────
   group_this_week: "Shu hafta",
@@ -1341,6 +1343,8 @@ const ru: typeof uz = {
   quest_completeall_desc: "Выполните все свои привычки на сегодня",
   quest_negwin_title: "Устойте перед вредной привычкой",
   quest_negwin_desc: "Сегодня удержитесь хотя бы от одной вредной привычки",
+  quest_consistency_title: "Продолжайте активность",
+  quest_consistency_desc: "Выполните хотя бы одну привычку и вчера, и сегодня",
 
   // ── Еженедельное соревнование группы ───────────────────────────
   group_this_week: "На этой неделе",
@@ -2157,6 +2161,8 @@ const en: typeof uz = {
   quest_completeall_desc: "Complete all of today's habits",
   quest_negwin_title: "Resist a bad habit",
   quest_negwin_desc: "Successfully hold off at least one negative habit today",
+  quest_consistency_title: "Keep the momentum going",
+  quest_consistency_desc: "Complete at least one habit both yesterday and today",
 
   // ── Group weekly competition ───────────────────────────────────
   group_this_week: "This week",

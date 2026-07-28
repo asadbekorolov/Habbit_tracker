@@ -4,14 +4,20 @@ import { getTodayQuestClaims, claimDailyQuest } from "../services/db";
 import type { Profile } from "../services/supabase";
 import { useLang } from "../store/LangContext";
 
-type QuestContext = { completedToday: number; totalHabits: number; negativeWin: boolean };
+type QuestContext = { completedToday: number; totalHabits: number; negativeWin: boolean; consistencyWin: boolean };
 type Quest = { id: string; titleKey: string; descKey: string; reward: number; met: (c: QuestContext) => boolean };
 
-const QUESTS: Quest[] = [
+const BASE_QUESTS: Quest[] = [
   { id: "q_complete_3", titleKey: "quest_complete3_title", descKey: "quest_complete3_desc", reward: 5, met: (c) => c.completedToday >= 3 },
   { id: "q_complete_all", titleKey: "quest_completeall_title", descKey: "quest_completeall_desc", reward: 10, met: (c) => c.totalHabits > 0 && c.completedToday >= c.totalHabits },
-  { id: "q_negative_win", titleKey: "quest_negwin_title", descKey: "quest_negwin_desc", reward: 5, met: (c) => c.negativeWin },
 ];
+
+// "Salbiy odatga qarshi turing" vazifasi salbiy odati umuman yo'q
+// foydalanuvchi uchun hech qachon bajarilmaydi (doim qulflangan qolardi) —
+// shuning uchun bunday foydalanuvchilarga o'rniga hammaga teng adolatli
+// "kecha ham, bugun ham faol bo'lish" vazifasi ko'rsatiladi.
+const NEGATIVE_QUEST: Quest = { id: "q_negative_win", titleKey: "quest_negwin_title", descKey: "quest_negwin_desc", reward: 5, met: (c) => c.negativeWin };
+const CONSISTENCY_QUEST: Quest = { id: "q_consistency", titleKey: "quest_consistency_title", descKey: "quest_consistency_desc", reward: 5, met: (c) => c.consistencyWin };
 
 interface DailyQuestsCardProps {
   isDark: boolean;
@@ -19,10 +25,12 @@ interface DailyQuestsCardProps {
   completedToday: number;
   totalHabits: number;
   negativeWin: boolean;
+  hasNegativeHabits: boolean;
+  consistencyWin: boolean;
   onProfileUpdate?: (p: Profile) => void;
 }
 
-export function DailyQuestsCard({ isDark, profile, completedToday, totalHabits, negativeWin, onProfileUpdate }: DailyQuestsCardProps) {
+export function DailyQuestsCard({ isDark, profile, completedToday, totalHabits, negativeWin, hasNegativeHabits, consistencyWin, onProfileUpdate }: DailyQuestsCardProps) {
   const { t } = useLang();
   const [claimedIds, setClaimedIds] = useState<Set<string>>(new Set());
   const [claiming, setClaiming] = useState<string | null>(null);
@@ -32,7 +40,8 @@ export function DailyQuestsCard({ isDark, profile, completedToday, totalHabits, 
     getTodayQuestClaims(profile.id).then(setClaimedIds).finally(() => setLoaded(true));
   }, [profile.id]);
 
-  const ctx: QuestContext = { completedToday, totalHabits, negativeWin };
+  const QUESTS: Quest[] = [...BASE_QUESTS, hasNegativeHabits ? NEGATIVE_QUEST : CONSISTENCY_QUEST];
+  const ctx: QuestContext = { completedToday, totalHabits, negativeWin, consistencyWin };
 
   async function handleClaim(questId: string) {
     setClaiming(questId);
