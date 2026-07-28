@@ -448,7 +448,7 @@ function GroupDetail({
     const unwrap = <T,>(r: PromiseSettledResult<T>, label: string, fallback: T): T => {
       if (r.status === "fulfilled") return r.value ?? fallback;
       console.error(`GroupDetail loadAll: ${label} failed`, r.reason);
-      failedParts.push(label);
+      failedParts.push(`${label} (${(r.reason as any)?.message || r.reason})`);
       return fallback;
     };
 
@@ -472,7 +472,7 @@ function GroupDetail({
     }
     setTodayLogs(logMap);
 
-    if (failedParts.length > 0) setLoadError(t('groups_err_load_data'));
+    if (failedParts.length > 0) setLoadError(`${t('groups_err_load_data')}: ${failedParts.join('; ')}`);
     setLoading(false);
   }
 
