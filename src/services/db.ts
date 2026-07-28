@@ -695,6 +695,10 @@ export async function getGroupHabits(groupId: string) {
   return data
 }
 
+// create_group_habit/update_group_habit/delete_group_habit RPC orqali —
+// oddiy INSERT/UPDATE/DELETE emas, chunki bular bir vaqtning o'zida har
+// bir a'zoning shaxsiy "Odatlar" ro'yxatidagi bog'langan nusxasini ham
+// yaratadi/yangilaydi/deaktivatsiya qiladi (033-migratsiya, group_habit_links).
 export async function addGroupHabit(
   groupId: string,
   name: string,
@@ -703,11 +707,9 @@ export async function addGroupHabit(
   targetValue: number = 1,
   unit: string = ''
 ) {
-  const { data, error } = await supabase
-    .from('group_habits')
-    .insert({ group_id: groupId, name, emoji, type, target_value: targetValue, unit })
-    .select()
-    .single()
+  const { data, error } = await supabase.rpc('create_group_habit', {
+    p_group_id: groupId, p_name: name, p_emoji: emoji, p_type: type, p_target_value: targetValue, p_unit: unit,
+  })
   if (error) throw error
   return data
 }
@@ -716,21 +718,17 @@ export async function updateGroupHabit(
   habitId: string,
   updates: { name?: string; emoji?: string; type?: 'positive' | 'negative'; target_value?: number; unit?: string }
 ) {
-  const { data, error } = await supabase
-    .from('group_habits')
-    .update(updates)
-    .eq('id', habitId)
-    .select()
-    .single()
+  const { data, error } = await supabase.rpc('update_group_habit', {
+    p_habit_id: habitId,
+    p_name: updates.name, p_emoji: updates.emoji, p_type: updates.type,
+    p_target_value: updates.target_value, p_unit: updates.unit,
+  })
   if (error) throw error
   return data
 }
 
 export async function deleteGroupHabit(habitId: string) {
-  const { error } = await supabase
-    .from('group_habits')
-    .delete()
-    .eq('id', habitId)
+  const { error } = await supabase.rpc('delete_group_habit', { p_habit_id: habitId })
   if (error) throw error
 }
 
