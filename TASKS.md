@@ -103,6 +103,12 @@ Migratsiya: `041_feedback_admin_reply.sql`.
 - [x] CSV eksport tugmalari endi Umumiy ko'rinishdagi yagona kartadan chiqarib, har bir tegishli bo'limning (Foydalanuvchilar, Fikr-mulohazalar, Odatlar) tab sarlavhasi tepasiga ko'chirildi.
 - [x] Odatlar CSV eksporti endi allaqachon yuklangan jadval holatidan (state) foydalanadi — qayta so'rov yubormaydi.
 
+### 14. Bosh sahifada musbat odatlarni "Bajarilmadi" deb belgilash (✘ tugmasi)
+- **Muammo:** Bosh sahifadagi "Bugungi Odatlar" vidjetida musbat odatlar faqat ✔ (bajarildi) belgisiga ega edi — bajarmagan holatni ("bajarilmadi") aniq belgilashning iloji yo'q edi, ayniqsa kunning ma'lum vaqtida bajarilishi shart bo'lgan odatlar (masalan "Bomdod namozi o'qish") uchun muhim.
+- [x] Salbiy odatlardagi uch-holatli naqsh (Kutilmoqda / Saqlanib qoldi / Buzildi) musbat odatlarga ham qo'llandi: endi har bir kartaning o'ng tomonida alohida ✘ tugma bor — bosilsa odat qizil rangda "bajarilmadi" deb belgilanadi (`habit_logs.completed=false`), qayta bosilsa neytral holatga qaytadi.
+- [x] Kartaning o'zini bosish avvalgidek ✔ (bajarildi, yashil) belgilaydi; endi bu ham xuddi shu uch-holatli naqshga o'tkazildi (qayta bosilsa neytralga qaytaradi, oldin esa "bajarilmadi" yozuvini yozib qo'yardi).
+- SQL migratsiya kerak emas — `habit_logs.completed=false` yozuvi va uni o'chirish funksiyalari avvaldan mavjud edi, faqat frontend UI/holat boshqaruvi qo'shildi.
+
 Migratsiya: yo'q (faqat frontend, mavjud RLS yetarli).
 
 ---

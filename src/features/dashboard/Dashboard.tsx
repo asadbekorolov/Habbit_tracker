@@ -36,6 +36,9 @@ export function Dashboard({ isDark, profile, completedToday, totalHabits, onNavi
   // Quick habit toggle state
   const [todayHabits, setTodayHabits] = useState<Habit[]>([]);
   const [doneIds, setDoneIds] = useState<Set<string>>(new Set());
+  // Musbat odat bugun aniq "bajarilmadi" deb belgilangan bo'lsa shu setda —
+  // doneIds'da ham, failedIds'da ham yo'q = hali belgilanmagan (neytral).
+  const [failedIds, setFailedIds] = useState<Set<string>>(new Set());
   const [savingIds, setSavingIds] = useState<Set<string>>(new Set());
   // Salbiy odatlar endi shu vidjetda ham ko'rsatiladi — HabitsLog.tsx'dagi
   // uch-holatli naqsh bilan bir xil: loggedIds (bugun bir marta belgilangan)
@@ -72,7 +75,9 @@ export function Dashboard({ isDark, profile, completedToday, totalHabits, onNavi
       setTodayHabits(posHabits);
       setNegativeHabits(negHabits);
 
+      const posHabitIds = new Set(posHabits.map((h: Habit) => h.id));
       const done = new Set<string>();
+      const failed = new Set<string>();
       const logged = new Set<string>();
       const negKept = new Set<string>();
       for (const l of todayLogsData || []) {
@@ -80,9 +85,12 @@ export function Dashboard({ isDark, profile, completedToday, totalHabits, onNavi
         if (l.completed) {
           done.add(l.habit_id);
           negKept.add(l.habit_id);
+        } else if (posHabitIds.has(l.habit_id)) {
+          failed.add(l.habit_id);
         }
       }
       setDoneIds(done);
+      setFailedIds(failed);
       setNegLoggedIds(logged);
       setNegKeptIds(negKept);
 
@@ -135,23 +143,37 @@ export function Dashboard({ isDark, profile, completedToday, totalHabits, onNavi
     onCompletedChange?.(completed, total);
   }
 
-  async function handleQuickToggle(habit: Habit) {
-    const wasDone = doneIds.has(habit.id);
-    const nowDone = !wasDone;
-    // For numeric habits: mark as fully completed (target_value) or 0
-    const value = nowDone ? (habit.target_value || 1) : 0;
+  // Musbat odat uchun uch-holatli belgi — salbiy odatlardagi
+  // handleQuickToggleNegative bilan bir xil naqsh: Kutilmoqda (log yo'q) →
+  // Bajarildi (yashil ✔) yoki Bajarilmadi (qizil ✘); qayta bossa neytralga qaytaradi.
+  async function handleQuickTogglePositive(habit: Habit, markFailed: boolean) {
+    const alreadyDone = doneIds.has(habit.id);
+    const alreadyFailed = failedIds.has(habit.id);
+    const sameState = (markFailed && alreadyFailed) || (!markFailed && alreadyDone);
+    const value = markFailed ? 0 : (habit.target_value || 1);
 
-    const nextDone = new Set(doneIds);
-    if (nowDone) nextDone.add(habit.id); else nextDone.delete(habit.id);
-    setDoneIds(nextDone);
-    reportProgress(nextDone, negLoggedIds, negKeptIds);
     setSavingIds((prev) => new Set(prev).add(habit.id));
-
     try {
-      await toggleHabitLog(habit.id, profile.id, nowDone, value, wasDone);
-    } catch {
-      setDoneIds(doneIds);
-      reportProgress(doneIds, negLoggedIds, negKeptIds);
+      if (sameState) {
+        await deleteHabitLog(habit.id, profile.id, today);
+        const nextDone = new Set(doneIds); nextDone.delete(habit.id);
+        const nextFailed = new Set(failedIds); nextFailed.delete(habit.id);
+        setDoneIds(nextDone);
+        setFailedIds(nextFailed);
+        reportProgress(nextDone, negLoggedIds, negKeptIds);
+      } else {
+        const completed = !markFailed;
+        await toggleHabitLog(habit.id, profile.id, completed, value, alreadyDone);
+        const nextDone = new Set(doneIds);
+        const nextFailed = new Set(failedIds);
+        if (completed) { nextDone.add(habit.id); nextFailed.delete(habit.id); }
+        else { nextFailed.add(habit.id); nextDone.delete(habit.id); }
+        setDoneIds(nextDone);
+        setFailedIds(nextFailed);
+        reportProgress(nextDone, negLoggedIds, negKeptIds);
+      }
+    } catch (e) {
+      console.error(e);
     } finally {
       setSavingIds((prev) => { const n = new Set(prev); n.delete(habit.id); return n; });
     }
@@ -583,21 +605,28 @@ export function Dashboard({ isDark, profile, completedToday, totalHabits, onNavi
           <div className="grid grid-cols-2 gap-2">
             {todayHabits.map((habit) => {
               const done = doneIds.has(habit.id);
+              const failed = failedIds.has(habit.id);
               const saving = savingIds.has(habit.id);
               const isNumeric = (habit.target_value || 1) > 1 || !!habit.unit;
               return (
-                <button
+                <div
                   key={habit.id}
-                  onClick={() => !saving && handleQuickToggle(habit)}
-                  disabled={saving}
+                  role="button"
+                  tabIndex={0}
+                  onClick={() => !saving && handleQuickTogglePositive(habit, false)}
+                  onKeyDown={(e) => { if (!saving && (e.key === "Enter" || e.key === " ")) { e.preventDefault(); handleQuickTogglePositive(habit, false); } }}
                   className="flex items-center gap-2 px-3 py-2.5 rounded-xl text-left transition-all"
                   style={{
                     background: done
                       ? isDark ? "rgba(74,222,128,0.1)" : "#F0FDF4"
-                      : isDark ? "rgba(255,255,255,0.03)" : "#F9FAFB",
+                      : failed
+                        ? isDark ? "rgba(248,113,113,0.1)" : "#FFF5F5"
+                        : isDark ? "rgba(255,255,255,0.03)" : "#F9FAFB",
                     border: `1px solid ${done
                       ? "rgba(74,222,128,0.25)"
-                      : isDark ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.06)"}`,
+                      : failed
+                        ? "rgba(248,113,113,0.25)"
+                        : isDark ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.06)"}`,
                     cursor: saving ? "default" : "pointer",
                     opacity: saving ? 0.6 : 1,
                   }}
@@ -605,18 +634,23 @@ export function Dashboard({ isDark, profile, completedToday, totalHabits, onNavi
                   <div
                     className="w-5 h-5 rounded-md flex items-center justify-center shrink-0"
                     style={{
-                      background: done ? "var(--neon-green)" : "transparent",
-                      border: `2px solid ${done ? "var(--neon-green)" : isDark ? "rgba(255,255,255,0.2)" : "rgba(0,0,0,0.2)"}`,
+                      background: done ? "var(--neon-green)" : failed ? HABIT_FAILURE_COLOR : "transparent",
+                      border: `2px solid ${done ? "var(--neon-green)" : failed ? HABIT_FAILURE_COLOR : isDark ? "rgba(255,255,255,0.2)" : "rgba(0,0,0,0.2)"}`,
                     }}
                   >
                     {saving
                       ? <Loader2 size={10} className="animate-spin" style={{ color: done ? "#000" : "var(--muted-foreground)" }} />
-                      : done ? <Check size={11} className="text-black" strokeWidth={3} /> : null}
+                      : done ? <Check size={11} className="text-black" strokeWidth={3} />
+                      : failed ? <X size={11} className="text-black" strokeWidth={3} /> : null}
                   </div>
                   <span className="text-base shrink-0">{habit.emoji}</span>
                   <div className="flex-1 min-w-0">
                     <span className="text-xs font-medium truncate block"
-                      style={{ color: done ? "var(--neon-green)" : "var(--foreground)", textDecoration: done ? "line-through" : "none", opacity: done ? 0.8 : 1 }}>
+                      style={{
+                        color: done ? "var(--neon-green)" : failed ? HABIT_FAILURE_COLOR : "var(--foreground)",
+                        textDecoration: done || failed ? "line-through" : "none",
+                        opacity: done || failed ? 0.8 : 1,
+                      }}>
                       {habit.name}
                     </span>
                     {isNumeric && (
@@ -625,7 +659,20 @@ export function Dashboard({ isDark, profile, completedToday, totalHabits, onNavi
                       </span>
                     )}
                   </div>
-                </button>
+                  <button
+                    type="button"
+                    aria-label={t('dash_mark_not_done')}
+                    onClick={(e) => { e.stopPropagation(); if (!saving) handleQuickTogglePositive(habit, true); }}
+                    className="w-6 h-6 rounded-lg flex items-center justify-center shrink-0"
+                    style={{
+                      background: failed ? "rgba(248,113,113,0.2)" : isDark ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.05)",
+                      color: failed ? HABIT_FAILURE_COLOR : "var(--muted-foreground)",
+                      border: `1px solid ${failed ? "rgba(248,113,113,0.35)" : "transparent"}`,
+                    }}
+                  >
+                    <X size={11} strokeWidth={2.5} />
+                  </button>
+                </div>
               );
             })}
           </div>
