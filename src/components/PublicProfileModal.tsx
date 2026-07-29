@@ -243,7 +243,7 @@ export function PublicProfileModal({ isDark, viewingId, myProfile, onClose }: Pu
           )}
 
           {/* Follow counts + social links in one row */}
-          <div className="flex items-center gap-4 mt-3">
+          <div className="flex items-center gap-3 mt-3 flex-wrap">
             <div className="text-center">
               <p className="text-sm font-bold" style={{ color: "var(--foreground)", fontFamily: "'Geist Mono', monospace" }}>
                 {followCounts.followers}
@@ -256,7 +256,7 @@ export function PublicProfileModal({ isDark, viewingId, myProfile, onClose }: Pu
               </p>
               <p className="text-[11px]" style={{ color: "var(--muted-foreground)" }}>{t('profile_following')}</p>
             </div>
-            <div className="ml-auto flex items-center gap-2">
+            <div className="ml-auto flex items-center gap-2 flex-wrap justify-end">
               {profile.telegram_username && canSeeTelegram && (
                 <a
                   href={`https://t.me/${profile.telegram_username}`}

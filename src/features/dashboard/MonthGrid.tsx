@@ -304,7 +304,7 @@ export function MonthGrid({ isDark, profile }: MonthGridProps) {
           </table>
 
           {/* Legend */}
-          <div className="flex items-center gap-4 mt-4 pt-3" style={{ borderTop: `1px solid ${isDark ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.06)"}` }}>
+          <div className="flex items-center gap-x-4 gap-y-2 mt-4 pt-3 flex-wrap" style={{ borderTop: `1px solid ${isDark ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.06)"}` }}>
             <div className="flex items-center gap-1.5">
               <div className="w-4 h-4 rounded" style={{ background: "#4ADE80" }} />
               <span className="text-[10px]" style={{ color: "var(--muted-foreground)" }}>{t('done')}</span>

@@ -1032,7 +1032,7 @@ export function Analytics({ isDark, completedToday, totalHabits, profile }: Anal
           </div>
 
           {/* Legend */}
-          <div className="flex items-center gap-4 mt-4 pt-3 border-t" style={{ borderColor: isDark ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.06)" }}>
+          <div className="flex items-center gap-x-4 gap-y-2 mt-4 pt-3 border-t flex-wrap" style={{ borderColor: isDark ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.06)" }}>
             {[
               { color: "#4ADE80", label: t('analytics_strong') },
               { color: "#FBBF24", label: t('analytics_mid') },

@@ -362,7 +362,7 @@ export function ProfilePage({ isDark, profile, onNavigate, onUserClick, onLogout
         )}
 
         {/* Follow counts + social links */}
-        <div className="flex items-center gap-4 mt-4 pt-4" style={{ borderTop: `1px solid ${isDark ? "rgba(255,255,255,0.07)" : "rgba(0,0,0,0.07)"}` }}>
+        <div className="flex items-center gap-3 sm:gap-4 mt-4 pt-4 flex-wrap" style={{ borderTop: `1px solid ${isDark ? "rgba(255,255,255,0.07)" : "rgba(0,0,0,0.07)"}` }}>
           <button type="button" onClick={() => openFollowModal("followers")}
             className="flex flex-col items-center gap-0.5 px-3 py-1.5 rounded-xl transition-all"
             style={{ background: "transparent" }}
@@ -380,7 +380,7 @@ export function ProfilePage({ isDark, profile, onNavigate, onUserClick, onLogout
             <span className="text-base font-bold" style={{ color: "var(--foreground)", fontFamily: "'Geist Mono', monospace" }}>{followCounts.following}</span>
             <span className="text-[11px]" style={{ color: "var(--muted-foreground)" }}>{t('profile_following')}</span>
           </button>
-          <div className="ml-auto flex items-center gap-2">
+          <div className="ml-auto flex items-center gap-2 flex-wrap justify-end">
             {profile.telegram_username && (
               <a href={`https://t.me/${profile.telegram_username}`} target="_blank" rel="noreferrer"
                 className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl text-xs font-medium"
