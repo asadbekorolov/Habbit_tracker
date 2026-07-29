@@ -85,6 +85,9 @@ Migratsiya: `039_admin_analytics_dashboard.sql`.
 
 Migratsiya: `040_admin_user_management.sql`.
 
+### 11. Bosiladigan "Jami Foydalanuvchilar" statistika kartasi
+- [x] Admin Panel → Umumiy ko'rinish tabidagi "Jami Foydalanuvchilar" kartasi endi bosilganda to'g'ridan-to'g'ri "Foydalanuvchilar" tabiga o'tkazadi (`setActiveTab("users")`). Sichqoncha ustiga kelganda engil kattalashish + neon-yashil chegara effekti (klaviatura orqali ham — Enter/Space bilan) qo'shildi, "Yaratilgan Odatlar" kartasi esa (tegishli boshqaruv tabi yo'qligi sabab) o'zgarishsiz qoldi. SQL migratsiya kerak emas — sof frontend.
+
 ---
 
 ## 🛠 Admin Monitoring & Health-Check (avvalgi vazifa)

@@ -32,6 +32,7 @@ export function AdminPanel({ isDark, profile }: AdminPanelProps) {
   const [banningId, setBanningId] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [efficiencyMap, setEfficiencyMap] = useState<Record<string, number>>({});
+  const [statHover, setStatHover] = useState<string | null>(null);
 
   // Bonus tanga/ball berish modali
   const [bonusUserId, setBonusUserId] = useState<string | null>(null);
@@ -446,10 +447,29 @@ export function AdminPanel({ isDark, profile }: AdminPanelProps) {
           {/* Global Ko'rsatkichlar */}
           <div className="grid grid-cols-2 gap-2 sm:gap-4">
             {[
-              { label: t('admin_stat_users'), value: stats.users, icon: Users, color: "#3B82F6", bg: "rgba(59,130,246,0.12)" },
+              { label: t('admin_stat_users'), value: stats.users, icon: Users, color: "#3B82F6", bg: "rgba(59,130,246,0.12)", onClick: () => setActiveTab("users") },
               { label: t('admin_stat_habits'), value: stats.habits, icon: ListChecks, color: "#4ADE80", bg: "rgba(74,222,128,0.12)" },
             ].map((stat) => (
-              <div key={stat.label} style={{ ...cardStyle, padding: 14 }} className="flex flex-col">
+              <div
+                key={stat.label}
+                style={{
+                  ...cardStyle,
+                  padding: 14,
+                  cursor: stat.onClick ? "pointer" : "default",
+                  transition: "transform 0.15s, border-color 0.15s",
+                  ...(stat.onClick && statHover === stat.label
+                    ? { transform: "scale(1.02)", borderColor: "var(--neon-green)" }
+                    : {}),
+                }}
+                className="flex flex-col"
+                onClick={stat.onClick}
+                onMouseEnter={stat.onClick ? () => setStatHover(stat.label) : undefined}
+                onMouseLeave={stat.onClick ? () => setStatHover(null) : undefined}
+                role={stat.onClick ? "button" : undefined}
+                tabIndex={stat.onClick ? 0 : undefined}
+                onKeyDown={stat.onClick ? (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); stat.onClick!(); } } : undefined}
+                title={stat.onClick ? t('admin_stat_view_users') : undefined}
+              >
                 <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl flex items-center justify-center mb-2 sm:mb-3" style={{ background: stat.bg }}>
                   <stat.icon size={16} style={{ color: stat.color }} />
                 </div>
