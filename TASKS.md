@@ -97,6 +97,14 @@ Migratsiya: `040_admin_user_management.sql`.
 
 Migratsiya: `041_feedback_admin_reply.sql`.
 
+### 13. Odatlar boshqaruvi tabi + har bir bo'limda CSV eksport
+- **Eslatma:** odatlar sxemasida alohida "category"/"frequency" ustunlari mavjud emas — Toifa ustuni mavjud `type` (`positive`/`negative`) maydonidan, Chastota ustuni esa `target_value`+`unit` maqsad qiymatidan (bo'lmasa "Har kuni" standart qiymati) olinadi. `habits` jadvali RLS'i allaqachon `USING (true)` bilan barcha autentifikatsiyalangan foydalanuvchilarga o'qishga ruxsat beradi, shuning uchun yangi migratsiya kerak bo'lmadi.
+- [x] Admin Panel'ga yangi **Odatlar** tabi qo'shildi: barcha foydalanuvchilarning odatlari jadval ko'rinishida — Odat nomi, Muallif (Ism + username), Toifa, Chastota, Yaratilgan sana; qidiruv maydoni ham bor.
+- [x] CSV eksport tugmalari endi Umumiy ko'rinishdagi yagona kartadan chiqarib, har bir tegishli bo'limning (Foydalanuvchilar, Fikr-mulohazalar, Odatlar) tab sarlavhasi tepasiga ko'chirildi.
+- [x] Odatlar CSV eksporti endi allaqachon yuklangan jadval holatidan (state) foydalanadi — qayta so'rov yubormaydi.
+
+Migratsiya: yo'q (faqat frontend, mavjud RLS yetarli).
+
 ---
 
 ## 🛠 Admin Monitoring & Health-Check (avvalgi vazifa)
