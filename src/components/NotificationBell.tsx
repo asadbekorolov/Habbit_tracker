@@ -28,6 +28,7 @@ const TYPE_CONFIG: Record<string, { icon: string; color: string; bg: string }> =
   telegram_approved:     { icon: '✅', color: '#4ADE80', bg: 'rgba(74,222,128,0.12)' },
   telegram_request_done: { icon: '✓',  color: '#4ADE80', bg: 'rgba(74,222,128,0.12)' },
   telegram_rejected:     { icon: '🔒', color: '#F87171', bg: 'rgba(248,113,113,0.13)' },
+  feedback_reply:        { icon: '💬', color: '#4ADE80', bg: 'rgba(74,222,128,0.12)' },
   contact_request:       { icon: '👋', color: '#60A5FA', bg: 'rgba(96,165,250,0.15)' },
   follow:                { icon: '👥', color: '#A78BFA', bg: 'rgba(167,139,250,0.13)' },
   group_approval:        { icon: '🎯', color: '#34D399', bg: 'rgba(52,211,153,0.12)' },

@@ -4,7 +4,7 @@ import {
   getGlobalStats, getAllProfiles, toggleUserBan, resetAllData, sendGlobalNotification,
   getAllPendingApprovals, approveGroupLog, rejectGroupLog,
   getAdminMonitoringStats, getInactiveGroups, adminDeleteGroup,
-  getAllFeedback, getAllHabitsAdmin, getAnalyticsSummary, getAdminAnalyticsDashboard,
+  getAllFeedback, replyToFeedback, getAllHabitsAdmin, getAnalyticsSummary, getAdminAnalyticsDashboard,
   getAdminUsersEfficiency, adminGrantBalance, getUserHabitsAdmin, getAllTimeLogs,
   type AdminMonitoringStats, type InactiveGroup, type FeedbackEntry, type AnalyticsSummaryRow, type AdminAnalyticsDashboard,
 } from "../../services/db";
@@ -66,6 +66,9 @@ export function AdminPanel({ isDark, profile }: AdminPanelProps) {
   const [feedback, setFeedback] = useState<FeedbackEntry[]>([]);
   const [feedbackLoading, setFeedbackLoading] = useState(true);
   const [feedbackError, setFeedbackError] = useState("");
+  const [replyDrafts, setReplyDrafts] = useState<Record<string, string>>({});
+  const [replyingId, setReplyingId] = useState<string | null>(null);
+  const [replyError, setReplyError] = useState("");
   const [exportingHabits, setExportingHabits] = useState(false);
   const [exportError, setExportError] = useState("");
 
@@ -114,6 +117,23 @@ export function AdminPanel({ isDark, profile }: AdminPanelProps) {
       setFeedbackError(e?.message || t('err_loading'));
     } finally {
       setFeedbackLoading(false);
+    }
+  }
+
+  async function handleSendReply(feedbackId: string) {
+    const reply = (replyDrafts[feedbackId] || "").trim();
+    if (!reply) return;
+    setReplyingId(feedbackId);
+    setReplyError("");
+    try {
+      await replyToFeedback(feedbackId, reply);
+      const now = new Date().toISOString();
+      setFeedback((prev) => prev.map((f) => f.id === feedbackId ? { ...f, admin_reply: reply, admin_replied_at: now } : f));
+      setReplyDrafts((prev) => { const next = { ...prev }; delete next[feedbackId]; return next; });
+    } catch (e: any) {
+      setReplyError(e?.message || t('err_loading'));
+    } finally {
+      setReplyingId(null);
     }
   }
 
@@ -918,8 +938,47 @@ export function AdminPanel({ isDark, profile }: AdminPanelProps) {
                     </span>
                   </div>
                   <p className="text-sm leading-relaxed whitespace-pre-wrap" style={{ color: "var(--muted-foreground)" }}>{f.content}</p>
+
+                  {f.admin_reply ? (
+                    <div className="mt-3 pl-3 flex flex-col gap-1" style={{ borderLeft: `2px solid ${isDark ? "rgba(74,222,128,0.4)" : "rgba(74,222,128,0.5)"}` }}>
+                      <span className="text-[10px] font-semibold" style={{ color: "#4ADE80" }}>
+                        {t('admin_feedback_your_reply')}
+                        {f.admin_replied_at && (
+                          <span className="font-normal" style={{ color: "var(--muted-foreground)" }}>
+                            {" · "}{new Date(f.admin_replied_at).toLocaleDateString(DATE_LOCALE[lang] || "uz-UZ")}
+                          </span>
+                        )}
+                      </span>
+                      <p className="text-sm leading-relaxed whitespace-pre-wrap" style={{ color: "var(--foreground)" }}>{f.admin_reply}</p>
+                    </div>
+                  ) : (
+                    <div className="mt-3 flex flex-col gap-2">
+                      <textarea
+                        value={replyDrafts[f.id] || ""}
+                        onChange={(e) => setReplyDrafts((prev) => ({ ...prev, [f.id]: e.target.value }))}
+                        placeholder={t('admin_feedback_reply_ph')}
+                        rows={2}
+                        className="w-full px-3 py-2 rounded-xl text-sm outline-none resize-none"
+                        style={{ background: isDark ? "rgba(255,255,255,0.05)" : "#fff", border: `1px solid ${isDark ? "rgba(255,255,255,0.1)" : "rgba(0,0,0,0.1)"}`, color: "var(--foreground)" }}
+                      />
+                      <button
+                        type="button"
+                        onClick={() => handleSendReply(f.id)}
+                        disabled={replyingId === f.id || !(replyDrafts[f.id] || "").trim()}
+                        className="self-end flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold"
+                        style={{
+                          background: "var(--neon-green)", color: "#0E1117",
+                          opacity: (replyingId === f.id || !(replyDrafts[f.id] || "").trim()) ? 0.5 : 1,
+                        }}
+                      >
+                        {replyingId === f.id ? <Loader2 size={12} className="animate-spin" /> : <MessageSquare size={12} />}
+                        {t('admin_feedback_reply_btn')}
+                      </button>
+                    </div>
+                  )}
                 </div>
               ))}
+              {replyError && <p className="text-xs text-center" style={{ color: "var(--coral-red)" }}>⚠ {replyError}</p>}
             </div>
           )}
         </div>

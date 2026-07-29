@@ -301,12 +301,19 @@ export type FeedbackEntry = {
   created_at: string
   display_name: string
   username: string
+  admin_reply: string | null
+  admin_replied_at: string | null
 }
 
 export async function getAllFeedback(): Promise<FeedbackEntry[]> {
   const { data, error } = await supabase.rpc('get_all_feedback');
   if (error) throw error;
   return data || [];
+}
+
+export async function replyToFeedback(feedbackId: string, reply: string) {
+  const { error } = await supabase.rpc('reply_to_feedback', { p_feedback_id: feedbackId, p_reply: reply });
+  if (error) throw error;
 }
 
 // ─── ADMIN — ALL HABITS (CSV export analysis) ───────────────

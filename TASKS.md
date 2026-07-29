@@ -88,6 +88,15 @@ Migratsiya: `040_admin_user_management.sql`.
 ### 11. Bosiladigan "Jami Foydalanuvchilar" statistika kartasi
 - [x] Admin Panel → Umumiy ko'rinish tabidagi "Jami Foydalanuvchilar" kartasi endi bosilganda to'g'ridan-to'g'ri "Foydalanuvchilar" tabiga o'tkazadi (`setActiveTab("users")`). Sichqoncha ustiga kelganda engil kattalashish + neon-yashil chegara effekti (klaviatura orqali ham — Enter/Space bilan) qo'shildi, "Yaratilgan Odatlar" kartasi esa (tegishli boshqaruv tabi yo'qligi sabab) o'zgarishsiz qoldi. SQL migratsiya kerak emas — sof frontend.
 
+### 12. Fikr-mulohazaga admin javob berishi
+- **Eslatma:** jadval nomi haqiqatda `user_feedback` (vazifada "feedbacks" deb ko'rsatilgan edi). O'qish avvaldan RLS SELECT policy emas, `get_all_feedback()` SECURITY DEFINER RPC orqali (faqat admin) amalga oshadi — javob yozish ham xuddi shu naqshda (RLS UPDATE policy emas) `reply_to_feedback()` RPC orqali qilindi, chunki bu loyihaning o'rnatilgan konvensiyasi.
+- [x] `user_feedback` jadvaliga `admin_reply`/`admin_replied_at` ustunlari qo'shildi; `get_all_feedback()` ularni ham qaytaradi.
+- [x] Yangi `reply_to_feedback(feedback_id, reply)` RPC — faqat sayt admini chaqira oladi, javobni saqlaydi va fikr-mulohaza egasiga darhol bildirishnoma yuboradi (javob matni bilan birga).
+- [x] Admin Panel → Fikr-mulohazalar tabida har bir karta ostida javob yozish maydoni + "Javob yozish" tugmasi; javob berilgan bo'lsa, o'sha javob (va sanasi) doimiy ko'rinadi (qayta yozish maydoni endi chiqmaydi).
+- [x] `NotificationBell`ga yangi `feedback_reply` turi uchun 💬 ikonka qo'shildi.
+
+Migratsiya: `041_feedback_admin_reply.sql`.
+
 ---
 
 ## 🛠 Admin Monitoring & Health-Check (avvalgi vazifa)
