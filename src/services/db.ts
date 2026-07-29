@@ -1261,11 +1261,7 @@ export async function searchUsers(query: string, excludeId?: string) {
   const q = query.trim();
   if (!q) return []
   const { data, error } = await supabase
-    .from('profiles')
-    .select('id, display_name, username, avatar_url, avatar_color, score')
-    .or(`username.ilike.%${q}%,display_name.ilike.%${q}%`)
-    .neq('id', excludeId || '00000000-0000-0000-0000-000000000000')
-    .limit(8)
+    .rpc('search_users', { p_query: q, p_exclude_id: excludeId || null })
   if (error) throw error
   return data || []
 }

@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Loader2, Rss, UserPlus, Flame } from "lucide-react";
+import { Loader2, Rss, UserPlus, Flame, Lock } from "lucide-react";
 import { getFollowingFeed, getFollowingStreaks, getFollowingNewHabits, searchUsers, followUser, checkFollowing, getFeedReactions, toggleFeedReaction } from "../../services/db";
 import type { Profile } from "../../services/supabase";
 import { useLang } from "../../store/LangContext";
@@ -253,21 +253,27 @@ export function FeedPage({ isDark, profile, onUserClick }: FeedPageProps) {
         {searchResults.length > 0 && (
           <div className="flex flex-col gap-2 mt-3">
             {searchResults.map((u) => {
-              const initials = (u.display_name || "?").split(" ").map((n: string) => n[0]).join("").toUpperCase().slice(0, 2);
+              const label = u.display_name || u.username || "?";
+              const initials = label.split(" ").map((n: string) => n[0]).join("").toUpperCase().slice(0, 2);
               const isFollowing = u.isFollowing || followingStates[u.id];
+              const canView = !u.is_private;
               return (
                 <div key={u.id} className="flex items-center gap-2.5">
                   <button
                     type="button"
-                    onClick={() => onUserClick?.(u.id)}
+                    onClick={canView ? () => onUserClick?.(u.id) : undefined}
                     className="flex items-center gap-2.5 flex-1 min-w-0"
+                    style={{ cursor: canView ? "pointer" : "default" }}
                   >
                     <div className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold shrink-0 overflow-hidden"
                       style={{ background: u.avatar_color || "#4ADE80", color: "#0E1117" }}>
                       {u.avatar_url ? <img src={u.avatar_url} alt="" className="w-8 h-8 object-cover" /> : initials}
                     </div>
                     <div className="min-w-0 text-left">
-                      <p className="text-xs font-semibold truncate" style={{ color: "var(--foreground)" }}>{u.display_name}</p>
+                      <p className="text-xs font-semibold truncate flex items-center gap-1" style={{ color: "var(--foreground)" }}>
+                        {label}
+                        {!canView && <Lock size={10} style={{ color: "var(--muted-foreground)" }} />}
+                      </p>
                       <p className="text-[11px] truncate" style={{ color: "var(--muted-foreground)" }}>@{u.username}</p>
                     </div>
                   </button>

@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo, useRef } from "react";
-import { Flame, Trophy, ArrowRight, Loader2, CalendarDays, CheckCircle2, Check, Lightbulb, TrendingUp, AlertTriangle, Search, X, Shield } from "lucide-react";
+import { Flame, Trophy, ArrowRight, Loader2, CalendarDays, CheckCircle2, Check, Lightbulb, TrendingUp, AlertTriangle, Search, X, Shield, Lock } from "lucide-react";
 import { HABIT_FAILURE_COLOR, HABIT_SUCCESS_COLOR, deleteHabitLog, getLast30DaysLogs, getHabits, getTodayLogs, toggleHabitLog, searchUsers, getStreakFreezes, computeHabitProgress } from "../../services/db";
 import { sortByOrder } from "../../utils/habitOrder";
 import { getLevel } from "../../utils/levels";
@@ -405,12 +405,14 @@ export function Dashboard({ isDark, profile, completedToday, totalHabits, onNavi
             ) : (
               searchResults.map((user) => {
                 const lv = getLevel(user.score || 0);
-                const initials = user.display_name.split(" ").map((n: string) => n[0]).join("").toUpperCase().slice(0, 2);
+                const label = user.display_name || user.username;
+                const initials = label.split(" ").map((n: string) => n[0]).join("").toUpperCase().slice(0, 2);
+                const canView = !user.is_private;
                 return (
                   <button key={user.id} type="button"
-                    onClick={() => { onUserClick?.(user.id); setSearchFocused(false); setSearchQuery(""); setSearchResults([]); }}
+                    onClick={canView ? () => { onUserClick?.(user.id); setSearchFocused(false); setSearchQuery(""); setSearchResults([]); } : undefined}
                     className="w-full flex items-center gap-3 px-4 py-3 text-left transition-colors"
-                    style={{ borderBottom: `1px solid ${isDark ? "rgba(255,255,255,0.05)" : "rgba(0,0,0,0.05)"}` }}
+                    style={{ borderBottom: `1px solid ${isDark ? "rgba(255,255,255,0.05)" : "rgba(0,0,0,0.05)"}`, cursor: canView ? "pointer" : "default" }}
                     onMouseEnter={(e) => (e.currentTarget.style.background = isDark ? "rgba(255,255,255,0.04)" : "#F9FAFB")}
                     onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}>
                     {user.avatar_url ? (
@@ -422,7 +424,10 @@ export function Dashboard({ isDark, profile, completedToday, totalHabits, onNavi
                       </div>
                     )}
                     <div className="flex-1 min-w-0">
-                      <p className="text-sm font-semibold truncate" style={{ color: "var(--foreground)" }}>{user.display_name}</p>
+                      <p className="text-sm font-semibold truncate flex items-center gap-1.5" style={{ color: "var(--foreground)" }}>
+                        {label}
+                        {!canView && <Lock size={11} style={{ color: "var(--muted-foreground)" }} />}
+                      </p>
                       <p className="text-xs" style={{ color: "var(--muted-foreground)" }}>@{user.username}</p>
                     </div>
                     <span className="text-xs font-bold px-2 py-0.5 rounded-full shrink-0"
