@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from "react";
 import { useLang } from "../../store/LangContext";
-import { Save, Loader2, Camera, ArrowLeft, User, Send, Instagram, Lock, Unlock, Check } from "lucide-react";
+import { Save, Loader2, Camera, ArrowLeft, User, Send, Instagram, Lock, Unlock, Check, X } from "lucide-react";
 import { updateUserProfile, uploadAvatar, getOwnedItemIds } from "../../services/db";
 import { FREE_AVATAR_COLORS, PREMIUM_AVATAR_COLORS } from "../../utils/cosmetics";
 import type { Profile } from "../../services/supabase";
@@ -31,6 +31,7 @@ export function EditProfilePage({ isDark, profile, onProfileUpdate, onBack }: Ed
   const [profilePrivate, setProfilePrivate] = useState(profile.profile_private ?? false);
   const [avatarFile, setAvatarFile] = useState<File | null>(null);
   const [avatarPreview, setAvatarPreview] = useState<string | null>(profile.avatar_url || null);
+  const [avatarRemoved, setAvatarRemoved] = useState(false);
   const [avatarColor, setAvatarColor] = useState(profile.avatar_color || FREE_AVATAR_COLORS[0]);
   const [ownedColorIds, setOwnedColorIds] = useState<Set<string>>(new Set());
 
@@ -71,7 +72,16 @@ export function EditProfilePage({ isDark, profile, onProfileUpdate, onBack }: Ed
       const file = e.target.files[0];
       setAvatarFile(file);
       setAvatarPreview(URL.createObjectURL(file));
+      setAvatarRemoved(false);
     }
+  };
+
+  const handleRemoveAvatar = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setAvatarFile(null);
+    setAvatarPreview(null);
+    setAvatarRemoved(true);
+    if (fileInputRef.current) fileInputRef.current.value = "";
   };
 
   function cleanHandle(val: string) {
@@ -84,6 +94,7 @@ export function EditProfilePage({ isDark, profile, onProfileUpdate, onBack }: Ed
     try {
       let avatar_url = profile.avatar_url;
       if (avatarFile) avatar_url = await uploadAvatar(profile.id, avatarFile);
+      else if (avatarRemoved) avatar_url = null;
 
       const updatedProfile = await updateUserProfile(profile.id, {
         display_name: displayName.trim(),
@@ -99,6 +110,7 @@ export function EditProfilePage({ isDark, profile, onProfileUpdate, onBack }: Ed
       onProfileUpdate(updatedProfile);
       setSuccess(t('ep_success'));
       setAvatarFile(null);
+      setAvatarRemoved(false);
     } catch (e: any) {
       setError(e.message || t('ep_error'));
     } finally {
@@ -140,6 +152,13 @@ export function EditProfilePage({ isDark, profile, onProfileUpdate, onBack }: Ed
               style={{ background: "rgba(0,0,0,0.45)" }}>
               <Camera size={22} color="#fff" />
             </div>
+            {avatarPreview && (
+              <button type="button" onClick={handleRemoveAvatar} title={t('ep_avatar_remove')}
+                className="absolute -top-1.5 -right-1.5 w-6 h-6 rounded-full flex items-center justify-center"
+                style={{ background: "var(--coral-red)", color: "#fff", border: "2px solid var(--card)" }}>
+                <X size={13} />
+              </button>
+            )}
           </div>
           <p className="text-xs" style={{ color: "var(--muted-foreground)" }}>
             {t('ep_avatar_hint')}
