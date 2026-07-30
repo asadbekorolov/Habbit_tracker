@@ -122,6 +122,8 @@ export function LoginPage({ isDark, onLogin }: LoginPageProps) {
       return t('auth_err_otp_expired');
     if (msg.includes("invalid") && msg.toLowerCase().includes("otp"))
       return t('auth_err_otp_invalid');
+    if (msg.toLowerCase().includes("error sending") && msg.toLowerCase().includes("email"))
+      return t('auth_err_email_send_failed');
     if (msg.includes("bloklangan"))
       return msg;
     return msg || t('auth_err_generic');
