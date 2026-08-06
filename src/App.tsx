@@ -31,6 +31,7 @@ import { LangContext, buildLangValue, type Lang } from "./store/LangContext";
 import { MONTHS_FULL, DAYS_FULL } from "./utils/i18n";
 import { trackEvent } from "./utils/analytics";
 import { Toaster } from "sonner";
+import { useMobileLifecycle } from "./hooks/useMobileLifecycle";
 
 const LEVEL_LABELS = ["", "level_1", "level_2", "level_3", "level_4", "level_5", "level_6", "level_7", "level_8", "level_9", "level_10"] as const;
 // Sidebar'da bor, lekin mobil pastki navigatsiyada joy yo'qligi uchun "Ko'proq" varag'iga yashiringan tablar
@@ -99,7 +100,11 @@ export default function App() {
   const location = useLocation();
   const navigate = useNavigate();
 
+  // Mobile lifecycle management (status bar, back button, keyboard)
+  useMobileLifecycle({ isDark });
+
   const currentPath = location.pathname.substring(1);
+
   const activeTab = currentPath || "dashboard";
   const setActiveTab = (tabId: string) => navigate(`/${tabId}`);
 
