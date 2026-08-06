@@ -1,5 +1,11 @@
 # Traccer — Vazifalar ro'yxati
 
+## 🎯 KEYINGI QADAM (NEXT STEP / CURRENT FOCUS)
+> [!IMPORTANT]
+> **Mobil ilovani ishlab chiqish (Mobile App Development):** Loyihani ko'rib chiqishda va keyingi bosqichlarda eng ustuvor vazifa — Capacitor asosida Android va iOS mobil ilovasini to'liq ishlab chiqish, moslashtirish, sinovdan o'tkazish va ishga tushirish.
+
+---
+
 ## 🔴 Roadmap & Backlog (joriy ustuvorlik)
 
 ### 1. Yuqori ustuvorlik va xato tuzatishlar
