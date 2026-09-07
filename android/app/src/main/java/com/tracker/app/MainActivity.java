@@ -1,4 +1,4 @@
-package com.traccer.app;
+package com.tracker.app;
 
 import android.os.Bundle;
 import android.webkit.WebView;

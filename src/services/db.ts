@@ -75,7 +75,7 @@ export async function resetUserPassword(email: string) {
   const isMobile = window.location.protocol !== 'http:' && window.location.protocol !== 'https:';
   // Use custom deep-link scheme for native app or production URL for web
   const redirectToUrl = isMobile
-    ? 'com.traccer.app://reset-password'
+    ? 'com.tracker.app://reset-password'
     : `${window.location.origin}/reset-password`;
 
   const { error } = await supabase.auth.resetPasswordForEmail(email, {

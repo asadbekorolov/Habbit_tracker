@@ -182,7 +182,7 @@ export function AdminPanel({ isDark, profile }: AdminPanelProps) {
 
   function exportUsersCsv() {
     downloadCsv(
-      `traccer_users_${new Date().toISOString().slice(0, 10)}.csv`,
+      `tracker_users_${new Date().toISOString().slice(0, 10)}.csv`,
       [t('admin_col_name'), t('admin_col_username'), t('admin_col_score'), t('admin_col_joined'), t('admin_col_last_seen')],
       users.map((u) => [
         u.display_name,
@@ -196,7 +196,7 @@ export function AdminPanel({ isDark, profile }: AdminPanelProps) {
 
   function exportFeedbackCsv() {
     downloadCsv(
-      `traccer_feedback_${new Date().toISOString().slice(0, 10)}.csv`,
+      `tracker_feedback_${new Date().toISOString().slice(0, 10)}.csv`,
       [t('admin_col_name'), t('admin_col_username'), t('admin_col_content'), t('admin_col_date')],
       feedback.map((f) => [
         f.display_name,
@@ -209,7 +209,7 @@ export function AdminPanel({ isDark, profile }: AdminPanelProps) {
 
   function exportHabitsCsv() {
     downloadCsv(
-      `traccer_habits_${new Date().toISOString().slice(0, 10)}.csv`,
+      `tracker_habits_${new Date().toISOString().slice(0, 10)}.csv`,
       [t('admin_col_name'), t('admin_col_username'), t('admin_col_habit_name'), t('admin_col_type'), t('admin_col_target'), t('admin_col_unit'), t('admin_col_active'), t('admin_col_date')],
       habitsAdmin.map((h) => [
         h.profiles?.display_name ?? "",

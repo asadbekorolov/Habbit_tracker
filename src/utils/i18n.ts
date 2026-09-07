@@ -620,7 +620,7 @@ const uz = {
 
   // ── App Shell ────────────────────────────────────────────────
   app_habits_word: "odat",
-  notif_daily_title: "Traccer — Kunlik Eslatma",
+  notif_daily_title: "Tracker — Kunlik Eslatma",
   notif_daily_no_habits: "Bugun odatlaringizni boshlang!",
   notif_daily_all_done: "Ajoyib! Barcha {n} ta odat bajarildi!",
   notif_daily_none_done: "Bugungi odatlaringizni hali boshlamadingiz!",
@@ -635,7 +635,7 @@ const uz = {
   toast_all_done_sub: "+{n} ochko qo'shildi",
   toast_streak_title: "{n} kunlik streak!",
   toast_streak_sub: "{name} — zo'r davom eting!",
-  pwa_install_title: "Traccer'ni o'rnating",
+  pwa_install_title: "Tracker'ni o'rnating",
   pwa_install_sub: "Telefoningizga qo'shing — tezroq ishlaydi",
   pwa_install_btn: "O'rnatish",
   logs_today_hint: "Bugungi odatlaringizni belgilang",
@@ -1526,7 +1526,7 @@ const ru: typeof uz = {
 
   // ── App Shell ────────────────────────────────────────────────
   app_habits_word: "привычек",
-  notif_daily_title: "Traccer — Ежедневное напоминание",
+  notif_daily_title: "Tracker — Ежедневное напоминание",
   notif_daily_no_habits: "Начните ваши привычки сегодня!",
   notif_daily_all_done: "Отлично! Все {n} привычек выполнены!",
   notif_daily_none_done: "Вы ещё не начали сегодняшние привычки!",
@@ -1541,7 +1541,7 @@ const ru: typeof uz = {
   toast_all_done_sub: "+{n} очков добавлено",
   toast_streak_title: "{n} дней подряд!",
   toast_streak_sub: "{name} — так держать!",
-  pwa_install_title: "Установите Traccer",
+  pwa_install_title: "Установите Tracker",
   pwa_install_sub: "Добавьте на телефон — работает быстрее",
   pwa_install_btn: "Установить",
   logs_today_hint: "Отметьте привычки сегодня",
@@ -2432,7 +2432,7 @@ const en: typeof uz = {
 
   // ── App Shell ────────────────────────────────────────────────
   app_habits_word: "habits",
-  notif_daily_title: "Traccer — Daily Reminder",
+  notif_daily_title: "Tracker — Daily Reminder",
   notif_daily_no_habits: "Start your habits today!",
   notif_daily_all_done: "Amazing! All {n} habits completed!",
   notif_daily_none_done: "You haven't started today's habits yet!",
@@ -2447,7 +2447,7 @@ const en: typeof uz = {
   toast_all_done_sub: "+{n} pts added",
   toast_streak_title: "{n} day streak!",
   toast_streak_sub: "{name} — keep it up!",
-  pwa_install_title: "Install Traccer",
+  pwa_install_title: "Install Tracker",
   pwa_install_sub: "Add to your phone — works faster",
   pwa_install_btn: "Install",
   logs_today_hint: "Mark today's habits",

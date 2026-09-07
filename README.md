@@ -1,6 +1,6 @@
-# Traccer — Odatlar va Salomatlikni Boshqarish Ilovasi
+# Tracker — Odatlar va Salomatlikni Boshqarish Ilovasi
 
-> **Traccer** — zamonaviy, gamifikatsiyalashgan va ma'lumotlarga asoslangan odatlarni kuzatish hamda salomatlik tahlili platformasi (Web va Android Native).
+> **Tracker** — zamonaviy, gamifikatsiyalashgan va ma'lumotlarga asoslangan odatlarni kuzatish hamda salomatlik tahlili platformasi (Web va Android Native).
 
 ## 🚀 Jonli Havola va Platformalar
 - **Web App (Vercel):** [https://habit-tracker-asadbek.vercel.app](https://habit-tracker-asadbek.vercel.app)
@@ -10,7 +10,7 @@
 
 ## 📌 Ilova Haqida Umumiy Ma'lumot
 
-**Traccer** foydalanuvchilarga kunlik ijobiy va salbiy odatlarini shakllantirish, salomatlik ko'rsatkichlarini (qadamlar, suv, uyqu, ekran vaqti, kaloriyalar, yurak urishi) kuzatib borish va guruhlarda birgalikda rivojlanish imkoniyatini beradi.
+**Tracker** foydalanuvchilarga kunlik ijobiy va salbiy odatlarini shakllantirish, salomatlik ko'rsatkichlarini (qadamlar, suv, uyqu, ekran vaqti, kaloriyalar, yurak urishi) kuzatib borish va guruhlarda birgalikda rivojlanish imkoniyatini beradi.
 
 Ilova quyidagi asosiy tamoyillarga asoslangan:
 1. **Gamifikatsiya (O'yinlashtirish):** Har bir bajarilgan odat va salomatlik maqsadi uchun XP (tajriba) hamda Tanga (Coins) beriladi.

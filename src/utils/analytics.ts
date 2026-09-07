@@ -1,6 +1,6 @@
 import { supabase } from "../services/supabase";
 
-const SESSION_KEY = "traccer_analytics_session";
+const SESSION_KEY = "tracker_analytics_session";
 
 function getSessionId(): string {
   let id = sessionStorage.getItem(SESSION_KEY);
