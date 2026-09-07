@@ -1,0 +1,197 @@
+<!doctype html>
+<html lang="uz">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Tracker — Taqdimot</title>
+<style>
+  :root { --bg: #05060a; --accent: #22C55E; }
+  * { box-sizing: border-box; }
+  html, body {
+    margin: 0; padding: 0; width: 100%; height: 100%;
+    background: var(--bg); overflow: hidden;
+    font-family: 'Inter', system-ui, sans-serif;
+  }
+  .viewport {
+    position: fixed; inset: 0;
+    display: flex; align-items: center; justify-content: center;
+    background: var(--bg);
+  }
+  .stage {
+    position: relative;
+    width: 1920px; height: 1080px;
+    transform-origin: center center;
+    box-shadow: 0 40px 120px rgba(0,0,0,0.6);
+    background: #0B0F1A;
+  }
+  .stage iframe {
+    position: absolute; inset: 0;
+    width: 1920px; height: 1080px;
+    border: 0; display: none;
+    background: #0B0F1A;
+  }
+  .stage iframe.active { display: block; }
+
+  .bar {
+    position: fixed; left: 50%; bottom: 22px; transform: translateX(-50%);
+    display: flex; align-items: center; gap: 14px;
+    padding: 10px 16px; border-radius: 999px;
+    background: rgba(11,15,26,0.85); border: 1px solid rgba(148,163,184,0.18);
+    backdrop-filter: blur(10px);
+    z-index: 50;
+    opacity: 0; transition: opacity 0.25s ease;
+    pointer-events: none;
+  }
+  .viewport:hover .bar, .bar.force-visible { opacity: 1; pointer-events: auto; }
+
+  .bar button {
+    all: unset; cursor: pointer;
+    width: 34px; height: 34px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    color: #F8FAFC; background: rgba(255,255,255,0.06);
+    transition: background 0.15s;
+  }
+  .bar button:hover { background: rgba(34,197,94,0.25); color: #22C55E; }
+  .bar button:disabled { opacity: 0.3; cursor: default; }
+  .bar button:disabled:hover { background: rgba(255,255,255,0.06); color: #F8FAFC; }
+
+  .dots { display: flex; gap: 7px; padding: 0 6px; }
+  .dot {
+    width: 7px; height: 7px; border-radius: 50%;
+    background: rgba(148,163,184,0.35); cursor: pointer;
+    transition: background 0.15s, transform 0.15s;
+  }
+  .dot:hover { transform: scale(1.3); }
+  .dot.active { background: #22C55E; }
+
+  .counter {
+    font-family: 'JetBrains Mono', monospace; font-size: 12px;
+    color: #94A3B8; letter-spacing: 0.05em; min-width: 44px; text-align: center;
+  }
+  .counter b { color: #F8FAFC; }
+
+  .hint {
+    position: fixed; top: 18px; right: 22px; z-index: 50;
+    font-family: 'JetBrains Mono', monospace; font-size: 11px;
+    color: #64748B; letter-spacing: 0.05em;
+    opacity: 0; transition: opacity 0.25s ease;
+  }
+  .viewport:hover .hint { opacity: 1; }
+
+  .loading {
+    position: fixed; inset: 0; display: flex; align-items: center; justify-content: center;
+    color: #22C55E; font-family: 'JetBrains Mono', monospace; font-size: 13px;
+    letter-spacing: 0.15em; text-transform: uppercase; z-index: 40;
+  }
+</style>
+</head>
+<body>
+
+<div class="viewport" id="viewport">
+  <div class="loading" id="loading">Yuklanmoqda…</div>
+  <div class="stage" id="stage">
+    <iframe src="01-cover.html" data-idx="0"></iframe>
+    <iframe src="02-problem.html" data-idx="1"></iframe>
+    <iframe src="03-solution.html" data-idx="2"></iframe>
+    <iframe src="04-gamification.html" data-idx="3"></iframe>
+    <iframe src="05-admin.html" data-idx="4"></iframe>
+    <iframe src="06-tech-stack.html" data-idx="5"></iframe>
+  </div>
+</div>
+
+<div class="hint">← → naviga·tsiya &nbsp;·&nbsp; F to'liq ekran &nbsp;·&nbsp; 1–6 sakrash</div>
+
+<div class="bar" id="bar">
+  <button id="prevBtn" title="Oldingi (←)">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+  </button>
+  <span class="counter" id="counter"><b>1</b> / 6</span>
+  <div class="dots" id="dots"></div>
+  <button id="nextBtn" title="Keyingi (→)">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+  </button>
+  <button id="fsBtn" title="To'liq ekran (F)">
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"/></svg>
+  </button>
+</div>
+
+<script>
+  const TOTAL = 6;
+  let current = 0;
+  const stage = document.getElementById('stage');
+  const viewport = document.getElementById('viewport');
+  const iframes = Array.from(stage.querySelectorAll('iframe'));
+  const counter = document.getElementById('counter');
+  const dotsWrap = document.getElementById('dots');
+  const loading = document.getElementById('loading');
+  const bar = document.getElementById('bar');
+
+  let loaded = 0;
+  iframes.forEach((f) => f.addEventListener('load', () => {
+    loaded++;
+    if (loaded >= TOTAL) loading.style.display = 'none';
+  }));
+
+  for (let i = 0; i < TOTAL; i++) {
+    const d = document.createElement('div');
+    d.className = 'dot' + (i === 0 ? ' active' : '');
+    d.addEventListener('click', () => goTo(i));
+    dotsWrap.appendChild(d);
+  }
+  const dots = Array.from(dotsWrap.children);
+
+  function scaleStage() {
+    const scale = Math.min(window.innerWidth / 1920, window.innerHeight / 1080) * 0.94;
+    stage.style.transform = `scale(${scale})`;
+  }
+  window.addEventListener('resize', scaleStage);
+  scaleStage();
+
+  function render() {
+    iframes.forEach((f) => f.classList.toggle('active', Number(f.dataset.idx) === current));
+    dots.forEach((d, i) => d.classList.toggle('active', i === current));
+    counter.innerHTML = `<b>${current + 1}</b> / ${TOTAL}`;
+    document.getElementById('prevBtn').disabled = current === 0;
+    document.getElementById('nextBtn').disabled = current === TOTAL - 1;
+  }
+
+  function goTo(i) {
+    current = Math.max(0, Math.min(TOTAL - 1, i));
+    render();
+  }
+  function next() { goTo(current + 1); }
+  function prev() { goTo(current - 1); }
+
+  document.getElementById('nextBtn').addEventListener('click', next);
+  document.getElementById('prevBtn').addEventListener('click', prev);
+  document.getElementById('fsBtn').addEventListener('click', toggleFullscreen);
+
+  function toggleFullscreen() {
+    if (!document.fullscreenElement) viewport.requestFullscreen?.();
+    else document.exitFullscreen?.();
+  }
+
+  window.addEventListener('keydown', (e) => {
+    if (['ArrowRight', 'PageDown', ' '].includes(e.key)) { e.preventDefault(); next(); }
+    else if (['ArrowLeft', 'PageUp'].includes(e.key)) { e.preventDefault(); prev(); }
+    else if (e.key.toLowerCase() === 'f') { e.preventDefault(); toggleFullscreen(); }
+    else if (e.key >= '1' && e.key <= '6') { goTo(Number(e.key) - 1); }
+    else if (e.key === 'Home') { goTo(0); }
+    else if (e.key === 'End') { goTo(TOTAL - 1); }
+  });
+
+  // Swipe support (touch devices)
+  let touchStartX = null;
+  viewport.addEventListener('touchstart', (e) => { touchStartX = e.touches[0].clientX; }, { passive: true });
+  viewport.addEventListener('touchend', (e) => {
+    if (touchStartX === null) return;
+    const dx = e.changedTouches[0].clientX - touchStartX;
+    if (Math.abs(dx) > 60) { dx < 0 ? next() : prev(); }
+    touchStartX = null;
+  }, { passive: true });
+
+  render();
+</script>
+
+</body>
+</html>

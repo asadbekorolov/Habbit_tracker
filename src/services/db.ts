@@ -1,0 +1,1941 @@
+import { supabase } from './supabase'
+import type { Profile } from './supabase'
+import { toDateStr } from '../utils/date'
+import { FREE_AVATAR_COLORS } from '../utils/cosmetics'
+
+export const HABIT_SUCCESS_COLOR = "#4ADE80"
+export const HABIT_FAILURE_COLOR = "#F87171"
+
+export function isHabitLogSuccess(log: { completed: boolean }): boolean {
+  return log.completed === true
+}
+
+export function getHabitStatusColor(completed: boolean): string {
+  return completed ? HABIT_SUCCESS_COLOR : HABIT_FAILURE_COLOR
+}
+
+const AVATAR_COLORS = FREE_AVATAR_COLORS
+
+// ─── IN-MEMORY & LOCALSTORAGE CACHE ────────────────────────
+const memoryCache: Record<string, any> = {};
+
+export function getCached<T>(key: string): T | null {
+  if (memoryCache[key] !== undefined) {
+    return memoryCache[key] as T;
+  }
+  try {
+    const raw = localStorage.getItem(`db_cache_${key}`);
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      memoryCache[key] = parsed;
+      return parsed as T;
+    }
+  } catch {}
+  return null;
+}
+
+export function setCached(key: string, data: any) {
+  memoryCache[key] = data;
+  try {
+    localStorage.setItem(`db_cache_${key}`, JSON.stringify(data));
+  } catch {}
+}
+
+export function invalidateCache(keyPrefix?: string) {
+  if (!keyPrefix) {
+    Object.keys(memoryCache).forEach((k) => delete memoryCache[k]);
+  } else {
+    Object.keys(memoryCache)
+      .filter((k) => k.startsWith(keyPrefix))
+      .forEach((k) => delete memoryCache[k]);
+  }
+}
+
+// ─── AUTH ──────────────────────────────────────────────────
+export async function signInUser(email: string, password: string): Promise<Profile> {
+  const { data: authData, error: authError } = await supabase.auth.signInWithPassword({ email, password })
+  if (authError) throw authError
+
+  const { data, error } = await supabase
+    .from('profiles')
+    .select('*')
+    .eq('id', authData.user.id)
+    .single()
+  if (error) throw error
+
+  if (data.is_banned) {
+    await supabase.auth.signOut();
+    throw new Error("Sizning akkauntingiz ma'muriyat tomonidan bloklangan.");
+  }
+
+  return data
+}
+
+export async function resetUserPassword(email: string) {
+  const isMobile = window.location.protocol !== 'http:' && window.location.protocol !== 'https:';
+  // Use custom deep-link scheme for native app or production URL for web
+  const redirectToUrl = isMobile
+    ? 'com.traccer.app://reset-password'
+    : `${window.location.origin}/reset-password`;
+
+  const { error } = await supabase.auth.resetPasswordForEmail(email, {
+    redirectTo: redirectToUrl,
+  });
+  if (error) throw error;
+}
+
+export async function resendConfirmationEmail(email: string) {
+  const { error } = await supabase.auth.resend({ type: 'signup', email });
+  if (error) throw error;
+}
+
+// Ro'yxatdan o'tish endi to'g'ridan-to'g'ri emailga 6 xonali kod
+// yuborishdan boshlanadi (avvalgi telefon-SMS OTP oqimi bilan bir xil
+// shakl) — parol faqat kod tasdiqlangandan keyin o'rnatiladi, shuning
+// uchun tasdiqlanmagan email bilan hech qachon ishlaydigan akkaunt
+// yaratilmaydi.
+export async function sendEmailOtp(email: string) {
+  const { error } = await supabase.auth.signInWithOtp({ email });
+  if (error) throw error;
+}
+
+export async function verifyEmailOtpAndCreateAccount(
+  email: string,
+  token: string,
+  password: string,
+  displayName: string,
+  username: string
+): Promise<Profile> {
+  const { data: existingUsername } = await supabase
+    .from('profiles')
+    .select('username')
+    .eq('username', username)
+    .maybeSingle();
+  if (existingUsername) throw new Error("Bu username allaqachon band. Iltimos, boshqasini tanlang");
+
+  const { error: otpError } = await supabase.auth.verifyOtp({ email, token, type: 'email' });
+  if (otpError) throw otpError;
+
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) throw new Error("Foydalanuvchi topilmadi");
+
+  // Agar bu email allaqachon ro'yxatdan o'tgan bo'lsa, signInWithOtp uni
+  // shunchaki tizimga kiritadi (login sifatida) — profil borligini
+  // tekshirmasak, "ro'yxatdan o'tish" oqimi uning mavjud parolini
+  // qayta yozib yuborishi mumkin edi.
+  const { data: existingProfile } = await supabase
+    .from('profiles')
+    .select('id')
+    .eq('id', user.id)
+    .maybeSingle();
+  if (existingProfile) {
+    await supabase.auth.signOut();
+    throw new Error("Bu email allaqachon ro'yxatdan o'tgan — Kirish tabiga o'ting");
+  }
+
+  const { error: updateError } = await supabase.auth.updateUser({ password });
+  if (updateError) throw updateError;
+
+  const color = AVATAR_COLORS[Math.floor(Math.random() * AVATAR_COLORS.length)];
+  const { data, error } = await supabase
+    .from('profiles')
+    .upsert({ id: user.id, username, display_name: displayName, avatar_color: color })
+    .select()
+    .single();
+  if (error) throw error;
+  return data;
+}
+
+export async function deleteOwnAccount() {
+  const { error } = await supabase.rpc('delete_own_account');
+  if (error) throw error;
+  await supabase.auth.signOut();
+}
+
+export async function updateUserPassword(newPassword: string) {
+  const { data, error } = await supabase.auth.updateUser({
+    password: newPassword
+  });
+  if (error) throw error;
+  return data;
+}
+
+export async function signOutUser() {
+  await supabase.auth.signOut()
+}
+
+export async function getProfileById(userId: string): Promise<Profile> {
+  const { data, error } = await supabase
+    .from('profiles')
+    .select('*')
+    .eq('id', userId)
+    .single()
+  if (error) throw error
+  return data
+}
+
+export async function ensureProfileForUser(user: any): Promise<Profile> {
+  const { data: existingProfile } = await supabase
+    .from('profiles')
+    .select('*')
+    .eq('id', user.id)
+    .maybeSingle();
+
+  if (existingProfile) {
+    if (existingProfile.is_banned) {
+      await supabase.auth.signOut();
+      throw new Error("Sizning akkauntingiz ma'muriyat tomonidan bloklangan.");
+    }
+    return existingProfile;
+  }
+
+  const meta = user.user_metadata || {};
+  const email = user.email || '';
+  const rawName = meta.full_name || meta.name || email.split('@')[0] || 'User';
+  const cleanUsername = (email.split('@')[0] || 'user').toLowerCase().replace(/[^a-z0-9_]/g, '') + '_' + Math.floor(Math.random() * 1000);
+  const color = AVATAR_COLORS[Math.floor(Math.random() * AVATAR_COLORS.length)];
+
+  const { data: newProfile, error } = await supabase
+    .from('profiles')
+    .upsert({
+      id: user.id,
+      display_name: rawName,
+      full_name: rawName,
+      username: cleanUsername,
+      avatar_url: meta.avatar_url || meta.picture || null,
+      avatar_color: color,
+    })
+    .select('*')
+    .single();
+
+  if (error) throw error;
+  return newProfile;
+}
+
+export async function updateUserProfile(
+  userId: string,
+  updates: {
+    display_name?: string; username?: string; avatar_url?: string | null;
+    bio?: string | null; telegram_username?: string | null;
+    instagram_username?: string | null; telegram_private?: boolean;
+    profile_private?: boolean; avatar_color?: string; active_frame?: string | null;
+    active_title?: string | null;
+    username_glow?: boolean;
+  }
+): Promise<Profile> {
+  const { data, error } = await supabase
+    .from('profiles')
+    .update(updates)
+    .eq('id', userId)
+    .select()
+    .single()
+  if (error) throw error
+  return data
+}
+
+export async function uploadAvatar(userId: string, file: File): Promise<string> {
+  if (file.size > 2 * 1024 * 1024) throw new Error("Rasm hajmi 2MB dan oshmasligi kerak")
+  const ext = file.name.split('.').pop()?.toLowerCase()
+  if (!ext || !['jpg', 'jpeg', 'png', 'webp'].includes(ext))
+    throw new Error("Faqat JPG, PNG yoki WebP formatdagi rasmlar qabul qilinadi")
+
+  const fileName = `${userId}/${Date.now()}.${ext}`
+  const { error: uploadError } = await supabase.storage.from('avatars').upload(fileName, file, { upsert: true })
+
+  if (uploadError) {
+    const msg = (uploadError.message || '').toLowerCase()
+    if (msg.includes('bucket') || msg.includes('not found'))
+      throw new Error("'avatars' storage bucket topilmadi. Supabase Dashboard → Storage → New Bucket: \"avatars\" (Public: ✓)")
+    if (msg.includes('policy') || msg.includes('permission') || msg.includes('unauthorized') || msg.includes('403'))
+      throw new Error("Storage ruxsati yo'q. Supabase Dashboard → Storage → avatars → Policies da INSERT ruxsatini bering.")
+    throw new Error("Yuklashda xatolik: " + uploadError.message)
+  }
+
+  const { data } = supabase.storage.from('avatars').getPublicUrl(fileName)
+  return data.publicUrl
+}
+
+// ─── PROFILE ───────────────────────────────────────────────
+export async function getOrCreateProfile(username: string, displayName: string) {
+  // Avval mavjudini qidirish
+  const { data: existing } = await supabase
+    .from('profiles')
+    .select('*')
+    .eq('username', username)
+    .single()
+
+  if (existing) return existing
+
+  // Yangi yaratish
+  const { data, error } = await supabase
+    .from('profiles')
+    .insert({ username, display_name: displayName })
+    .select()
+    .single()
+
+  if (error) throw error
+  return data
+}
+
+export async function getAllProfiles() {
+  const { data, error } = await supabase
+    .from('profiles')
+    .select('*')
+    .order('created_at', { ascending: true })
+  if (error) throw error
+  return data
+}
+
+export async function getGlobalStats() {
+  const [
+    { count: usersCount },
+    { count: habitsCount },
+  ] = await Promise.all([
+    supabase.from('profiles').select('*', { count: 'exact', head: true }),
+    supabase.from('habits').select('*', { count: 'exact', head: true }),
+  ]);
+  return {
+    users: usersCount || 0,
+    habits: habitsCount || 0,
+  };
+}
+
+export async function touchLastSeen() {
+  try { await supabase.rpc('touch_last_seen') } catch { /* best-effort, ignore */ }
+}
+
+export type AdminMonitoringStats = {
+  dau: number
+  top_habits: { name: string; completions: number }[]
+}
+
+export async function getAdminMonitoringStats(): Promise<AdminMonitoringStats> {
+  const { data, error } = await supabase.rpc('get_admin_monitoring_stats')
+  if (error) throw error
+  return data as AdminMonitoringStats
+}
+
+export type InactiveGroup = {
+  group_id: string
+  group_name: string
+  leader_name: string | null
+  last_log_date: string | null
+}
+
+export async function getInactiveGroups(): Promise<InactiveGroup[]> {
+  const { data, error } = await supabase.rpc('get_inactive_groups')
+  if (error) throw error
+  return data || []
+}
+
+export async function adminDeleteGroup(groupId: string) {
+  const { error } = await supabase.rpc('admin_delete_group', { p_group_id: groupId })
+  if (error) throw error
+}
+
+export async function toggleUserBan(userId: string, isBanned: boolean) {
+  const { error } = await supabase.rpc('toggle_user_ban', { p_user_id: userId, p_is_banned: isBanned });
+  if (error) throw error;
+}
+
+// Har bir a'zo uchun samaradorlik foizini BITTA so'rovda oladi (N+1 emas) —
+// { user_id: efficiency_pct } shaklidagi lookup jadvaliga aylantirib qaytaradi.
+export async function getAdminUsersEfficiency(): Promise<Record<string, number>> {
+  const { data, error } = await supabase.rpc('get_admin_users_efficiency');
+  if (error) throw error;
+  const map: Record<string, number> = {};
+  for (const row of (data || []) as { user_id: string; efficiency_pct: number }[]) {
+    map[row.user_id] = row.efficiency_pct;
+  }
+  return map;
+}
+
+export async function adminGrantBalance(userId: string, coinsDelta: number, scoreDelta: number) {
+  const { error } = await supabase.rpc('admin_grant_balance', {
+    p_user_id: userId, p_coins_delta: coinsDelta, p_score_delta: scoreDelta,
+  });
+  if (error) throw error;
+}
+
+export async function getUserHabitsAdmin(userId: string) {
+  const { data, error } = await supabase
+    .from('habits')
+    .select('id, name, emoji, type, target_value, unit, is_active, created_at')
+    .eq('user_id', userId)
+    .eq('is_active', true)
+    .order('created_at', { ascending: false });
+  if (error) throw error;
+  return data || [];
+}
+
+// ─── USER FEEDBACK ──────────────────────────────────────────
+export async function submitFeedback(userId: string, content: string) {
+  const { error } = await supabase.from('user_feedback').insert({ user_id: userId, content });
+  if (error) throw error;
+}
+
+export type FeedbackEntry = {
+  id: string
+  user_id: string
+  content: string
+  created_at: string
+  display_name: string
+  username: string
+  admin_reply: string | null
+  admin_replied_at: string | null
+}
+
+export async function getAllFeedback(): Promise<FeedbackEntry[]> {
+  const { data, error } = await supabase.rpc('get_all_feedback');
+  if (error) throw error;
+  return data || [];
+}
+
+export async function replyToFeedback(feedbackId: string, reply: string) {
+  const { error } = await supabase.rpc('reply_to_feedback', { p_feedback_id: feedbackId, p_reply: reply });
+  if (error) throw error;
+}
+
+// ─── ADMIN — ALL HABITS (CSV export analysis) ───────────────
+export type AdminHabitEntry = {
+  id: string
+  user_id: string
+  name: string
+  emoji: string
+  type: 'positive' | 'negative'
+  target_value: number | null
+  unit: string | null
+  is_active: boolean
+  created_at: string
+  profiles: { display_name: string; username: string } | null
+}
+
+export async function getAllHabitsAdmin(): Promise<AdminHabitEntry[]> {
+  const { data, error } = await supabase
+    .from('habits')
+    .select('id, user_id, name, emoji, type, target_value, unit, is_active, created_at, profiles(display_name, username)')
+    .order('created_at', { ascending: false });
+  if (error) throw error;
+  return (data || []) as unknown as AdminHabitEntry[];
+}
+
+// ─── ADMIN — ANALYTICS SUMMARY ───────────────────────────────
+export type AnalyticsSummaryRow = {
+  event_name: string
+  total_count: number
+  unique_users: number
+  unique_sessions: number
+}
+
+export async function getAnalyticsSummary(days = 30): Promise<AnalyticsSummaryRow[]> {
+  const { data, error } = await supabase.rpc('get_analytics_summary', { p_days: days });
+  if (error) throw error;
+  return data || [];
+}
+
+export type AdminAnalyticsDashboard = {
+  users: { total: number; new_today: number; new_week: number; banned: number }
+  habits: { active_total: number; positive_count: number; negative_count: number; completion_rate_pct: number; logs_last_30d: number }
+  economy: { total_coins: number; total_xp: number; active_frames: number }
+  groups: { total_groups: number; avg_members: number; pending_proofs: number; approved_proofs: number }
+}
+
+export async function getAdminAnalyticsDashboard(): Promise<AdminAnalyticsDashboard> {
+  const { data, error } = await supabase.rpc('get_admin_analytics_dashboard');
+  if (error) throw error;
+  return data as AdminAnalyticsDashboard;
+}
+
+export async function resetAllData() {
+  const { error } = await supabase.rpc('reset_all_data');
+  if (error) throw error;
+}
+
+export async function sendGlobalNotification(title: string, body: string) {
+  const { error } = await supabase.rpc('send_global_notification', { p_title: title, p_body: body });
+  if (error) throw error;
+}
+
+// ─── HABITS ────────────────────────────────────────────────
+export async function getHabits(userId: string) {
+  const cacheKey = `habits_${userId}`;
+  const cached = getCached<any[]>(cacheKey);
+
+  const fetchPromise = supabase
+    .from('habits')
+    .select('*')
+    .eq('user_id', userId)
+    .eq('is_active', true)
+    .order('created_at', { ascending: true })
+    .then(({ data, error }) => {
+      if (error) throw error;
+      setCached(cacheKey, data || []);
+      return data || [];
+    });
+
+  if (cached) {
+    Promise.resolve(fetchPromise).catch(() => {});
+    return cached;
+  }
+  return await fetchPromise;
+}
+
+export async function addHabit(
+  userId: string,
+  name: string,
+  emoji: string,
+  type: 'positive' | 'negative',
+  target_value: number = 1,
+  unit: string = '',
+  scheduledStart?: string,
+  scheduledEnd?: string,
+  description: string = ''
+) {
+  const baseData: Record<string, unknown> = { user_id: userId, name, emoji, type };
+  if (target_value > 1 || unit) {
+    baseData.target_value = target_value;
+    baseData.unit = unit;
+  }
+  if (scheduledStart) baseData.scheduled_start = scheduledStart;
+  if (scheduledEnd) baseData.scheduled_end = scheduledEnd;
+  if (description) baseData.description = description;
+
+  const { data, error } = await supabase
+    .from('habits')
+    .insert(baseData)
+    .select()
+    .single()
+  if (error) throw error
+  return data
+}
+
+export async function updateHabit(
+  habitId: string,
+  updates: { name?: string; emoji?: string; description?: string; target_value?: number; unit?: string; scheduled_start?: string | null; scheduled_end?: string | null }
+) {
+  const { data, error } = await supabase
+    .from('habits')
+    .update(updates)
+    .eq('id', habitId)
+    .select()
+    .single()
+  if (error) throw error
+  return data
+}
+
+export async function deleteHabit(habitId: string) {
+  const { error } = await supabase
+    .from('habits')
+    .update({ is_active: false })
+    .eq('id', habitId)
+  if (error) throw error
+}
+
+// ─── HABIT LOGS ────────────────────────────────────────────
+export async function getTodayLogs(userId: string) {
+  const today = toDateStr();
+  const cacheKey = `today_logs_${userId}_${today}`;
+  const cached = getCached<any[]>(cacheKey);
+
+  const fetchPromise = supabase
+    .from('habit_logs')
+    .select('*')
+    .eq('user_id', userId)
+    .eq('log_date', today)
+    .then(({ data, error }) => {
+      if (error) throw error;
+      setCached(cacheKey, data || []);
+      return data || [];
+    });
+
+  if (cached) {
+    Promise.resolve(fetchPromise).catch(() => {});
+    return cached;
+  }
+  return await fetchPromise;
+}
+
+export async function getLogsForDate(userId: string, date: string) {
+  const { data, error } = await supabase
+    .from('habit_logs')
+    .select('*')
+    .eq('user_id', userId)
+    .eq('log_date', date)
+  if (error) throw error
+  return data
+}
+
+export async function toggleHabitLog(
+  habitId: string,
+  userId: string,
+  completed: boolean,
+  value: number = 1,
+  prevCompleted?: boolean,
+  isNegative: boolean = false,
+  date?: string
+) {
+  const today = toDateStr()
+  const logDate = date || today
+  if (isLogDateLocked(logDate)) throw new Error(LOG_LOCKED_MESSAGE)
+  const { data, error } = await supabase
+    .from('habit_logs')
+    .upsert({
+      habit_id: habitId,
+      user_id: userId,
+      log_date: logDate,
+      completed,
+      value,
+    }, { onConflict: 'habit_id,user_id,log_date' })
+    .select()
+    .single()
+  if (error) throw error
+
+  // Score + Coins: bugungi ijobiy va salbiy odatlar uchun tangential tangalar va ochkolar
+  if (logDate === today && prevCompleted !== undefined && prevCompleted !== completed) {
+    const scoreDelta = completed ? 1 : -1
+    const coinsDelta = completed ? (isNegative ? 10 : 1) : (isNegative ? -10 : -1)
+    try { await supabase.rpc('increment_score', { uid: userId, delta: scoreDelta }) } catch { /* server-side tekshiruv rad etsa, jim o'tkazamiz */ }
+    try { await supabase.rpc('increment_coins', { uid: userId, delta: coinsDelta }) } catch {}
+  }
+
+  // XP + Daraja: umr bo'yi progress hisoblagichi
+  if (logDate === today && completed && prevCompleted !== completed) {
+    const xpAmount = isNegative ? 15 : 5
+    try { await addXpToUser(habitId, xpAmount) } catch { /* allaqachon berilgan yoki tasdiqlanmagan bo'lishi mumkin */ }
+  }
+
+  return data
+}
+
+// Kunlik Jurnal — qat'iy qulflash: har bir kun uchun belgilash/o'zgartirish
+// oynasi shu kun 00:00'dan ertasi kuni soat 09:00'gacha ochiq (masalan
+// "Uyqu" kabi kechayarimdan keyin tugaydigan odatlar uchun ham yetarli
+// muhlat qoldiradi). Bu muddat o'tgach — hatto allaqachon belgilangan
+// yozuv bo'lsa ham — kun butunlay qulflanadi: yangi belgilash, mavjud
+// belgini bekor qilish yoki qiymatini o'zgartirish endi mumkin emas. Bu
+// sof vaqt matematikasi (serverda cron yoki avtomatik yozuv shart emas)
+// va universal — barcha odat turlariga (vaqtli/vaqtsiz/musbat/salbiy)
+// bab-baravar qo'llaniladi, faqat sanaga bog'liq.
+const LOCK_GRACE_HOUR = 9
+export const LOG_LOCKED_MESSAGE = "Bu kun uchun belgilash muddati tugagan (ertasi kuni soat 09:00 gacha ochiq edi)."
+
+export function isLogDateLocked(dateStr: string, now: Date = new Date()): boolean {
+  const windowStart = new Date(dateStr + 'T00:00:00')
+  const windowEnd = new Date(windowStart)
+  windowEnd.setDate(windowEnd.getDate() + 1)
+  windowEnd.setHours(LOCK_GRACE_HOUR, 0, 0, 0)
+  return !(now >= windowStart && now < windowEnd)
+}
+
+// "Kutilmoqda" holatiga qaytarish (log qatorini o'chirish) — toggleHabitLog
+// bilan bir xil qulflash tekshiruvidan o'tadi, shuning uchun HabitsLog.tsx
+// endi bevosita supabase.from('habit_logs').delete() chaqirmaydi.
+export async function deleteHabitLog(habitId: string, userId: string, date: string) {
+  if (isLogDateLocked(date)) throw new Error(LOG_LOCKED_MESSAGE)
+  const { error } = await supabase
+    .from('habit_logs')
+    .delete()
+    .eq('habit_id', habitId)
+    .eq('user_id', userId)
+    .eq('log_date', date)
+  if (error) throw error
+}
+
+// Kunlik progress hisob-kitobi — YAGONA MANBA. App.tsx, Dashboard.tsx va HabitsLog.tsx
+// bu formula orqali umumiy header foizini (completedToday/totalHabits) hisoblaydi.
+// Qoida: Har ikkala odat turida ham (musbat ham, salbiy ham) completed=true muvaffaqiyatni
+// (musbat odat bajarilganini yoki salbiy odat saqlanib qolinganini) anglatadi.
+export function computeHabitProgress(
+  habits: { id: string; type: string }[],
+  logs: { habit_id: string; completed: boolean }[]
+): { completed: number; total: number } {
+  const completedSet = new Set<string>()
+  for (const l of logs) {
+    if (isHabitLogSuccess(l)) completedSet.add(l.habit_id)
+  }
+  let completed = 0
+  let total = habits.length
+  for (const h of habits) {
+    if (completedSet.has(h.id)) completed++
+  }
+  return { completed, total }
+}
+
+export type XpResult = { total_xp: number; level: number; xp_gained: number }
+
+export async function addXpToUser(habitId: string, xpAmount = 5): Promise<XpResult> {
+  const { data, error } = await supabase.rpc('add_xp_to_user', { p_habit_id: habitId, p_xp_amount: xpAmount })
+  if (error) throw error
+  return data as XpResult
+}
+
+export async function getMonthLogs(userId: string, year: number, month: number) {
+  const from = `${year}-${String(month).padStart(2, '0')}-01`
+  const lastDay = new Date(year, month, 0).getDate()
+  const to = `${year}-${String(month).padStart(2, '0')}-${String(lastDay).padStart(2, '0')}`
+  const { data, error } = await supabase
+    .from('habit_logs')
+    .select('habit_id, log_date, completed')
+    .eq('user_id', userId)
+    .gte('log_date', from)
+    .lte('log_date', to)
+  if (error) throw error
+  return data
+}
+
+export type LeaderboardEntry = {
+  id: string
+  username: string
+  display_label: string
+  avatar_color: string
+  avatar_url: string | null
+  active_frame: string | null
+  username_glow: boolean
+  score: number
+  efficiency_pct: number
+  is_private: boolean
+  has_star: boolean
+}
+
+export async function getLeaderboard(period: 'daily' | 'monthly' | '6months' | 'yearly' | 'all' = 'monthly'): Promise<LeaderboardEntry[]> {
+  let query = supabase.from('profiles').select('id, display_name, username, avatar_url, avatar_color, score, star_expires_at, active_frame, username_glow, profile_private, created_at');
+
+  const now = new Date();
+  let startDate: string | null = null;
+  if (period === 'daily') {
+    startDate = toDateStr(now);
+  } else if (period === 'monthly') {
+    const firstDay = new Date(now.getFullYear(), now.getMonth(), 1);
+    startDate = toDateStr(firstDay);
+  } else if (period === '6months') {
+    const d = new Date(now);
+    d.setMonth(d.getMonth() - 6);
+    startDate = toDateStr(d);
+  } else if (period === 'yearly') {
+    const d = new Date(now);
+    d.setFullYear(d.getFullYear() - 1);
+    startDate = toDateStr(d);
+  }
+
+  const { data: profiles, error } = await query;
+  if (error) throw error;
+  if (!profiles) return [];
+
+  if (period === 'all' || !startDate) {
+    return profiles.map((p: any) => ({
+      id: p.id,
+      username: p.username || 'user',
+      display_label: p.display_name ? `${p.display_name.split(' ')[0]} ${p.display_name.split(' ')[1]?.[0] || ''}.` : (p.username || 'User'),
+      avatar_color: p.avatar_color || '#4ADE80',
+      avatar_url: p.avatar_url,
+      active_frame: p.active_frame,
+      username_glow: !!p.username_glow,
+      score: p.score || 0,
+      efficiency_pct: Math.min(100, Math.round((p.score || 0) / 10)),
+      is_private: !!(p.profile_private ?? p.is_private),
+      has_star: p.star_expires_at ? new Date(p.star_expires_at) > now : false,
+    })).sort((a, b) => b.score - a.score);
+  }
+
+  const { data: logs } = await supabase
+    .from('habit_logs')
+    .select('user_id, completed')
+    .gte('log_date', startDate)
+    .eq('completed', true);
+
+  const counts: Record<string, number> = {};
+  for (const l of (logs || [])) {
+    counts[l.user_id] = (counts[l.user_id] || 0) + 1;
+  }
+
+  return profiles.map((p: any) => {
+    const count = counts[p.id] || 0;
+    return {
+      id: p.id,
+      username: p.username || 'user',
+      display_label: p.display_name ? `${p.display_name.split(' ')[0]} ${p.display_name.split(' ')[1]?.[0] || ''}.` : (p.username || 'User'),
+      avatar_color: p.avatar_color || '#4ADE80',
+      avatar_url: p.avatar_url,
+      active_frame: p.active_frame,
+      username_glow: !!p.username_glow,
+      score: count * 10,
+      efficiency_pct: Math.min(100, count * 5),
+      is_private: !!(p.profile_private ?? p.is_private),
+      has_star: p.star_expires_at ? new Date(p.star_expires_at) > now : false,
+    };
+  }).sort((a, b) => b.score - a.score);
+}
+
+export async function getUserRank(userId: string): Promise<number> {
+  const { data, error } = await supabase.rpc('get_user_rank_efficiency', { p_user_id: userId })
+  if (error) return 0
+  return data || 0
+}
+
+export async function getAllTimeLogs(userId: string) {
+  const { data, error } = await supabase
+    .from('habit_logs')
+    .select('habit_id, log_date, completed, habits(type)')
+    .eq('user_id', userId)
+    .eq('completed', true)
+  if (error) throw error
+  return data
+}
+
+export async function getLogsByRange(userId: string, days: number) {
+  const from = new Date();
+  from.setDate(from.getDate() - days);
+  const startDate = toDateStr(from);
+  const cacheKey = `logs_range_${userId}_${days}`;
+  const cached = getCached<any[]>(cacheKey);
+
+  const fetchPromise = supabase
+    .from('habit_logs')
+    .select('*, habits(name, emoji, type)')
+    .eq('user_id', userId)
+    .gte('log_date', startDate)
+    .order('log_date', { ascending: false })
+    .then(({ data, error }) => {
+      if (error) throw error;
+      setCached(cacheKey, data || []);
+      return data || [];
+    });
+
+  if (cached) {
+    Promise.resolve(fetchPromise).catch(() => {});
+    return cached;
+  }
+  return await fetchPromise;
+}
+
+export async function getHealthLogsByRange(userId: string, days: number) {
+  const from = new Date();
+  from.setDate(from.getDate() - days);
+  const startDate = toDateStr(from);
+  const cacheKey = `health_logs_${userId}_${days}`;
+  const cached = getCached<any[]>(cacheKey);
+
+  const fetchPromise = supabase
+    .from('health_logs')
+    .select('*')
+    .eq('user_id', userId)
+    .gte('log_date', startDate)
+    .order('log_date', { ascending: false })
+    .then(({ data, error }) => {
+      if (error) throw error;
+      setCached(cacheKey, data || []);
+      return data || [];
+    });
+
+  if (cached) {
+    Promise.resolve(fetchPromise).catch(() => {});
+    return cached;
+  }
+  return await fetchPromise;
+}
+
+export async function getLast30DaysLogs(userId: string) {
+  return getLogsByRange(userId, 30)
+}
+
+// ─── GROUPS ────────────────────────────────────────────────
+export async function createGroup(name: string, adminId: string) {
+  const inviteCode = Math.random().toString(36).substring(2, 8).toUpperCase()
+  const { data, error } = await supabase
+    .from('groups')
+    .insert({ name, admin_id: adminId, invite_code: inviteCode })
+    .select()
+    .single()
+  if (error) throw error
+
+  const { error: memberErr } = await supabase.from('group_members').insert({
+    group_id: data.id,
+    user_id: adminId,
+    role: 'admin',
+  })
+  if (memberErr) {
+    // A'zolik yozuvi muvaffaqiyatsiz bo'lsa, egasiz ("a'zosiz") guruh
+    // qolib ketmasligi uchun endigina yaratilgan guruhni orqaga qaytaramiz
+    await supabase.from('groups').delete().eq('id', data.id)
+    throw memberErr
+  }
+
+  return data
+}
+
+export async function joinGroup(inviteCode: string, userId: string) {
+  const { data: group, error: gErr } = await supabase
+    .from('groups')
+    .select('*')
+    .eq('invite_code', inviteCode)
+    .single()
+  if (gErr) throw new Error("Guruh topilmadi. Invite kod noto'g'ri.")
+
+  const { error } = await supabase
+    .from('group_members')
+    .insert({ group_id: group.id, user_id: userId, role: 'member' })
+  if (error) {
+    if (error.code === '23505') throw new Error('Siz allaqachon bu guruhdasiz.')
+    throw new Error(error.message || "Guruhga qo'shilishda xatolik yuz berdi.")
+  }
+
+  return group
+}
+
+// Oddiy a'zo darhol chiqadi. Asosiy sardor uchun: yagona a'zo bo'lsa guruh
+// butunlay o'chadi, aks holda server 'owner_must_transfer' xatosini
+// qaytaradi — avval Egalikni topshirish kerak.
+export async function leaveGroup(groupId: string): Promise<void> {
+  const { error } = await supabase.rpc('leave_group', { p_group_id: groupId })
+  if (error) throw error
+}
+
+// Sardor yoki co-admin chaqira oladi; asosiy sardorni chiqarib bo'lmaydi
+// (serverda tekshiriladi).
+export async function kickMember(groupId: string, userId: string): Promise<void> {
+  const { error } = await supabase.rpc('kick_member', { p_group_id: groupId, p_user_id: userId })
+  if (error) throw error
+}
+
+// Faqat asosiy sardor chaqira oladi — guruhni butunlay o'chiradi (barcha
+// odatlar, loglar, a'zolik yozuvlari kaskad orqali tozalanadi).
+export async function deleteGroup(groupId: string): Promise<void> {
+  const { error } = await supabase.rpc('delete_group', { p_group_id: groupId })
+  if (error) throw error
+}
+
+// Faqat asosiy sardor: biror a'zoni co-admin qiladi yoki co-admin
+// huquqini olib tashlaydi.
+export async function setGroupMemberRole(groupId: string, userId: string, role: 'admin' | 'member'): Promise<void> {
+  const { error } = await supabase.rpc('set_group_member_role', { p_group_id: groupId, p_user_id: userId, p_role: role })
+  if (error) throw error
+}
+
+// Faqat asosiy sardor: guruh egaligini boshqa a'zoga to'liq topshiradi
+// (groups.admin_id o'zgaradi, yangi egaga avtomatik co-admin roli beriladi).
+export async function transferGroupOwnership(groupId: string, newOwnerId: string): Promise<void> {
+  const { error } = await supabase.rpc('transfer_group_ownership', { p_group_id: groupId, p_new_owner_id: newOwnerId })
+  if (error) throw error
+}
+
+export async function getMyGroups(userId: string) {
+  const { data, error } = await supabase
+    .from('group_members')
+    .select('*, groups(*, admin_profile:profiles!admin_id(id, display_name, username, avatar_url, avatar_color, telegram_username, telegram_private))')
+    .eq('user_id', userId)
+  if (error) throw error
+  return data
+}
+
+export async function getGroupMembers(groupId: string) {
+  const { data, error } = await supabase
+    .from('group_members')
+    .select('*, profiles(*)')
+    .eq('group_id', groupId)
+  if (error) throw error
+  return data
+}
+
+// ─── GROUP HABITS ──────────────────────────────────────────
+export async function getGroupHabits(groupId: string) {
+  const { data, error } = await supabase
+    .from('group_habits')
+    .select('*')
+    .eq('group_id', groupId)
+    .order('created_at', { ascending: true })
+  if (error) throw error
+  return data
+}
+
+// create_group_habit/update_group_habit/delete_group_habit RPC orqali —
+// oddiy INSERT/UPDATE/DELETE emas, chunki bular bir vaqtning o'zida har
+// bir a'zoning shaxsiy "Odatlar" ro'yxatidagi bog'langan nusxasini ham
+// yaratadi/yangilaydi/deaktivatsiya qiladi (033-migratsiya, group_habit_links).
+export async function addGroupHabit(
+  groupId: string,
+  name: string,
+  emoji: string,
+  type: 'positive' | 'negative' = 'positive',
+  targetValue: number = 1,
+  unit: string = ''
+) {
+  const { data, error } = await supabase.rpc('create_group_habit', {
+    p_group_id: groupId, p_name: name, p_emoji: emoji, p_type: type, p_target_value: targetValue, p_unit: unit,
+  })
+  if (error) throw error
+  return data
+}
+
+export async function updateGroupHabit(
+  habitId: string,
+  updates: { name?: string; emoji?: string; type?: 'positive' | 'negative'; target_value?: number; unit?: string }
+) {
+  const { data, error } = await supabase.rpc('update_group_habit', {
+    p_habit_id: habitId,
+    p_name: updates.name, p_emoji: updates.emoji, p_type: updates.type,
+    p_target_value: updates.target_value, p_unit: updates.unit,
+  })
+  if (error) throw error
+  return data
+}
+
+export async function deleteGroupHabit(habitId: string) {
+  const { error } = await supabase.rpc('delete_group_habit', { p_habit_id: habitId })
+  if (error) throw error
+}
+
+// ─── MEMBER GOALS (Adaptiv ball tizimi) ───────────────────
+export async function setMemberGoal(
+  groupHabitId: string,
+  userId: string,
+  groupId: string,
+  target: number,
+  intervalDays = 10
+) {
+  const { data, error } = await supabase
+    .from('member_goals')
+    .upsert({
+      group_habit_id: groupHabitId,
+      user_id: userId,
+      group_id: groupId,
+      initial_target: target,
+      current_target: target,
+      review_interval_days: intervalDays,
+    }, { onConflict: 'group_habit_id,user_id' })
+    .select()
+    .single()
+  if (error) throw error
+  return data
+}
+
+export async function getMemberGoals(groupId: string) {
+  const { data, error } = await supabase
+    .from('member_goals')
+    .select('*, profiles(display_name), group_habits(name, emoji)')
+    .eq('group_id', groupId)
+  if (error) throw error
+  return data
+}
+
+// ─── GROUP LEADERBOARD ─────────────────────────────────────
+export async function getGroupLeaderboard(groupId: string) {
+  const members = await getGroupMembers(groupId)
+  const { data: logs } = await supabase
+    .from('group_habit_logs')
+    .select('*, member_goals(current_target)')
+    .eq('group_id', groupId)
+
+  const scores: Record<string, { name: string; color: string; avatarUrl: string | null; score: number; completed: number; hasStar: boolean }> = {}
+
+  for (const m of members) {
+    scores[m.user_id] = {
+      name: m.profiles.display_name,
+      color: m.profiles.avatar_color,
+      avatarUrl: m.profiles.avatar_url,
+      score: 0,
+      completed: 0,
+      hasStar: isStarActive(m.profiles),
+    }
+  }
+
+  for (const log of (logs || [])) {
+    if (!log.completed || !scores[log.user_id]) continue
+    if (log.approval_status && log.approval_status !== 'approved' && log.approval_status !== 'auto') continue
+    scores[log.user_id].completed++
+
+    // Adaptiv ball: bajargan / maqsad × 100
+    const target = log.member_goals?.current_target || 1
+    const points = Math.min(100, Math.round((log.reps / target) * 100))
+    scores[log.user_id].score += points
+  }
+
+  return Object.entries(scores)
+    .map(([userId, s]) => ({ userId, ...s }))
+    .sort((a, b) => b.score - a.score)
+}
+
+// Joriy hafta (Dushanba-Yakshanba) uchun jonli reyting — getGroupLeaderboard
+// bilan bir xil mantiq, faqat log_date shu haftaga cheklangan. Tanga
+// berilmaydi (faqat ko'rish uchun) — mukofot faqat settleGroupWeek() orqali,
+// hafta TUGAGANDA beriladi.
+export async function getGroupWeeklyLeaderboard(groupId: string) {
+  const now = new Date()
+  const day = (now.getDay() + 6) % 7 // 0=Dushanba
+  const weekStart = new Date(now)
+  weekStart.setDate(now.getDate() - day)
+  const weekStartStr = toDateStr(weekStart)
+
+  const members = await getGroupMembers(groupId)
+  const { data: logs } = await supabase
+    .from('group_habit_logs')
+    .select('*, member_goals(current_target)')
+    .eq('group_id', groupId)
+    .gte('log_date', weekStartStr)
+
+  const scores: Record<string, { name: string; color: string; avatarUrl: string | null; score: number; completed: number; hasStar: boolean }> = {}
+
+  for (const m of members) {
+    scores[m.user_id] = {
+      name: m.profiles.display_name,
+      color: m.profiles.avatar_color,
+      avatarUrl: m.profiles.avatar_url,
+      score: 0,
+      completed: 0,
+      hasStar: isStarActive(m.profiles),
+    }
+  }
+
+  for (const log of (logs || [])) {
+    if (!log.completed || !scores[log.user_id]) continue
+    if (log.approval_status && log.approval_status !== 'approved' && log.approval_status !== 'auto') continue
+    scores[log.user_id].completed++
+    const target = log.member_goals?.current_target || 1
+    const points = Math.min(100, Math.round((log.reps / target) * 100))
+    scores[log.user_id].score += points
+  }
+
+  return Object.entries(scores)
+    .map(([userId, s]) => ({ userId, ...s }))
+    .sort((a, b) => b.score - a.score)
+}
+
+export type GroupWeekWinner = { user_id: string; display_name: string; score: number; reward: number; already_settled: boolean }
+
+// O'tgan (tugagan) haftaning g'olibini hisoblab, hali yozilmagan bo'lsa
+// bonus tanga beradi — a'zo guruh sahifasini ochganda chaqiriladi (cron
+// shart emas, cleanup_expired_frame() bilan bir xil o'z-o'zini tuzatish
+// naqshi). Hech kim faol bo'lmagan hafta uchun null qaytaradi.
+export async function settleGroupWeek(groupId: string): Promise<GroupWeekWinner | null> {
+  const { data, error } = await supabase.rpc('settle_group_week', { p_group_id: groupId })
+  if (error) return null
+  return (data && data[0]) || null
+}
+
+// ─── GROUP LOGS ────────────────────────────────────────────
+// log_group_habit RPC orqali — oddiy upsert emas, chunki approval_status
+// ustuniga to'g'ridan-to'g'ri yozish (003-migratsiyadagi xavfsizlik
+// GRANT'i tufayli) faqat INSERT'da ishlaydi, EDIT/qayta yuborishda
+// "permission denied" beradi. RPC serverda auth.uid()ni tekshirib, har
+// safar approval_status'ni 'pending'ga qaytaradi (qayta ko'rib chiqish).
+export async function logGroupHabit(
+  groupHabitId: string,
+  groupId: string,
+  _userId: string,
+  completed: boolean,
+  reps = 1,
+  proofNote?: string
+) {
+  const today = toDateStr()
+  const { data, error } = await supabase.rpc('log_group_habit', {
+    p_group_habit_id: groupHabitId,
+    p_group_id: groupId,
+    p_log_date: today,
+    p_completed: completed,
+    p_reps: reps,
+    p_proof_note: proofNote || null,
+  })
+  if (error) throw error
+  return data
+}
+
+export async function getTodayGroupLogs(groupId: string, userId: string) {
+  const today = toDateStr()
+  const { data, error } = await supabase
+    .from('group_habit_logs')
+    .select('*')
+    .eq('group_id', groupId)
+    .eq('user_id', userId)
+    .eq('log_date', today)
+  if (error) throw error
+  return data
+}
+
+export async function getPendingGroupApprovals(groupId: string) {
+  const { data, error } = await supabase
+    .from('group_habit_logs')
+    .select('*, profiles!user_id(display_name, avatar_color, avatar_url, username), group_habits(name, emoji)')
+    .eq('group_id', groupId)
+    .eq('approval_status', 'pending')
+    .eq('completed', true)
+    .order('created_at', { ascending: false })
+  if (error) throw error
+  return data || []
+}
+
+// ─── ADMIN MODERATION (barcha guruhlar bo'yicha) ────────────
+export async function getAllPendingApprovals() {
+  const { data, error } = await supabase
+    .from('group_habit_logs')
+    .select('*, profiles!user_id(display_name, avatar_color, avatar_url, username), group_habits(name, emoji), groups(name)')
+    .eq('approval_status', 'pending')
+    .eq('completed', true)
+    .order('created_at', { ascending: false })
+    .limit(100)
+  if (error) throw error
+  return data || []
+}
+
+export async function getRecentRejections(limitCount = 30) {
+  const { data, error } = await supabase
+    .from('group_habit_logs')
+    .select('*, profiles!user_id(display_name, avatar_color, avatar_url, username), group_habits(name, emoji), groups(name)')
+    .eq('approval_status', 'rejected')
+    .order('created_at', { ascending: false })
+    .limit(limitCount)
+  if (error) throw error
+  return data || []
+}
+
+export async function approveGroupLog(logId: string) {
+  // approve_group_log RPC serverda auth.uid()ni guruhning haqiqiy admin_id'si
+  // bilan solishtiradi — klient endi "men adminman" deb da'vo qila olmaydi.
+  const { error } = await supabase.rpc('approve_group_log', { p_log_id: logId })
+  if (error) throw error
+}
+
+export async function rejectGroupLog(logId: string, reason: string) {
+  const { error } = await supabase.rpc('reject_group_log', { p_log_id: logId, p_reason: reason })
+  if (error) throw error
+}
+
+export async function getGroupMembersMonthlyStats(groupId: string) {
+  const now = new Date()
+  const firstDay = toDateStr(new Date(now.getFullYear(), now.getMonth(), 1))
+  const { data, error } = await supabase
+    .from('group_habit_logs')
+    .select('user_id, log_date, approval_status, completed, reps, group_habit_id, profiles!user_id(display_name, avatar_color, avatar_url), group_habits(name, emoji)')
+    .eq('group_id', groupId)
+    .gte('log_date', firstDay)
+    .order('log_date')
+  if (error) throw error
+  return data || []
+}
+
+// ─── DAILY NOTES ────────────────────────────────────────────
+export async function getDailyNote(userId: string, date: string) {
+  const { data, error } = await supabase
+    .from('daily_notes')
+    .select('*')
+    .eq('user_id', userId)
+    .eq('note_date', date)
+    .maybeSingle()
+  if (error) throw error
+  return data
+}
+
+export async function upsertDailyNote(userId: string, date: string, content: string, mood?: number) {
+  // Uyqu/ekran vaqti endi shu yerda saqlanmaydi — yagona manba health_logs
+  // (upsertHealthLog), HealthPage va DailyNotes ikkalasi ham o'shandan
+  // o'qiydi/yozadi, aks holda ikki joyda ikki xil qiymat ko'rinib qolardi.
+  const { data, error } = await supabase
+    .from('daily_notes')
+    .upsert(
+      { user_id: userId, note_date: date, content, mood },
+      { onConflict: 'user_id,note_date' }
+    )
+    .select()
+    .single()
+  if (error) throw error
+  return data
+}
+
+export async function getMonthNotes(userId: string, year: number, month: number) {
+  const from = `${year}-${String(month).padStart(2, '0')}-01`
+  const lastDay = new Date(year, month, 0).getDate()
+  const to = `${year}-${String(month).padStart(2, '0')}-${String(lastDay).padStart(2, '0')}`
+  const { data, error } = await supabase
+    .from('daily_notes')
+    .select('note_date, content, mood, sleep_hours, screen_hours')
+    .eq('user_id', userId)
+    .gte('note_date', from)
+    .lte('note_date', to)
+  if (error) throw error
+  return data
+}
+
+// ─── WEEKLY REFLECTION ─────────────────────────────────────
+export async function getWeeklyReflection(userId: string, weekStart: string) {
+  const { data } = await supabase
+    .from('weekly_reflections')
+    .select('*')
+    .eq('user_id', userId)
+    .eq('week_start', weekStart)
+    .maybeSingle()
+  return data
+}
+
+export async function upsertWeeklyReflection(
+  userId: string,
+  weekStart: string,
+  wentWell: string,
+  improveNext: string
+) {
+  const { data, error } = await supabase
+    .from('weekly_reflections')
+    .upsert({
+      user_id: userId,
+      week_start: weekStart,
+      went_well: wentWell,
+      improve_next: improveNext,
+      updated_at: new Date().toISOString(),
+    }, { onConflict: 'user_id,week_start' })
+    .select()
+    .single()
+  if (error) throw error
+  return data
+}
+
+// ─── AI COACH NOTE (cached, generated on-demand via api/ai-coach.ts) ──
+export type CoachNote = { note: string; generated_at: string }
+
+export async function getCoachNote(userId: string): Promise<CoachNote | null> {
+  const { data, error } = await supabase
+    .from('ai_coach_notes')
+    .select('note, generated_at')
+    .eq('user_id', userId)
+    .maybeSingle()
+  if (error) throw error
+  return data
+}
+
+export async function upsertCoachNote(userId: string, note: string): Promise<void> {
+  const { error } = await supabase
+    .from('ai_coach_notes')
+    .upsert({ user_id: userId, note, generated_at: new Date().toISOString() }, { onConflict: 'user_id' })
+  if (error) throw error
+}
+
+// ─── AI ANALYSIS — COIN-GATED ────────────────────────────────
+// Har bir AI tahlil (Coach Note) generatsiyasi 50 tanga turadi — bu
+// api/ai-coach.ts orqali sarflanadigan haqiqiy LLM chaqiruvi xarajatini
+// cheklaydi. spend_coins RPC (setup.sql/006_xp_leveling.sql) allaqachon
+// bitta atomik UPDATE ichida balansni tekshirib yechadi — xuddi
+// purchaseCoinItem'da ishlatilgani kabi — shu bilan ikkita bir vaqtdagi
+// so'rov (double-tap, 2 tab) bir xil boshlang'ich balansni o'qib,
+// bir-birini bosib ketishining oldini oladi.
+export const AI_ANALYSIS_COST = 50
+
+export async function spendCoinsForAnalysis(userId: string): Promise<boolean> {
+  const { error } = await supabase.rpc('spend_coins', { uid: userId, price: AI_ANALYSIS_COST })
+  return !error
+}
+
+// AI chaqiruvi texnik sababdan (tarmoq, API xatosi, "not_configured" va h.k.)
+// muvaffaqiyatsiz bo'lsa, foydalanuvchi tangasini abadiy yo'qotmasligi
+// uchun — purchaseCoinItem'dagi refund naqshiga mos.
+export async function refundAnalysisCoins(userId: string): Promise<void> {
+  try { await supabase.rpc('increment_coins', { uid: userId, delta: AI_ANALYSIS_COST }) } catch { /* best-effort */ }
+}
+
+// ─── PUSH NOTIFICATIONS ────────────────────────────────────
+function urlBase64ToUint8Array(base64String: string) {
+  const padding = '='.repeat((4 - base64String.length % 4) % 4);
+  const base64 = (base64String + padding).replace(/\-/g, '+').replace(/_/g, '/');
+  const rawData = window.atob(base64);
+  const outputArray = new Uint8Array(rawData.length);
+  for (let i = 0; i < rawData.length; ++i) {
+    outputArray[i] = rawData.charCodeAt(i);
+  }
+  return outputArray;
+}
+
+export async function subscribeToPushNotifications(userId: string) {
+  if (!('serviceWorker' in navigator) || !('PushManager' in window)) {
+    throw new Error("Bu brauzer Push xabarlarni qo'llab-quvvatlamaydi");
+  }
+
+  const isWebNotifSupported = typeof window !== 'undefined' && 'Notification' in window && typeof (window as any).Notification === 'function';
+  if (!isWebNotifSupported) {
+    throw new Error("Bildirishnomalar bu qurilmada qo'llab-quvvatlanmaydi");
+  }
+
+  let permission: string = 'default';
+  try {
+    const n = (window as any).Notification;
+    if (n && typeof n.requestPermission === 'function') {
+      permission = await n.requestPermission();
+    }
+  } catch (err) {
+    console.warn('Browser Notification.requestPermission failed:', err);
+    throw new Error("Bildirishnomalarga ruxsat berishda xatolik");
+  }
+
+  if (permission !== 'granted') {
+    throw new Error("Bildirishnomalarga ruxsat berilmadi");
+  }
+
+  const registration = await navigator.serviceWorker.register('/sw.js');
+  await navigator.serviceWorker.ready;
+
+  const publicVapidKey = import.meta.env.VITE_VAPID_PUBLIC_KEY; 
+  if (!publicVapidKey) {
+    throw new Error("VAPID kaliti (VITE_VAPID_PUBLIC_KEY) topilmadi");
+  }
+
+  const subscription = await registration.pushManager.subscribe({
+    userVisibleOnly: true,
+    applicationServerKey: urlBase64ToUint8Array(publicVapidKey)
+  });
+
+  const subJson = subscription.toJSON();
+
+  const { error } = await supabase.from('push_subscriptions').upsert({
+    user_id: userId,
+    endpoint: subJson.endpoint,
+    p256dh: subJson.keys?.p256dh,
+    auth: subJson.keys?.auth
+  }, { onConflict: 'endpoint' });
+
+  if (error) throw error;
+}
+
+// ─── PUBLIC PROFILE ─────────────────────────────────────────
+export async function getPublicProfileStats(userId: string) {
+  const [profile, allLogs, habits] = await Promise.all([
+    getProfileById(userId),
+    getAllTimeLogs(userId),
+    getHabits(userId),
+  ])
+  const totalCompleted = (allLogs || []).filter((l: any) => l.habits?.type === 'positive').length
+  return { profile, totalCompleted, habitsCount: (habits || []).length }
+}
+
+export async function sendContactRequest(
+  fromUserId: string, toUserId: string,
+  fromName: string, fromUsername: string
+) {
+  const { error } = await supabase.from('notifications').insert({
+    user_id: toUserId,
+    title: "Telegram aloqa so'rovi",
+    body: `@${fromUsername} (${fromName}) siz bilan Telegramda aloqa o'rnatmoqchi`,
+    type: 'contact_request',
+    link: null,
+  })
+  if (error) throw error
+}
+
+// ─── FOLLOW SYSTEM ───────────────────────────────────────────
+export async function followUser(followerId: string, followingId: string, followerName = '') {
+  const { error } = await supabase
+    .from('followers')
+    .upsert({ follower_id: followerId, following_id: followingId }, { onConflict: 'follower_id,following_id' })
+  if (error) throw error
+  supabase.from('notifications').insert({
+    user_id: followingId,
+    title: 'Yangi kuzatuvchi!',
+    body: `${followerName || 'Foydalanuvchi'} sizi kuzatishni boshladi`,
+    type: 'follow',
+    link: 'profile',
+  }).then(() => {})
+}
+
+export async function unfollowUser(followerId: string, followingId: string) {
+  const { error } = await supabase
+    .from('followers')
+    .delete()
+    .eq('follower_id', followerId)
+    .eq('following_id', followingId)
+  if (error) throw error
+}
+
+export async function checkFollowing(followerId: string, followingId: string): Promise<boolean> {
+  const { data } = await supabase
+    .from('followers')
+    .select('id')
+    .eq('follower_id', followerId)
+    .eq('following_id', followingId)
+    .maybeSingle()
+  return !!data
+}
+
+export async function getFollowCounts(userId: string) {
+  const [{ count: followersCount }, { count: followingCount }] = await Promise.all([
+    supabase.from('followers').select('id', { count: 'exact', head: true }).eq('following_id', userId),
+    supabase.from('followers').select('id', { count: 'exact', head: true }).eq('follower_id', userId),
+  ])
+  return { followers: followersCount || 0, following: followingCount || 0 }
+}
+
+export async function getFollowersList(userId: string) {
+  const { data, error } = await supabase
+    .from('followers')
+    .select('follower:profiles!follower_id(id, display_name, username, avatar_url, avatar_color, score)')
+    .eq('following_id', userId)
+  if (error) throw error
+  return (data || []).map((r: any) => r.follower).filter(Boolean)
+}
+
+export async function getFollowingList(userId: string) {
+  const { data, error } = await supabase
+    .from('followers')
+    .select('following:profiles!following_id(id, display_name, username, avatar_url, avatar_color, score)')
+    .eq('follower_id', userId)
+  if (error) throw error
+  return (data || []).map((r: any) => r.following).filter(Boolean)
+}
+
+export async function searchUsers(query: string, excludeId?: string) {
+  const q = query.trim();
+  if (!q) return []
+  const { data, error } = await supabase
+    .rpc('search_users', { p_query: q, p_exclude_id: excludeId || null })
+  if (error) throw error
+  return data || []
+}
+
+export async function getFollowingFeed(userId: string) {
+  const { data: followingData } = await supabase
+    .from('followers')
+    .select('following_id')
+    .eq('follower_id', userId)
+
+  if (!followingData || followingData.length === 0) return []
+
+  const followingIds = followingData.map((f: any) => f.following_id)
+
+  const from = new Date()
+  from.setDate(from.getDate() - 7)
+
+  const { data, error } = await supabase
+    .from('habit_logs')
+    .select('*, habits(name, emoji, type), profiles(id, display_name, username, avatar_color, avatar_url)')
+    .in('user_id', followingIds)
+    .eq('completed', true)
+    .gte('log_date', toDateStr(from))
+    .order('log_date', { ascending: false })
+    .order('created_at', { ascending: false })
+    .limit(60)
+
+  if (error) throw error
+  return (data || []).filter((l: any) => l.habits?.type === 'positive')
+}
+
+export async function getFollowingStreaks(userIds: string[]): Promise<Record<string, number>> {
+  if (userIds.length === 0) return {}
+  const from = new Date()
+  from.setDate(from.getDate() - 60)
+  const { data } = await supabase
+    .from('habit_logs')
+    .select('user_id, log_date')
+    .in('user_id', userIds)
+    .eq('completed', true)
+    .gte('log_date', toDateStr(from))
+  if (!data) return {}
+  const userDates: Record<string, Set<string>> = {}
+  for (const row of data) {
+    if (!userDates[row.user_id]) userDates[row.user_id] = new Set()
+    userDates[row.user_id].add(row.log_date)
+  }
+  const result: Record<string, number> = {}
+  const todayStr = toDateStr()
+  for (const [uid, dates] of Object.entries(userDates)) {
+    let streak = 0
+    const startI = dates.has(todayStr) ? 0 : 1
+    for (let i = startI; i <= 60; i++) {
+      const d = new Date()
+      d.setDate(d.getDate() - i)
+      if (dates.has(toDateStr(d))) streak++
+      else break
+    }
+    if (streak > 0) result[uid] = streak
+  }
+  return result
+}
+
+export async function getFollowingNewHabits(userId: string) {
+  const { data: followingData } = await supabase
+    .from('followers')
+    .select('following_id')
+    .eq('follower_id', userId)
+  if (!followingData || followingData.length === 0) return []
+  const followingIds = followingData.map((f: any) => f.following_id)
+  const from = new Date()
+  from.setDate(from.getDate() - 7)
+  const { data } = await supabase
+    .from('habits')
+    .select('id, name, emoji, created_at, user_id, profiles(id, display_name, username, avatar_color, avatar_url)')
+    .in('user_id', followingIds)
+    .eq('is_active', true)
+    .gte('created_at', from.toISOString())
+    .order('created_at', { ascending: false })
+    .limit(20)
+  return data || []
+}
+
+// ─── FEED REACTIONS ─────────────────────────────────────────
+export async function getFeedReactions(itemIds: string[]) {
+  if (itemIds.length === 0) return []
+  const { data } = await supabase
+    .from('feed_reactions')
+    .select('item_id, reaction_type, reactor_id')
+    .in('item_id', itemIds)
+  return data || []
+}
+
+export async function toggleFeedReaction(
+  reactorId: string,
+  itemId: string,
+  reactionType: 'fire' | 'clap'
+): Promise<boolean> {
+  const { data: existing } = await supabase
+    .from('feed_reactions')
+    .select('id')
+    .eq('reactor_id', reactorId)
+    .eq('item_id', itemId)
+    .eq('reaction_type', reactionType)
+    .maybeSingle()
+  if (existing) {
+    await supabase.from('feed_reactions').delete().eq('id', existing.id)
+    return false
+  }
+  await supabase.from('feed_reactions').insert({ reactor_id: reactorId, item_id: itemId, reaction_type: reactionType })
+  return true
+}
+
+// ─── TELEGRAM REQUESTS ───────────────────────────────────────
+// Yozish (yuborish/javob berish) send_telegram_request/respond_telegram_request
+// SECURITY DEFINER RPC'lari orqali — jadvalda client uchun to'g'ridan-to'g'ri
+// INSERT/UPDATE policy yo'q (037-migratsiya), shuning uchun so'rovchi statusni
+// o'zi "approved" qilib qo'ya olmaydi va 2 soatlik sovish muddati serverda
+// (client soatiga ishonmasdan) tekshiriladi.
+const TELEGRAM_REQUEST_COOLDOWN_MS = 2 * 60 * 60 * 1000
+
+export type TelegramRequestStatus = 'none' | 'pending' | 'approved' | 'cooldown'
+
+export async function getTelegramRequestStatus(
+  requesterId: string,
+  targetId: string
+): Promise<{ status: TelegramRequestStatus; retryAt?: string }> {
+  const { data } = await supabase
+    .from('telegram_requests')
+    .select('status, updated_at')
+    .eq('requester_id', requesterId)
+    .eq('target_id', targetId)
+    .maybeSingle()
+  if (!data) return { status: 'none' }
+  if (data.status === 'rejected') {
+    const retryAtMs = new Date(data.updated_at).getTime() + TELEGRAM_REQUEST_COOLDOWN_MS
+    if (Date.now() < retryAtMs) return { status: 'cooldown', retryAt: new Date(retryAtMs).toISOString() }
+    return { status: 'none' }
+  }
+  return { status: data.status as 'pending' | 'approved' }
+}
+
+export async function sendTelegramRequest(targetId: string) {
+  const { data, error } = await supabase.rpc('send_telegram_request', { p_target_id: targetId })
+  if (error) throw error
+  return data
+}
+
+export async function respondTelegramRequest(requestId: string, status: 'approved' | 'rejected') {
+  const { error } = await supabase.rpc('respond_telegram_request', { p_request_id: requestId, p_status: status })
+  if (error) throw error
+}
+
+// ─── STREAK FREEZE ───────────────────────────────────────────
+// Oyiga bepul muzlatishlar soni — yagona manba. Bu son ilgari Dashboard.tsx
+// (1) va HabitsLog.tsx (2) ichida alohida-alohida qattiq yozilgan bo'lib,
+// ikki ekranda "qolgan muzlatish" soni har xil ko'rinardi. Endi faqat
+// HabitsLog (Jurnal) shu doimiyni ishlatadi — muzlatish amali yagona shu
+// yerda.
+export const FREE_FREEZES_PER_MONTH = 2
+
+export async function getStreakFreezes(userId: string): Promise<string[]> {
+  const { data } = await supabase
+    .from('streak_freezes')
+    .select('freeze_date')
+    .eq('user_id', userId)
+  return (data || []).map((r: any) => r.freeze_date)
+}
+
+export async function getMonthlyFreezeCount(userId: string): Promise<number> {
+  const now = new Date()
+  const monthStart = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-01`
+  const { count } = await supabase
+    .from('streak_freezes')
+    .select('id', { count: 'exact', head: true })
+    .eq('user_id', userId)
+    .gte('freeze_date', monthStart)
+  return count || 0
+}
+
+export async function useStreakFreeze(userId: string, date: string): Promise<void> {
+  const { error } = await supabase
+    .from('streak_freezes')
+    .insert({ user_id: userId, freeze_date: date })
+  if (error) throw error
+}
+
+// ─── COIN SHOP ───────────────────────────────────────────────
+export async function purchaseCoinItem(userId: string, itemId: string, price: number): Promise<number> {
+  // spend_coins RPC bitta atomik UPDATE ichida balansni tekshiradi va yechadi,
+  // shu bilan ikkita bir vaqtdagi xarid (double-tap, 2 tab) bir xil boshlang'ich
+  // balansni o'qib, bir-birini bosib ketishining oldini oladi.
+  const { data: newBalance, error: rpcErr } = await supabase.rpc('spend_coins', { uid: userId, price })
+  if (rpcErr) throw new Error(rpcErr.message.includes('yetarli') ? rpcErr.message : 'Tangalar yetarli emas')
+  const { error } = await supabase.from('coin_purchases').insert({ user_id: userId, item_id: itemId })
+  if (error) {
+    try { await supabase.rpc('increment_coins', { uid: userId, delta: price }) } catch {}
+    throw error
+  }
+  return newBalance as number
+}
+
+// ─── KUNLIK VAZIFALAR (Daily Quests) ────────────────────────
+export async function getTodayQuestClaims(userId: string): Promise<Set<string>> {
+  const today = toDateStr()
+  const { data } = await supabase
+    .from('daily_quest_claims')
+    .select('quest_id')
+    .eq('user_id', userId)
+    .eq('quest_date', today)
+  return new Set((data || []).map((r) => r.quest_id))
+}
+
+// Shart serverda claim_daily_quest() RPC ichida mustaqil qayta tekshiriladi
+// (bu yerdagi hisob-kitob faqat UI uchun) — shuning uchun client hech qachon
+// tekshiruvsiz mukofot ololmaydi.
+export async function claimDailyQuest(userId: string, questId: string): Promise<number> {
+  const { data, error } = await supabase.rpc('claim_daily_quest', { uid: userId, p_quest_id: questId })
+  if (error) throw error
+  return data as number
+}
+
+export async function getExtraFreezeCount(userId: string): Promise<number> {
+  const now = new Date()
+  const monthStart = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-01`
+  const { count } = await supabase
+    .from('coin_purchases')
+    .select('id', { count: 'exact', head: true })
+    .eq('user_id', userId)
+    .eq('item_id', 'streak_freeze')
+    .gte('purchased_at', monthStart)
+  return count || 0
+}
+
+export async function hasShopBadge(userId: string, itemId: string): Promise<boolean> {
+  const { data } = await supabase
+    .from('coin_purchases')
+    .select('id')
+    .eq('user_id', userId)
+    .eq('item_id', itemId)
+    .maybeSingle()
+  return !!data
+}
+
+// Do'kondagi kosmetika (ramka/rang) egaligini bitta so'rovda tekshirish —
+// har bir item uchun alohida hasShopBadge chaqirishdan qochish uchun.
+export async function getOwnedItemIds(userId: string): Promise<Set<string>> {
+  const { data } = await supabase
+    .from('coin_purchases')
+    .select('item_id')
+    .eq('user_id', userId)
+  return new Set((data || []).map((r) => r.item_id))
+}
+
+// Ramkalar 30 kunga sotib olinadi (doimiy emas) — har bir frame_* item_id
+// uchun ENG SO'NGGI xarid sanasini qaytaradi, shundan CoinShopModal muddat
+// tugash sanasini hisoblaydi va "sizda bor" holatini shunga qarab ko'rsatadi.
+export async function getFramePurchases(userId: string): Promise<Map<string, string>> {
+  const { data } = await supabase
+    .from('coin_purchases')
+    .select('item_id, purchased_at')
+    .eq('user_id', userId)
+    .in('item_id', ['frame_bronze', 'frame_silver', 'frame_gold'])
+    .order('purchased_at', { ascending: false })
+  const map = new Map<string, string>()
+  for (const row of data || []) {
+    if (!map.has(row.item_id)) map.set(row.item_id, row.purchased_at)
+  }
+  return map
+}
+
+// Foydalanuvchi kirganda yoki do'konni ochganda chaqiriladi — agar hozir
+// faollashtirilgan ramkaning xaridi 30 kundan oshgan bo'lsa, serverda
+// avtomatik yechib tashlaydi (profiles.active_frame = null) va joriy
+// (yechilgandan keyingi) qiymatni qaytaradi.
+export async function cleanupExpiredFrame(userId: string): Promise<string | null> {
+  const { data, error } = await supabase.rpc('cleanup_expired_frame', { uid: userId })
+  if (error) return null
+  return data as string | null
+}
+
+// ─── STAR STATUS (30 kunlik obuna, 500 tanga) ─────────────────
+// buy_star RPC balansni atomik tekshiradi/yechadi va star_expires_at'ni
+// yangilaydi (agar hali faol Star bo'lsa, muddat cho'ziladi, aks holda
+// hozirdan 30 kun) — qaytadigan qiymat yangi tugash sanasi.
+export async function buyStar(userId: string): Promise<string> {
+  const { data, error } = await supabase.rpc('buy_star', { uid: userId })
+  if (error) throw error
+  return data as string
+}
+
+export function isStarActive(profile: { has_star?: boolean; star_expires_at?: string | null }): boolean {
+  return !!profile.has_star && !!profile.star_expires_at && new Date(profile.star_expires_at) > new Date()
+}
+
+// ─── ACHIEVEMENTS ENGINE ───────────────────────────────────────
+export type Achievement = {
+  id: string
+  user_id: string
+  achievement_key: string
+  icon: string
+  unlocked_at: string
+}
+
+export async function getAchievements(userId: string): Promise<Achievement[]> {
+  const { data, error } = await supabase
+    .from('achievements')
+    .select('*')
+    .eq('user_id', userId)
+    .order('unlocked_at', { ascending: false })
+  if (error) throw error
+  return data || []
+}
+
+// Har bir habit_log yozuvidan keyin chaqiriladi (fire-and-forget) — server
+// haqiqiy streak/izchillikni o'zi tekshiradi, client faqat "tekshirib ko'r"
+// deb so'raydi. Yangi ochilgan yutuqlar sarlavhalari qaytariladi (toast
+// ko'rsatish uchun); hech narsa yangi bo'lmasa bo'sh massiv.
+export async function checkAndUnlockAchievements(userId: string): Promise<string[]> {
+  const { data, error } = await supabase.rpc('check_and_unlock_achievements', { p_user_id: userId })
+  if (error) throw error
+  return (data || []).map((row: any) => row.achievement_key)
+}
+
+// ─── GROUP TELEGRAM LINK ──────────────────────────────────────
+export async function updateGroupTelegramLink(groupId: string, link: string | null) {
+  const { error } = await supabase
+    .from('groups')
+    .update({ telegram_link: link })
+    .eq('id', groupId)
+  if (error) throw error
+}
+
+// ─── TELEGRAM BOT ────────────────────────────────────────────
+export async function unlinkTelegramBot(_userId: string) {
+  // telegram_chat_id endi to'g'ridan-to'g'ri update qilib bo'lmaydigan ustun —
+  // faqat bot backend (service role) uni bog'lay oladi. Uzish uchun RPC ishlatamiz.
+  const { error } = await supabase.rpc('unlink_telegram_bot')
+  if (error) throw error
+}
+
+// ─── GROUP SUBTEAMS ───────────────────────────────────────────
+export async function getGroupSubteams(groupId: string) {
+  const { data, error } = await supabase
+    .from('group_subteams')
+    .select(`id, name, emoji, created_by, created_at,
+      group_subteam_members(user_id, profiles(id, display_name, avatar_color, avatar_url, username))`)
+    .eq('group_id', groupId)
+    .order('created_at')
+  if (error) throw error
+  return data || []
+}
+
+export async function createSubteam(groupId: string, name: string, emoji: string, createdBy: string) {
+  const { data, error } = await supabase
+    .from('group_subteams')
+    .insert({ group_id: groupId, name, emoji, created_by: createdBy })
+    .select()
+    .single()
+  if (error) throw error
+  return data
+}
+
+export async function addSubteamMember(subteamId: string, userId: string) {
+  const { error } = await supabase
+    .from('group_subteam_members')
+    .insert({ subteam_id: subteamId, user_id: userId })
+  if (error && error.code !== '23505') throw error
+}
+
+export async function removeSubteamMember(subteamId: string, userId: string) {
+  const { error } = await supabase
+    .from('group_subteam_members')
+    .delete()
+    .eq('subteam_id', subteamId)
+    .eq('user_id', userId)
+  if (error) throw error
+}
+
+export async function deleteSubteam(subteamId: string) {
+  const { error } = await supabase
+    .from('group_subteams')
+    .delete()
+    .eq('id', subteamId)
+  if (error) throw error
+}
+
+// ─── HEALTH LOGS ──────────────────────────────────────────────
+export async function getHealthLog(userId: string, date: string) {
+  const { data } = await supabase
+    .from('health_logs')
+    .select('*')
+    .eq('user_id', userId)
+    .eq('log_date', date)
+    .maybeSingle()
+  return data
+}
+
+export async function upsertHealthLog(
+  userId: string,
+  date: string,
+  fields: {
+    steps?: number | null;
+    sleep_hours?: number | null;
+    water_glasses?: number | null;
+    screen_time_hours?: number | null;
+    nature_time_minutes?: number | null;
+    social_time_minutes?: number | null;
+    calories?: number | null;
+    heart_rate?: number | null;
+  }
+) {
+  const { error } = await supabase
+    .from('health_logs')
+    .upsert({ user_id: userId, log_date: date, ...fields }, { onConflict: 'user_id,log_date' })
+  if (error) throw error
+}
+
+// Kunlik Jurnaldagi "Raqamli Ko'rsatkichlar" slaydiri (Tabiat/Ijtimoiy
+// tarmoq vaqti) uchun tor qavatlash — bular alohida odat emas (habit_id
+// yo'q), shuning uchun health_logs'dagi mos ustunga yoziladi, xuddi
+// sleep_hours/screen_time_hours kabi boshqa kunlik sog'liq
+// ko'rsatkichlari bilan bir xil "yagona manba" jadvalida.
+export type HabitMetricKey = 'nature_time_minutes' | 'social_time_minutes'
+
+export async function upsertHabitMetric(
+  userId: string,
+  metricKey: HabitMetricKey,
+  logDate: string,
+  value: number
+): Promise<void> {
+  if (isLogDateLocked(logDate)) throw new Error(LOG_LOCKED_MESSAGE)
+  await upsertHealthLog(userId, logDate, { [metricKey]: value })
+}
+
+export async function getMonthHealthLogs(userId: string, year: number, month: number): Promise<any[]> {
+  const from = `${year}-${String(month).padStart(2, '0')}-01`
+  const lastDay = new Date(year, month, 0).getDate()
+  const to = `${year}-${String(month).padStart(2, '0')}-${String(lastDay).padStart(2, '0')}`
+  const { data, error } = await supabase
+    .from('health_logs')
+    .select('log_date, sleep_hours, screen_time_hours')
+    .eq('user_id', userId)
+    .gte('log_date', from)
+    .lte('log_date', to)
+  if (error) throw error
+  return data || []
+}
+
+export async function getWeeklyHealthLogs(userId: string): Promise<any[]> {
+  const from = new Date()
+  from.setDate(from.getDate() - 6)
+  const { data } = await supabase
+    .from('health_logs')
+    .select('log_date, steps, sleep_hours, water_glasses, screen_time_hours, calories, heart_rate')
+    .eq('user_id', userId)
+    .gte('log_date', toDateStr(from))
+    .order('log_date')
+  return data || []
+}

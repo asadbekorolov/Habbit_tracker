@@ -1,0 +1,324 @@
+<!doctype html>
+<html lang="uz">
+<head>
+<meta charset="utf-8">
+<title>Gamifikatsiya — Coin Economy</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0B0F1A; --bg-2: #111827; --bg-3: #1F2937;
+    --accent: #22C55E; --gold: #F59E0B; --gold-dark: #D97706;
+    --bronze: #CD7F32; --silver: #C0C0C0;
+    --text: #F8FAFC; --text-dim: #94A3B8; --text-mute: #64748B;
+    --border: rgba(148,163,184,0.18);
+  }
+  body { margin:0; padding:0; background:#000; overflow:hidden; font-family:'Inter',sans-serif; }
+  .slide-container { position:relative; width:1920px; height:1080px; overflow:hidden;
+    background:
+      radial-gradient(ellipse 1000px 700px at 50% 0%, rgba(245,158,11,0.18), transparent 60%),
+      radial-gradient(ellipse 700px 500px at 100% 100%, rgba(34,197,94,0.16), transparent 60%),
+      radial-gradient(ellipse 800px 500px at 0% 50%, rgba(34,197,94,0.10), transparent 60%),
+      linear-gradient(180deg, #0B0F1A 0%, #050810 100%);
+  }
+  .grid-bg { position:absolute; inset:0; opacity:0.16; pointer-events:none; z-index:1;
+    background-image:
+      linear-gradient(rgba(245,158,11,0.07) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(245,158,11,0.07) 1px, transparent 1px);
+    background-size: 80px 80px;
+    mask-image: radial-gradient(ellipse 1100px 700px at center, #000 30%, transparent 75%);
+    -webkit-mask-image: radial-gradient(ellipse 1100px 700px at center, #000 30%, transparent 75%);
+  }
+  .glow-md { position:absolute; left:40%; top:-200px; width:700px; height:700px; border-radius:50%;
+    background: radial-gradient(circle, rgba(245,158,11,0.30), transparent 65%);
+    filter: blur(90px); z-index:1; pointer-events:none;
+  }
+
+  .eyebrow { position:absolute; left:90px; top:80px; z-index:10;
+    display:inline-flex; align-items:center; gap:10px; padding:10px 22px; border-radius:999px;
+    background:rgba(245,158,11,0.10); border:1px solid rgba(245,158,11,0.45);
+    color:#F59E0B; font-size:15px; font-weight:600; letter-spacing:0.18em; text-transform:uppercase;
+  }
+  .eyebrow .dot { width:8px; height:8px; border-radius:50%; background:#F59E0B;
+    box-shadow:0 0 12px #F59E0B; }
+
+  .headline {
+    position:absolute; left:90px; top:160px; width:1300px; z-index:10;
+    margin:0;
+    font-size:72px; font-weight:800; line-height:1.0; letter-spacing:-0.035em;
+    color:#F8FAFC;
+  }
+  .headline .gold { color:#F59E0B; text-shadow:0 0 30px rgba(245,158,11,0.40); }
+  .headline .underline { position:relative; display:inline-block; }
+  .headline .underline::after {
+    content:''; position:absolute; left:0; right:0; bottom:6px; height:4px;
+    background:#F59E0B; border-radius:2px;
+  }
+
+  /* LIVE SCREENSHOT (PROFILE / COIN SHOP) - LEFT BIG */
+  .live-wrap {
+    position:absolute; left:60px; top:380px; width:700px; height:580px; z-index:5;
+    display:flex; align-items:center; justify-content:center;
+  }
+  .live-frame {
+    position:relative; width:680px; height:580px; border-radius:24px; overflow:hidden;
+    background:#0B0F1A;
+    box-shadow:
+      0 0 0 2px rgba(245,158,11,0.45),
+      0 0 0 6px rgba(11,15,26,0.95),
+      0 0 60px rgba(245,158,11,0.30),
+      0 30px 80px rgba(0,0,0,0.55);
+    transform: perspective(1600px) rotateY(5deg) rotateX(2deg);
+  }
+  .live-frame img { width:100%; height:100%; object-fit:cover; display:block; }
+  .live-tag {
+    position:absolute; right:-30px; top:30px;
+    padding:8px 14px; border-radius:999px; background:rgba(11,15,26,0.95);
+    border:1px solid rgba(245,158,11,0.45); backdrop-filter: blur(8px);
+    font-family:'JetBrains Mono',monospace; font-size:12px; color:#F59E0B;
+    letter-spacing:0.05em;
+  }
+  .live-tag .d { width:6px; height:6px; border-radius:50%; background:#F59E0B;
+    display:inline-block; margin-right:6px; box-shadow:0 0 8px #F59E0B; }
+
+  /* Right column - 3 RANK CARDS */
+  .rank-col { position:absolute; right:60px; top:380px; width:740px; z-index:10; }
+  .rank-h { color:#F8FAFC; font-size:24px; font-weight:700; margin-bottom:20px;
+    display:flex; align-items:center; gap:12px;
+  }
+  .rank-h::before { content:''; display:inline-block; width:5px; height:24px;
+    background:#F59E0B; border-radius:3px; }
+
+  .rank-card {
+    position:relative; padding:24px 26px; border-radius:18px; margin-bottom:18px;
+    background: linear-gradient(180deg, rgba(20,30,48,0.85) 0%, rgba(11,15,26,0.92) 100%);
+    border:1px solid rgba(148,163,184,0.16);
+    display:flex; align-items:center; gap:22px;
+    overflow:hidden;
+  }
+  .rank-card.silver::before { content:''; position:absolute; left:0; top:0; bottom:0; width:5px;
+    background:linear-gradient(180deg,#C0C0C0,#A8A8A8); }
+  .rank-card.bronze::before { content:''; position:absolute; left:0; top:0; bottom:0; width:5px;
+    background:linear-gradient(180deg,#CD7F32,#A0522D); }
+  .rank-card.gold::before { content:''; position:absolute; left:0; top:0; bottom:0; width:5px;
+    background:linear-gradient(180deg,#F59E0B,#D97706); }
+
+  .rank-icon {
+    position:relative; width:60px; height:60px; border-radius:50%; flex:none;
+    display:flex; align-items:center; justify-content:center;
+  }
+  .rank-icon svg { width:30px; height:30px; }
+  .rank-icon.bronze {
+    background: radial-gradient(circle, rgba(205,127,50,0.30), transparent 70%);
+    border:1px solid rgba(205,127,50,0.55);
+  }
+  .rank-icon.bronze svg { color:#CD7F32; fill:#CD7F32; }
+  .rank-icon.silver {
+    background: radial-gradient(circle, rgba(192,192,192,0.30), transparent 70%);
+    border:1px solid rgba(192,192,192,0.55);
+  }
+  .rank-icon.silver svg { color:#C0C0C0; fill:#C0C0C0; }
+  .rank-icon.gold {
+    background: radial-gradient(circle, rgba(245,158,11,0.40), transparent 70%);
+    border:1px solid rgba(245,158,11,0.65);
+  }
+  .rank-icon.gold svg { color:#F59E0B; fill:#F59E0B; }
+
+  .rank-body { flex:1; min-width:0; }
+  .rank-name { margin:0 0 4px; color:#F8FAFC; font-size:22px; font-weight:700; }
+  .rank-desc { margin:0; color:#94A3B8; font-size:14px; line-height:1.4; }
+  .rank-cost {
+    flex:none; padding:8px 18px; border-radius:10px;
+    background: rgba(245,158,11,0.10); border:1px solid rgba(245,158,11,0.35);
+    color:#F59E0B; font-family:'JetBrains Mono',monospace; font-size:16px;
+    font-weight:700; letter-spacing:0.05em;
+  }
+  .rank-cost .coin { font-size:12px; opacity:0.85; margin-left:4px; }
+
+  /* Bottom strip - flow of coins */
+  .flow-strip { position:absolute; left:90px; top:1000px; right:90px; height:0; }
+
+  /* Coin flow visualization - centered between left and right */
+  .flow { position:absolute; left:90px; top:930px; right:90px; z-index:10;
+    display:flex; align-items:center; justify-content:center; gap:0; padding:0;
+  }
+  .flow-step {
+    flex:1; padding:14px 22px; border-radius:14px;
+    background:rgba(11,15,26,0.85); border:1px solid var(--border);
+    display:flex; align-items:center; gap:14px;
+  }
+  .flow-icon {
+    width:38px; height:38px; border-radius:10px; flex:none;
+    display:flex; align-items:center; justify-content:center;
+  }
+  .flow-icon.green { background:rgba(34,197,94,0.12); color:#22C55E; }
+  .flow-icon.gold { background:rgba(245,158,11,0.12); color:#F59E0B; }
+  .flow-icon.cyan { background:rgba(56,189,248,0.12); color:#38BDF8; }
+  .flow-icon svg { width:18px; height:18px; }
+  .flow-text { color:#CBD5E1; font-size:14px; line-height:1.3; }
+  .flow-text b { color:#F8FAFC; font-weight:600; display:block; }
+  .flow-text small { color:#64748B; font-size:11px; letter-spacing:0.05em;
+    text-transform:uppercase; display:block; margin-bottom:2px; }
+  .flow-arrow {
+    color:#64748B; font-size:24px; font-weight:700; padding:0 10px;
+    display:flex; align-items:center; justify-content:center;
+  }
+
+  /* Big left-side text below headline */
+  .summary {
+    position:absolute; left:90px; top:380px; width:680px; z-index:15;
+    margin:0; color:#CBD5E1; font-size:18px; line-height:1.5;
+  }
+  .summary b { color:#F8FAFC; font-weight:600; }
+  .summary em { color:#F59E0B; font-style:normal; font-weight:600; }
+
+  .footer-meta {
+    position:absolute; left:90px; bottom:50px; right:90px; z-index:10;
+    display:flex; justify-content:space-between; align-items:center;
+    color:#64748B; font-size:13px; letter-spacing:0.10em;
+    text-transform:uppercase; font-weight:500;
+  }
+  .footer-meta .pg { font-family:'JetBrains Mono',monospace; color:#F59E0B; font-weight:600; }
+
+  h1.headline { margin:0; }
+</style>
+</head>
+<body>
+<div class="slide-container">
+
+  <div class="grid-bg"></div>
+  <div class="glow-md"></div>
+
+  <div data-object="true" data-object-type="textbox" style="z-index:10;">
+    <div class="eyebrow">
+      <span class="dot"></span>
+      <span>Gamifikatsiya · 04 / 06</span>
+    </div>
+  </div>
+
+  <div data-object="true" data-object-type="textbox" style="width:1300px; z-index:10;">
+    <h1 class="headline">
+      Coin Economy — Intizom<br>
+      <span class="underline">uchun <span class="gold">haqiqiy mukofot</span></span>
+    </h1>
+  </div>
+
+  <!-- LEFT-SIDE SUMMARY -->
+  <div data-object="true" data-object-type="textbox" style="width:680px; z-index:15;">
+    <p class="summary">
+      Tasdiqlangan har bir <b>ijobiy odat</b> uchun <em>tangalar (coins)</em> ishlanadi.
+      Tangalar evaziga 30 kunlik muddatli eksklyuziv <b>profil ramkalari</b> (Bronza, Kumush, Oltin)
+      va neon ism effektlarini sotib olish mumkin. <b>Coin → iqtidor, intizom → mukofot.</b>
+    </p>
+  </div>
+
+  <!-- LIVE SCREENSHOT - PROFILE ILLUSTRATION -->
+  <div data-object="true" data-object-type="image" class="live-wrap" style="position:absolute; left:60px; top:560px; width:700px; height:430px; z-index:5;">
+    <div class="live-frame" style="width:660px; height:430px;">
+      <img src="../assets/coin-shop.png" alt="Tanga Do'koni — Oltin ramka">
+    </div>
+    <div class="live-tag"><span class="d"></span>shop.tsx · LIVE</div>
+  </div>
+
+  <!-- RIGHT COLUMN - 3 RANK CARDS -->
+  <div data-object="true" data-object-type="textbox" style="position:absolute; right:60px; top:380px; width:740px; z-index:10;">
+    <div class="rank-h">Profil Ramkalari Darajasi</div>
+
+    <div class="rank-card bronze">
+      <div class="rank-icon bronze">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M12 2l2.4 7.4H22l-6.2 4.5 2.4 7.4L12 16.8 5.8 21.3l2.4-7.4L2 9.4h7.6z"/>
+        </svg>
+      </div>
+      <div class="rank-body">
+        <h3 class="rank-name">Bronza Ramka 🥉</h3>
+        <p class="rank-desc">Boshlang'ich foydalanuvchilar uchun. Asosiy identifikator.</p>
+      </div>
+      <div class="rank-cost">1<span class="coin">coin</span></div>
+    </div>
+
+    <div class="rank-card silver">
+      <div class="rank-icon silver">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M12 2l2.4 7.4H22l-6.2 4.5 2.4 7.4L12 16.8 5.8 21.3l2.4-7.4L2 9.4h7.6z"/>
+        </svg>
+      </div>
+      <div class="rank-body">
+        <h3 class="rank-name">Kumush Ramka 🥈</h3>
+        <p class="rank-desc">Doimiy foydalanuvchilar uchun o'rta martaba bosqichi.</p>
+      </div>
+      <div class="rank-cost">20<span class="coin">coin</span></div>
+    </div>
+
+    <div class="rank-card gold">
+      <div class="rank-icon gold">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M12 2l2.4 7.4H22l-6.2 4.5 2.4 7.4L12 16.8 5.8 21.3l2.4-7.4L2 9.4h7.6z"/>
+        </svg>
+      </div>
+      <div class="rank-body">
+        <h3 class="rank-name">Oltin Ramka 🥇</h3>
+        <p class="rank-desc">Premium foydalanuvchilar uchun elit identifikator + neon effekt.</p>
+      </div>
+      <div class="rank-cost" style="background:rgba(34,197,94,0.10); border-color:rgba(34,197,94,0.40); color:#22C55E;">
+        500<span class="coin">coin</span> <span style="color:#22C55E; margin-left:6px;">✓ Sotib olingan</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- COIN FLOW -->
+  <div data-object="true" data-object-type="textbox" style="z-index:10;">
+    <div class="flow">
+      <div class="flow-step">
+        <div class="flow-icon green">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M9 11l3 3L21 5"/><path d="M20 12v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h12"/></svg>
+        </div>
+        <div class="flow-text">
+          <b>Odat bajarildi</b>
+          <small>Qabul qilindi</small>
+        </div>
+      </div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-step">
+        <div class="flow-icon gold">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 6v12M9 9h6M9 15h6"/></svg>
+        </div>
+        <div class="flow-text">
+          <b>+1 tanga qo'shildi</b>
+          <small>Avtomatik tarqatish</small>
+        </div>
+      </div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-step">
+        <div class="flow-icon cyan">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M3 9h18M9 21V9"/></svg>
+        </div>
+        <div class="flow-text">
+          <b>Do'konda sarflang</b>
+          <small>Ramkalar, effektlar</small>
+        </div>
+      </div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-step">
+        <div class="flow-icon gold">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 2l2.4 7.4H22l-6.2 4.5 2.4 7.4L12 16.8 5.8 21.3l2.4-7.4L2 9.4h7.6z"/></svg>
+        </div>
+        <div class="flow-text">
+          <b>Eksklyuziv nishon</b>
+          <small>Profilga o'rnatildi</small>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div data-object="true" data-object-type="textbox" style="z-index:10;">
+    <div class="footer-meta">
+      <span>Tracker · Odat Kuzatuvchi · <span class="pg">04 / 06</span></span>
+      <span>Gamifikatsiya va Coin Economy</span>
+    </div>
+  </div>
+
+</div>
+</body>
+</html>

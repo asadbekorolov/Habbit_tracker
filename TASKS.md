@@ -1,0 +1,248 @@
+# Traccer — Vazifalar ro'yxati
+
+## 🎯 KEYINGI QADAM (NEXT STEP / CURRENT FOCUS)
+> [!IMPORTANT]
+> **Mobil ilovani ishlab chiqish (Mobile App Development):** Loyihani ko'rib chiqishda va keyingi bosqichlarda eng ustuvor vazifa — Capacitor asosida Android va iOS mobil ilovasini to'liq ishlab chiqish, moslashtirish, sinovdan o'tkazish va ishga tushirish.
+
+---
+
+## 🔴 Roadmap & Backlog (joriy ustuvorlik)
+
+### 1. Yuqori ustuvorlik va xato tuzatishlar
+- [x] **Admin fikr-mulohaza ko'rish/eksport:** Kod allaqachon to'liq mavjud edi (AdminPanel → Fikr-mulohaza tab, CSV eksport). Email o'rniga shu tanlandi. Faqat production deploy qilinishini kutmoqda (Vercel webhook muammosi tufayli).
+- [x] **Daraja (Level) balansini qayta ko'rib chiqish:** 5 tadan 10 ta darajaga o'tkazildi, eksponensial formula `round(N^1.5 * 100)` bilan (0/283/520/800/1118/1470/1852/2263/2700/3162). Client (`levels.ts`) va server (`calculate_level()` SQL, migration 024) ikkalasi ham yangilandi.
+
+### 2. Adolatli reyting (Global Reyting / Tahlil)
+- [x] **Samaradorlikka asoslangan reyting:** `get_leaderboard()` va yangi `get_user_rank_efficiency()` endi so'nggi 30 kunlik `(bajarilgan / faol odatlar soni * kunlar) * 100` samaradorlik foiziga qarab tartiblanadi (xom ball emas). Reyting sahifasida foiz asosiy ko'rsatkich, ball kichik ikkinchi darajali statistika sifatida qoladi.
+
+### 3. Coin Do'kon va Monetizatsiya
+- [x] **Do'konni kengaytirish:** Profil ramkalari (bronza/kumush/oltin — sotib olib "Faollashtirish" bilan tanlanadi, avatar ko'rinadigan hamma joyda: Profil, Reyting, boshqa profil) va maxsus avatar gradientlari (3 ta, Profilni tahrirlashda tanlanadi) qo'shildi. Egalik `coin_purchases` jadvali orqali umumiy tarzda kuzatiladi.
+- [x] **Ramka muddati (30 kun) + narx balansi + Yaltiroq ism:** Ramkalar endi 30 kunlik xarid (`cleanup_expired_frame()` RPC — kirganda/do'kon ochilganda avtomatik yechadi, reytingda ham mustaqil tekshiriladi). Aniq "Faollashtirish"/"O'chirish" tugmasi va "N kun qoldi" ko'rsatkichi qo'shildi. Narxlar qayta balanslandi: Bronza 8, Kumush 20, Oltin 50 (avval 15/30/60). Yangi doimiy kosmetika: "Yaltiroq ism" (40🪙, `profiles.username_glow`) — Profil, boshqa profil va Reytingda ismi yaltirab ko'rinadi, dark/light rejimga moslashadi. Migratsiya: `028_frame_expiry_and_username_glow.sql`.
+- [x] **Kunlik vazifalar (Daily Quests) + Guruh haftalik musobaqasi:** Bosh sahifada 3 ta kunlik vazifa kartasi (3 ta odat bajarish +5🪙, kunni 100% yakunlash +10🪙, salbiy odatga qarshi turish +5🪙) — shart har doim serverda (`claim_daily_quest()` RPC) mustaqil tekshiriladi, firibgarlik imkonsiz. Guruh "Reyting" tabida jonli "Shu hafta" mini-reyting va o'tgan hafta g'olibiga avtomatik +20🪙 mukofot banneri (`settle_group_week()` — kirganda o'z-o'zini hisoblaydi, cron shart emas). Migratsiya: `029_daily_quests_and_group_weekly.sql`.
+- [~] **Monetizatsiya integratsiyasi:** Arxitektura tayyorlandi — `docs/Monetization_Architecture.md` (Click/Payme oqimi, `payment_transactions` jadvali, xavfsizlik nazorat ro'yxati). Kod hali yozilmagan — merchant hisobi va API kalitlari kutilmoqda.
+
+### 4. Guruh A'zoligini Boshqarish (Group Membership & Management Rework)
+- [x] **Guruhdan chiqish:** Oddiy a'zo istalgan payt chiqadi. Asosiy sardor faqat (a) yagona a'zo bo'lsa (guruh butunlay o'chadi) yoki (b) avval egalikni boshqasiga topshirgandan keyin chiqa oladi.
+- [x] **Guruhni o'chirish:** Faqat asosiy sardor — guruh sozlamalari (⚙️) menyusidan, ikki bosishli tasdiqlash bilan. Barcha bog'liq odat/log/a'zolik yozuvlari kaskad orqali tozalanadi.
+- [x] **A'zoni chiqarib yuborish:** Sardor va co-adminlar A'zolar tabidan istalgan (o'zidan va asosiy sardordan tashqari) a'zoni chiqarib yubora oladi.
+- [x] **Ikkinchi admin (co-admin):** Asosiy sardor A'zolar tabidan istalgan a'zoga admin huquqi bera/olib tashlay oladi (`group_members.role`) — co-admin odat qo'shish/o'chirish, isbot tasdiqlash/rad etish va a'zo chiqarib yuborishni bajara oladi, lekin guruhni o'chira yoki boshqa birovni admin qila olmaydi. Egalikni to'liq topshirish (`transfer_group_ownership`) ham qo'shildi.
+
+Migratsiya: `031_group_membership_management.sql`.
+
+### 5. Guruh Odatlarini Yaxshilash
+- [x] **Guruh odatini tahrirlash:** Admin/co-admin endi mavjud guruh odatini (nom/emoji/tur/maqsad/birlik) o'chirib-qayta yaratmasdan tahrirlay oladi.
+- [x] **Guruh ↔ shaxsiy odatlarni integratsiyalash ("Avtomatik nusxa"):** Admin guruhga odat qo'shganda, har bir a'zoning shaxsiy "Odatlar" ro'yxatiga ham bog'langan nusxa avtomatik yaratiladi (`group_habit_links`). Yangi a'zo qo'shilganda mavjud guruh odatlariga ham avtomatik bog'lanadi (trigger). Guruhda bajarib sardor tasdiqlasa — bog'langan shaxsiy odat ham `completed=true` bo'ladi va bugungi kun uchun ball/tanga/XP avtomatik beriladi (`approve_group_log` yangilandi) — endi bitta ishni ikki marta belgilash shart emas. Guruh odatini tahrirlash/o'chirish ham bog'langan barcha shaxsiy nusxalarga tarqaladi.
+
+- [x] **Bog'lashda dublikatning oldini olish:** 033 dastlab har doim YANGI shaxsiy odat yaratardi — a'zoda nomi bir xil odat ALLAQACHON bo'lsa ham. Endi avval mavjud faol odatlar orasidan nomi mos kelganini qidiradi va o'shanga bog'lanadi; allaqachon yaratilgan dublikatlar ham bitta migratsiyada tozalanadi (eskisi asosiy sifatida qoladi, loglar ko'chiriladi).
+
+Migratsiya: `033_group_personal_habit_integration.sql` (+ `032_group_habit_logs_approval_columns.sql`, `034_group_habit_link_dedupe.sql`).
+
+- [x] **`approval_status` ustuni PostgREST embed ziddiyati:** 032-migratsiya `approved_by` (profiles'ga FK) qo'shgandan keyin `group_habit_logs`dan `profiles(...)` so'ralganda PostgREST ikkita FK (`user_id` va `approved_by`) orasida ziddiyatga tushib "more than one relationship was found" xatosini berdi. `profiles!user_id(...)` aniq hint bilan tuzatildi (`getPendingGroupApprovals`, `getAllPendingApprovals`, `getRecentRejections`, `getGroupMembersMonthlyStats`).
+- [x] **Guruh "Tahlil" bo'limini kengaytirish:** oldingi versiya faqat a'zolar bo'yicha oddiy tasdiqlangan/kutilayotgan/rad etilgan foizini ko'rsatardi va ma'lumot bo'lmasa butunlay bo'sh edi. Endi shaxsiy "Tahlil" sahifasiga o'xshab: 4 ta KPI karta (jami bajarildi, faol a'zolar, kutilayotgan, o'rtacha bajarish %), kunlik faollik trend grafigi (recharts), odat kesimida taqsimot (qaysi odat ko'p bajarilyapti + necha kishi), va a'zolar reytingi (medal + profil rasmi bilan). Ma'lumot yo'q holatlar uchun alohida tushunarli xabar.
+- [x] **Guruh reyting/haftalik musobaqada profil rasmi:** `getGroupLeaderboard`/`getGroupWeeklyLeaderboard` `avatar_url`ni umuman qaytarmasdi, shu sabab "Reyting" va "Shu hafta" bo'limlari haqiqiy rasmi bor a'zolarda ham faqat bosh harf-doira ko'rsatardi (A'zolar tabidan farqli). Ikkalasiga ham `avatarUrl` qo'shilib, mavjud bo'lsa `<img>` ko'rsatiladigan bo'ldi.
+- [x] **Tasdiqlangandan keyin ball/tanga/XP berilmay qolish bug'i:** `approve_group_log()` mukofot shartiga `log_date = CURRENT_DATE` (server sanasi) qo'shgan edi. Bu ikki holatda mukofotni butunlay yo'qqa chiqarardi: (a) vaqt zonasi farqi — Postgres CURRENT_DATE odatda UTC, foydalanuvchi sanasi esa mahalliy vaqt (masalan Toshkent, UTC+5), shu sabab har kecha 00:00–05:00 oralig'ida ikkisi mos kelmaydi; (b) admin tasdiqlashni ertasi kuniga qoldirsa (odatiy holat) — bu orqaga sana bilan firibgarlik emas, chunki guruhda o'tmish sanasi uchun isbot yuborish imkoniyati umuman yo'q. Shart butunlay olib tashlandi, qayta mukofotlashdan himoya `xp_awarded`/`completed` bayrog'i orqali saqlanib qoldi. Allaqachon tasdiqlangan-u mukofotsiz qolgan loglar uchun bir martalik "to'ldirish" ham qo'shildi.
+
+Migratsiya: `035_fix_group_approval_reward_date_bug.sql`.
+
+- [x] **Guruh odatini qayta belgilashda "permission denied for table group_habit_logs":** `logGroupHabit()` klientdan to'g'ridan-to'g'ri `group_habit_logs`ga upsert qilardi va har safar `approval_status`ni ham yozardi. 003-migratsiya xavfsizlik uchun ataylab faqat `(completed, reps, proof_note)` ustunlariga UPDATE ruxsatini bergan (a'zo o'zini-o'zi "tasdiqlangan" qila olmasligi uchun) — shuning uchun BIRINCHI marta belgilash (INSERT) ishlaydi, lekin xuddi shu kun uchun IKKINCHI marta belgilash/izohni tuzatish (UPDATE yo'liga tushadi) xato berardi. Yechim: yozish `log_group_habit` SECURITY DEFINER RPC orqali ko'chirildi — u `auth.uid()`ni tekshiradi va har safar `approval_status`ni xavfsiz tarzda 'pending'ga qaytaradi (eski tasdiq/rad holati tozalanadi). Sana hamon client hisoblagan (mahalliy vaqt) qiymat sifatida uzatiladi — server `CURRENT_DATE`siga o'tilmadi (035dagi vaqt-zonasi muammosini qaytarmaslik uchun).
+
+Migratsiya: `036_log_group_habit_rpc.sql`.
+
+### 6. Telegram aloqa so'rovi (Public Profile)
+- [x] **`telegram_requests` jadvali yo'qligi:** `PublicProfileModal.tsx`/`NotificationBell.tsx` allaqachon `telegram_requests` jadvaliga ishonib yozilgan edi (`getTelegramRequestStatus`, `sendTelegramRequest`, tasdiqlash/rad etish UI), lekin jadvalning o'zi hech qachon yaratilmagan (003-migratsiya faqat `to_regclass(...) IS NOT NULL` sharti bilan RLS qo'yishga harakat qilgan — jadval yo'qligi sabab hech narsa qo'yilmagan). Natijada "Could not find the table 'public.telegram_requests'" xatosi. Endi jadval to'liq yaratildi: `requester_id`, `target_id`, `status` ('pending'/'approved'/'rejected'), `created_at`, `updated_at`, `UNIQUE(requester_id, target_id)`.
+- [x] **Xavfsiz yozish (RPC orqali):** jadvalda client uchun to'g'ridan-to'g'ri INSERT/UPDATE policy yo'q — aks holda so'rovchi statusni o'zi "approved" qilib qo'ya olardi. Yozish ikkita SECURITY DEFINER RPC orqali: `send_telegram_request(target_id)` (yuborish/qayta yuborish + bildirishnoma) va `respond_telegram_request(request_id, status)` (tasdiqlash/rad etish + bildirishnoma, ikkalasi ham `auth.uid()`ni serverda tekshiradi).
+- [x] **2 soatlik sovish muddati:** rad etilgan so'rov uchun serverda (`updated_at + 2 soat`) tekshiriladi — client soatiga ishonilmaydi. Muddat o'tmagan bo'lsa `send_telegram_request` `'COOLDOWN'` xatosini qaytaradi, frontend buni ushlab holatni "cooldown" qilib ko'rsatadi (qolgan vaqt bilan: "{h} soat {m} daqiqadan so'ng qayta urining").
+- [x] **`getTelegramRequestStatus` to'liq holat qaytaradi:** endi `'none' | 'pending' | 'approved' | 'cooldown'` (+ `retryAt`) — avvalgi versiya faqat `'none'/'pending'/'approved'`ni bilardi, rad etilganini "none" deb ko'rsatib, sovish muddatisiz darhol qayta so'rovga yo'l qo'yardi.
+- [x] **Rad etilganda bildirishnoma:** avval `rejectTelegramRequest` so'rovchiga hech qanday xabar yubormasdi. Endi rad etilganda ham bildirishnoma boradi ("2 soatdan so'ng qayta urinib ko'rishingiz mumkin").
+- [x] **Tasdiqlangan bildirishnomani bosish profilni ochadi:** tasdiqlash bildirishnomasi endi `link: 'profile:<approver_id>'` bilan keladi; `NotificationBell` bu naqshni tanib, bosilganda `PublicProfileModal`ni to'g'ridan-to'g'ri o'sha foydalanuvchining profili bilan ochadi (u yerda endi "Telegramga o'tish" tugmasi to'g'ridan-to'g'ri ishlaydi) — buning uchun `NotificationBell`ga yangi `onUserClick` prop qo'shildi (`App.tsx`dagi mavjud `handleUserClick` bilan bog'landi).
+
+Migratsiya: `037_telegram_requests.sql`.
+
+### 7. Dark/Light rejim nomuvofiqligi (yon panel qorong'i, kontent aralash)
+- [x] **Ildiz sabab — majburiy `.dark` klassi:** `App.tsx`da IKKITA alohida `useEffect` bor edi: biri (`[isDark]` bog'liq) `<html>`ga `isDark` holatiga qarab to'g'ri `dark` klassini qo'yar/olib tashlar edi; ikkinchisi (bo'sh `[]` bog'liqlik — auth-init effekti ichida) esa har doim, `isDark`dan qat'i nazar, `document.documentElement.classList.add("dark")` deb SHART-SHARTSIZ qo'shib qo'yar edi. Ikkalasi ham mount paytida ishga tushgani uchun, agar foydalanuvchining holati/tizim sozlamasi YORUG' bo'lsa ham, DOM'dagi `dark` klassi doim majburan yoqilib qolar edi.
+- [x] **Nima uchun "yon panel qorong'i, kontent aralash" ko'rinishi paydo bo'lgan:** `Sidebar.tsx` faqat CSS o'zgaruvchilari (`var(--sidebar)` va h.k.) orqali rang oladi — bular DOM'dagi `dark` klassiga bog'liq, shuning uchun u har doim qorong'i ko'rinardi. `Dashboard.tsx`dagi ko'p elementlar esa React `isDark` holatini to'g'ridan-to'g'ri `isDark ? ... : ...` shaklida ishlatadi — bu holat yorug' bo'lsa, ular yorug' ranglarni chizadi. Ikki mexanizm bir-biriga mos kelishi kerak edi, lekin majburiy klass buni buzgan — natijada bir qismi qorong'i, bir qismi yorug' bo'lib qolgan.
+- [x] **Tuzatish:** keraksiz, shart-shartsiz `document.documentElement.classList.add("dark")` qatori butunlay olib tashlandi — endi DOM klassini FAQAT `[isDark]`ga bog'liq effekt boshqaradi.
+- [x] **Qo'shimcha kontrast tuzatish:** Bosh sahifadagi "Streak Freeze xavfda" banneri va "Muzlatilgan" belgisi matn rangi (`#93C5FD`) hech qachon o'zgarmas edi (na `isDark` shartiga, na CSS o'zgaruvchisiga bog'liq emas edi) — yorug' rejimda deyarli oq fonda o'qib bo'lmas darajada past kontrast berardi. Endi `isDark` holatiga qarab to'q ko'k (`#2563EB`, yorug' rejim uchun) yoki asl pastel ko'k (qorong'i rejim uchun) tanlanadi.
+
+Fayl: `src/App.tsx`, `src/features/dashboard/Dashboard.tsx` — SQL migratsiya kerak emas.
+
+### 8. Admin Monitoring: DAU "0" va "Eng ommabop odatlar — hali ma'lumot yo'q"
+- [x] **Xato butunlay yashiringan edi:** `AdminPanel.tsx`ning `loadMonitoring()` funksiyasi `get_admin_monitoring_stats()` RPC xato bersa, uni faqat brauzer konsoliga yozib qo'yardi (`console.error`) — ekranda esa shunchaki "0" va "Hali ma'lumot yo'q" ko'rinardi, xuddi haqiqatan ham ma'lumot yo'qdek. Endi xato matni interfeysda (qizil banner) ham ko'rsatiladi — shu bilan bu shu sessiyada bir necha marta uchragan "migratsiya yozilgan-u, lekin Supabase'da hech qachon ishga tushirilmagan" holatimi yoki haqiqatan ham ma'lumot yo'qligimi darhol bilinadi.
+- [x] **005-migratsiya obyektlari qaytadan xavfsiz tasdiqlandi:** `last_seen_at` ustuni, `touch_last_seen()` va `get_admin_monitoring_stats()` — barchasi `IF NOT EXISTS`/`CREATE OR REPLACE` bilan qayta yozildi (avvalgisi bilan bir xil, ishga tushirish xavfsiz — allaqachon mavjud bo'lsa ham hech narsa buzilmaydi).
+- [x] **"Eng ommabop odatlar" endi haqiqatan "hozirgi" ko'rsatkich:** avval BUTUN TARIX bo'yicha (sana chegarasisiz) hisoblanardi — bu "hamma vaqtdagi eng ko'p yozilgan" edi, "hozir ommabop" emas. Endi so'nggi 30 kun bilan chegaralandi.
+- DAU (`now() - interval '24 hours'`) hisoblash mantig'ining o'zi to'g'ri edi — `timestamptz` mutlaq vaqt bo'lgani uchun bu yerda avvalgi sessiyalarda uchragan vaqt-zonasi (`CURRENT_DATE`) turidagi xato yo'q edi.
+
+Migratsiya: `038_admin_monitoring_fix.sql`.
+
+### 9. To'liq Admin Analitika paneli
+- [x] **Eski holat:** "Analitika" tabi faqat `analytics_events` jadvalidagi 4 ta xom hodisa qatorini ko'rsatardi — foydalanuvchi o'sishi, odat/gamifikatsiya/guruh ko'rsatkichlari umuman yo'q edi.
+- [x] **Yangi `get_admin_analytics_dashboard()` RPC:** bitta chaqiruvda 4 blokni qaytaradi — **Foydalanuvchilar** (jami, bugun/shu hafta yangi, bloklangan), **Odatlar** (faol soni, so'nggi 30 kunlik bajarish foizi, ijobiy/salbiy taqsimoti), **Gamifikatsiya iqtisodiyoti** (jami tangalar, jami XP, hozir faol ramkalar — muddati tugagan ramkalar hisobga olinmaydi, `get_leaderboard()`dagi bilan bir xil qoida), **Guruhlar** (faol guruhlar soni, o'rtacha a'zolar soni, kutilayotgan/tasdiqlangan isbotlar).
+- [x] **`AdminPanel.tsx` Analitika tabi to'liq qayta qurildi:** endi zamonaviy ko'rsatkichlar to'ri (4 blok, har biri kartalar+progress-bar bilan), eski xom hodisalar jadvali esa pastda "Batafsil hodisalar" sifatida saqlanib qoldi. Ikkalasi ham qorong'i/yorug' rejimda ishlaydigan mavjud `cardStyle`/CSS o'zgaruvchilari orqali qurilgan.
+- [x] Xato sodir bo'lsa (masalan RPC hali ishga tushirilmagan bo'lsa) konsolga emas, interfeysga (qizil banner) chiqariladi — 038dagi bilan bir xil naqsh.
+
+Migratsiya: `039_admin_analytics_dashboard.sql`.
+
+### 10. Kengaytirilgan Foydalanuvchilarni Boshqarish (Admin Panel)
+- **Eslatma:** `is_banned` ustuni va bloklash/blokdan chiqarish (`toggle_user_ban`) allaqachon mavjud edi (setup.sql/004-migratsiya) — bu vazifa ularni takrorlamadi, faqat yetishmayotgan imkoniyatlarni qo'shdi.
+- [x] **Jadval kengaytirildi:** Ism+Username (avatar + xarid qilingan ramka bilan), Holat (Faol/Bloklangan belgisi), Rol (Admin/Foydalanuvchi), Balans (🪙 tanga + ⭐ ball), Samaradorlik % (so'nggi 30 kunlik), Qo'shilgan sana.
+- [x] **`get_admin_users_efficiency()` RPC:** har bir foydalanuvchi uchun samaradorlik foizini (bajarilgan/(faol odatlar×kunlar)×100, `get_leaderboard()`dagi bilan bir xil formula) BITTA so'rovda qaytaradi — jadvaldagi har bir qator uchun alohida so'rov yubormaslik uchun (N+1 muammosining oldini olish).
+- [x] **Bonus tanga/ball berish:** yangi `admin_grant_balance()` RPC + modal — admin istagan foydalanuvchiga tanga va/yoki ball qo'sha (yoki kamaytira) oladi, natija hech qachon manfiy bo'lmaydi.
+- [x] **"Batafsil ko'rish" modali:** foydalanuvchining barcha faol odatlari (turi bilan) va umumiy statistikasi (tanga, ball, samaradorlik, jami bajarilgan) — mavjud `getUserHabitsAdmin`/`getAllTimeLogs` funksiyalaridan foydalanadi.
+
+Migratsiya: `040_admin_user_management.sql`.
+
+### 11. Bosiladigan "Jami Foydalanuvchilar" statistika kartasi
+- [x] Admin Panel → Umumiy ko'rinish tabidagi "Jami Foydalanuvchilar" kartasi endi bosilganda to'g'ridan-to'g'ri "Foydalanuvchilar" tabiga o'tkazadi (`setActiveTab("users")`). Sichqoncha ustiga kelganda engil kattalashish + neon-yashil chegara effekti (klaviatura orqali ham — Enter/Space bilan) qo'shildi, "Yaratilgan Odatlar" kartasi esa (tegishli boshqaruv tabi yo'qligi sabab) o'zgarishsiz qoldi. SQL migratsiya kerak emas — sof frontend.
+
+### 12. Fikr-mulohazaga admin javob berishi
+- **Eslatma:** jadval nomi haqiqatda `user_feedback` (vazifada "feedbacks" deb ko'rsatilgan edi). O'qish avvaldan RLS SELECT policy emas, `get_all_feedback()` SECURITY DEFINER RPC orqali (faqat admin) amalga oshadi — javob yozish ham xuddi shu naqshda (RLS UPDATE policy emas) `reply_to_feedback()` RPC orqali qilindi, chunki bu loyihaning o'rnatilgan konvensiyasi.
+- [x] `user_feedback` jadvaliga `admin_reply`/`admin_replied_at` ustunlari qo'shildi; `get_all_feedback()` ularni ham qaytaradi.
+- [x] Yangi `reply_to_feedback(feedback_id, reply)` RPC — faqat sayt admini chaqira oladi, javobni saqlaydi va fikr-mulohaza egasiga darhol bildirishnoma yuboradi (javob matni bilan birga).
+- [x] Admin Panel → Fikr-mulohazalar tabida har bir karta ostida javob yozish maydoni + "Javob yozish" tugmasi; javob berilgan bo'lsa, o'sha javob (va sanasi) doimiy ko'rinadi (qayta yozish maydoni endi chiqmaydi).
+- [x] `NotificationBell`ga yangi `feedback_reply` turi uchun 💬 ikonka qo'shildi.
+
+Migratsiya: `041_feedback_admin_reply.sql`.
+
+### 13. Odatlar boshqaruvi tabi + har bir bo'limda CSV eksport
+- **Eslatma:** odatlar sxemasida alohida "category"/"frequency" ustunlari mavjud emas — Toifa ustuni mavjud `type` (`positive`/`negative`) maydonidan, Chastota ustuni esa `target_value`+`unit` maqsad qiymatidan (bo'lmasa "Har kuni" standart qiymati) olinadi. `habits` jadvali RLS'i allaqachon `USING (true)` bilan barcha autentifikatsiyalangan foydalanuvchilarga o'qishga ruxsat beradi, shuning uchun yangi migratsiya kerak bo'lmadi.
+- [x] Admin Panel'ga yangi **Odatlar** tabi qo'shildi: barcha foydalanuvchilarning odatlari jadval ko'rinishida — Odat nomi, Muallif (Ism + username), Toifa, Chastota, Yaratilgan sana; qidiruv maydoni ham bor.
+- [x] CSV eksport tugmalari endi Umumiy ko'rinishdagi yagona kartadan chiqarib, har bir tegishli bo'limning (Foydalanuvchilar, Fikr-mulohazalar, Odatlar) tab sarlavhasi tepasiga ko'chirildi.
+- [x] Odatlar CSV eksporti endi allaqachon yuklangan jadval holatidan (state) foydalanadi — qayta so'rov yubormaydi.
+
+### 14. Bosh sahifada musbat odatlarni "Bajarilmadi" deb belgilash (✘ tugmasi)
+- **Muammo:** Bosh sahifadagi "Bugungi Odatlar" vidjetida musbat odatlar faqat ✔ (bajarildi) belgisiga ega edi — bajarmagan holatni ("bajarilmadi") aniq belgilashning iloji yo'q edi, ayniqsa kunning ma'lum vaqtida bajarilishi shart bo'lgan odatlar (masalan "Bomdod namozi o'qish") uchun muhim.
+- [x] Salbiy odatlardagi uch-holatli naqsh (Kutilmoqda / Saqlanib qoldi / Buzildi) musbat odatlarga ham qo'llandi: endi har bir kartaning o'ng tomonida alohida ✘ tugma bor — bosilsa odat qizil rangda "bajarilmadi" deb belgilanadi (`habit_logs.completed=false`), qayta bosilsa neytral holatga qaytadi.
+- [x] Kartaning o'zini bosish avvalgidek ✔ (bajarildi, yashil) belgilaydi; endi bu ham xuddi shu uch-holatli naqshga o'tkazildi (qayta bosilsa neytralga qaytaradi, oldin esa "bajarilmadi" yozuvini yozib qo'yardi).
+- SQL migratsiya kerak emas — `habit_logs.completed=false` yozuvi va uni o'chirish funksiyalari avvaldan mavjud edi, faqat frontend UI/holat boshqaruvi qo'shildi.
+
+Migratsiya: yo'q (faqat frontend, mavjud RLS yetarli).
+
+---
+
+## 🛠 Admin Monitoring & Health-Check (avvalgi vazifa)
+
+1. [x] `touch_last_seen()` integratsiyasi App.tsx'ga (sessiya init va login paytida chaqiriladi)
+2. [x] "Monitoring" tab UI — DAU stat kartasi (last_seen_at asosida) + top 5 odat chart (get_admin_monitoring_stats)
+3. [x] "Sog'liq tekshiruvi" tab UI — faolsiz guruhlar ro'yxati (get_inactive_groups) + o'chirish tugmasi (tasdiqlash bilan)
+4. [x] Build & typecheck tekshiruvi
+5. [x] Production'ga deploy (`npx vercel --prod`)
+
+---
+
+## ✅ Bajarilgan
+- Score tizimi (increment_score RPC, retroaktiv SQL)
+- Salbiy odatlar 3 holat (Ha/Yo'q/belgilanmagan)
+- Oldingi kunlar uchun belgilash (7 kun orqaga)
+- Dashboard count sinkronizatsiyasi
+- ProfilePage va Achievements fresh score fetch
+- Salbiy odatlar ball qo'shmasligi (isNegative flag)
+- Bildirishnomalar UI (denied/default/granted holat)
+- Vercel deploy pipeline
+- Telefon raqam +998 prefiksi va auto-format
+- Profilni tahrirlash sahifasi (EditProfilePage) — avatar, ism, bio
+- Sozlamalar sahifasi tozalandi — faqat parol + bildirishnomalar + chiqish
+- Guruh tizimi to'liq: tur/birlik bilan odat qo'shish, isbotlash, tasdiqlash, sardor paneli, tahlil
+- Follow/Follower tizimi — kuzatish/bekor qilish, hisob, ro'yxat
+- Apple Calendar uslubida HabitsLog (Jurnal) — haftalik timeline, vaqt bloklar
+- SMS OTP telefon tasdiqlash (LoginPage)
+- Calendar vaqt belgilash (HabitsManager — scheduled_start/end)
+- **Lenta (FeedPage)** — kuzatayotganlarning natijalarini ko'rish, foydalanuvchi qidirish
+- SQL Migrations — habits scheduled_start/end, group_habits type/unit/RLS, profiles bio
+
+---
+
+## 🔴 Navbatdagi vazifalar (prioritet bo'yicha)
+
+### ~~1. Profil + Sozlamalar birlashtirish~~ ✅
+### ~~2. Til tanlash UI yaxshilash~~ ✅
+### ~~3. Lenta (Feed) — Profil ichiga ko'chirildi~~ ✅
+
+### ~~4. Guruh oylik hisobot eksporti~~ ✅
+- ~~Stats tab'ida "Yuklab olish" tugmasi (html2canvas orqali)~~
+
+---
+
+### ~~3. Kuzatuvchilar lentalari yaxshilash~~ ✅
+- ~~Lenta sahifasida streak ko'rsatish~~
+- ~~"Yangi odat qo'shdi" events ham ko'rsatish~~
+
+---
+
+### ~~4. Sub-team~~ ✅
+- ~~Guruh ichida 2–3 kishilik kichik jamoalar~~
+
+---
+
+## 💡 Kelajakdagi g'oyalar
+- ~~Instagram profil havolasini profilda ko'rsatish~~ ✅
+- ~~Duel so'rovini followers ichidan yuborish~~ ✅
+- ~~Guruhda Telegram guruh havolasini ko'rsatish~~ ✅
+- ~~A'zo odat bajarganida Telegram botga avtomatik xabar~~ ✅
+
+---
+
+## 🔄 Avtomatlashtirish va Integratsiya
+
+### ~~Salomatlik ilovalari integratsiyasi~~ ✅
+- ~~Qadam, uyqu, suv, ekran vaqti kunlik kiritish~~
+- ~~7 kunlik trend grafigi, maqsad progress bar~~
+- ~~Mos odat topib avtomatik to'ldirish (Auto-fill)~~
+- ~~Web app uchun: manual entry + habit auto-fill (Apple Health/Google Fit native API faqat native app da ishlaydi)~~
+
+### ~~Telegram Bot yordamchisi~~ ✅
+- ~~Foydalanuvchilar ilovaga kirmasdan Telegram orqali odat bajarganini tasdiqlashsin~~
+- ~~Bitta tugma: "✅ Bajarildi" — aktivlikni keskin oshiradi~~
+
+---
+
+## 🎮 Gamifikatsiya va Psixologiya
+
+### ~~Streak Freeze (Muzlatish)~~ ✅
+- ~~Duolingo kabi tizim: oyda 1 kun bepul + coin shop orqali qo'shimcha muzlatish~~
+- ~~Foydalanuvchi kasal bo'lsa yoki ta'tilda bo'lsa, seriyasi uzilmasin~~
+- ~~Dashboard da "Muzlat 🛡️" banneri — seria xavf ostida bo'lganda ko'rinadi~~
+
+### ~~Haftalik Sarhisob (Weekly Reflection)~~ ✅
+- ~~Jurnal → "Sarhisob" tab: hafta navigatsiyasi, 2 savol, saqlash~~
+
+### ~~Ichki Do'kon (Coin Shop)~~ ✅
+- ~~Ballardan tashqari tangalar (coins) tizimi~~
+- ~~Odat bajarganda tanga yig'ish~~
+- ~~Sarflash imkoniyatlari: Seriya Himoyasi 🛡️ (10🪙), Yulduz Nishoni ⭐ (15🪙)~~
+- ~~Profil sahifasida coin hisobi ko'rsatilsin~~
+
+---
+
+## 🤖 Sun'iy Intellekt va Kengaytirilgan Tahlil
+
+### ~~AI Korrelyatsiya Tahlili~~ ✅
+- ~~DailyNotes (kayfiyat, uyqu, ekran vaqti) + odat ma'lumotlari asosida bog'liqlik topish~~
+- ~~Kayfiyat/Uyqu/Ekran vaqti va odat bajarish foizi taqqoslanadi~~
+- ~~Analytics sahifasida "AI Tahlil" bo'limi — 5 kundan kam bo'lsa "yetarli emas" xabari~~
+
+### ~~Smart Odat Tavsiyalari~~ ✅
+- ~~Maqsad tanlash (4 xil): "Sog'lom hayot", "Samaradorlik", "Stress kamaytirish", "Raqamli detoks"~~
+- ~~Har bir maqsad uchun odatlar ro'yxati, checkbox bilan tanlash, bir tugma bilan qo'shish~~
+
+---
+
+## 👥 Ijtimoiy Interaksiya
+
+### ~~Kudos / Reaksiyalar (Feed)~~ ✅
+- ~~Lenta sahifasida 🔥 / 👏 tugmalari — optimistik update, toggle (bosib-ochish)~~
+- ~~feed_reactions jadval, getFeedReactions / toggleFeedReaction DB funksiyalari~~
+
+### ~~Duel Revanshi~~ ✅
+- ~~Tugagan duelda "Revansh" tugmasi — raqib bilan yangi duel formi ochiladi~~
+
+---
+
+## 📱 Texnik va Platforma Qulayligi
+
+### ~~PWA (Progressive Web App)~~ ✅
+- ~~manifest.json, service worker, iconlar (192/512px), install banner~~
+
+### ~~Oflayn Rejim~~ ✅
+- ~~Internet yo'q bo'lganda ham odatlarni belgilash imkoniyati~~
+- ~~IndexedDB yoki localStorage ga vaqtincha saqlash~~
+- ~~Aloqa tiklanganda Supabase bilan avtomatik sinxronizatsiya~~

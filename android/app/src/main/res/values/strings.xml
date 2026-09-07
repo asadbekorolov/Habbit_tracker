@@ -1,0 +1,8 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Tracker</string>
+    <string name="title_activity_main">Tracker</string>
+    <string name="package_name">com.traccer.app</string>
+    <string name="custom_url_scheme">com.traccer.app</string>
+    <string name="server_client_id">512488053553-tjcrlmg447iupisp9ka3l9u67ip6rhmo.apps.googleusercontent.com</string>
+</resources>

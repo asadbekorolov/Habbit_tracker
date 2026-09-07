@@ -1,0 +1,143 @@
+@custom-variant dark (&:is(.dark *));
+
+:root {
+  --font-size: 16px;
+  --background: #F8FAFC;
+  --foreground: #0F172A;
+  --card: #FFFFFF;
+  --card-foreground: #0F172A;
+  --popover: rgba(255, 255, 255, 0.9);
+  --popover-foreground: #0F172A;
+  --primary: #10B981;
+  --primary-foreground: #FFFFFF;
+  --secondary: #F1F5F9;
+  --secondary-foreground: #64748B;
+  --muted: #F1F5F9;
+  --muted-foreground: #64748B;
+  --accent: #F0FDF4;
+  --accent-foreground: #10B981;
+  --destructive: #EF4444;
+  --destructive-foreground: #FFFFFF;
+  --border: rgba(0, 0, 0, 0.06);
+  --input: #F1F5F9;
+  --ring: #10B981;
+  --radius: 1rem;
+
+  --glass-blur: blur(12px);
+  --glass-border: rgba(0, 0, 0, 0.06);
+  --glass-bg: rgba(255, 255, 255, 0.8);
+}
+
+.dark {
+  --background: #0B0F17;
+  --foreground: #F8FAFC;
+  --card: #161B26;
+  --card-foreground: #F8FAFC;
+  --popover: #1F2937;
+  --popover-foreground: #F8FAFC;
+  --primary: #10B981;
+  --primary-foreground: #0B0F17;
+  --secondary: #1F2937;
+  --secondary-foreground: #94A3B8;
+  --muted: #1F2937;
+  --muted-foreground: #94A3B8;
+  --accent: #064E3B;
+  --accent-foreground: #10B981;
+  --destructive: #EF4444;
+  --destructive-foreground: #FFFFFF;
+  --border: rgba(255, 255, 255, 0.08);
+  --input: #1F2937;
+  --ring: #10B981;
+
+  --glass-border: rgba(255, 255, 255, 0.08);
+  --glass-bg: rgba(22, 27, 38, 0.8);
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+
+  --color-gold: #F59E0B;
+  --color-xp: #6366F1;
+
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+  --radius-2xl: calc(var(--radius) + 8px);
+  --radius-3xl: calc(var(--radius) + 16px);
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+    -webkit-tap-highlight-color: transparent;
+    user-select: none;
+  }
+
+  body {
+    @apply bg-background text-foreground;
+    overscroll-behavior-y: none;
+    transition: background-color 0.3s ease, color 0.3s ease;
+  }
+
+  ::-webkit-scrollbar {
+    display: none;
+  }
+
+  html {
+    font-size: var(--font-size);
+  }
+
+  h1, h2, h3, h4 { @apply font-bold tracking-tight; }
+}
+
+@utility premium-card {
+  @apply bg-card border border-border rounded-2xl shadow-sm transition-all;
+}
+
+@utility glass-effect {
+  @apply backdrop-blur-md;
+  background-color: var(--glass-bg);
+  border: 1px solid var(--glass-border);
+}
+
+
+@utility premium-input {
+  @apply bg-input border border-border rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-primary/50 transition-all;
+}
+
+@layer components {
+  .glass {
+    @apply glass-effect;
+  }
+}
+
+.app-main-padding {
+  padding-bottom: calc(6rem + env(safe-area-inset-bottom));
+}
+@media (min-width: 768px) {
+  .app-main-padding {
+    padding-bottom: 1.5rem;
+  }
+}
+
+.pt-safe { padding-top: env(safe-area-inset-top); }
+.pb-safe { padding-bottom: env(safe-area-inset-bottom); }

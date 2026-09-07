@@ -1,0 +1,362 @@
+<!doctype html>
+<html lang="uz">
+<head>
+<meta charset="utf-8">
+<title>Texnologik Stek — Tracker</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0B0F1A; --bg-2: #111827; --bg-3: #1F2937;
+    --accent: #22C55E; --gold: #F59E0B; --cyan: #38BDF8; --violet: #A78BFA;
+    --pink: #EC4899; --orange: #FB923C;
+    --text: #F8FAFC; --text-dim: #94A3B8; --text-mute: #64748B;
+    --border: rgba(148,163,184,0.18);
+  }
+  body { margin:0; padding:0; background:#000; overflow:hidden; font-family:'Inter',sans-serif; }
+  .slide-container { position:relative; width:1920px; height:1080px; overflow:hidden;
+    background:
+      radial-gradient(ellipse 1100px 700px at 50% 50%, rgba(34,197,94,0.15), transparent 60%),
+      radial-gradient(ellipse 700px 500px at 100% 0%, rgba(56,189,248,0.14), transparent 60%),
+      radial-gradient(ellipse 700px 500px at 0% 100%, rgba(167,139,250,0.12), transparent 60%),
+      linear-gradient(180deg, #0B0F1A 0%, #050810 100%);
+  }
+  .grid-bg { position:absolute; inset:0; opacity:0.20; pointer-events:none; z-index:1;
+    background-image:
+      linear-gradient(rgba(148,163,184,0.05) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(148,163,184,0.05) 1px, transparent 1px);
+    background-size: 80px 80px;
+    mask-image: radial-gradient(ellipse 1100px 700px at center, #000 30%, transparent 75%);
+    -webkit-mask-image: radial-gradient(ellipse 1100px 700px at center, #000 30%, transparent 75%);
+  }
+  .glow-c { position:absolute; right:30%; top:30%; width:780px; height:780px; border-radius:50%;
+    background: radial-gradient(circle, rgba(34,197,94,0.20), transparent 60%);
+    filter: blur(100px); z-index:1; pointer-events:none;
+  }
+
+  .eyebrow { position:absolute; left:90px; top:80px; z-index:10;
+    display:inline-flex; align-items:center; gap:10px; padding:10px 22px; border-radius:999px;
+    background:rgba(167,139,250,0.10); border:1px solid rgba(167,139,250,0.45);
+    color:#A78BFA; font-size:15px; font-weight:600; letter-spacing:0.18em; text-transform:uppercase;
+  }
+  .eyebrow .dot { width:8px; height:8px; border-radius:50%; background:#A78BFA;
+    box-shadow:0 0 12px #A78BFA; }
+
+  .headline {
+    position:absolute; left:90px; top:160px; width:1500px; z-index:10;
+    margin:0;
+    font-size:72px; font-weight:800; line-height:1.0; letter-spacing:-0.035em;
+    color:#F8FAFC;
+  }
+  .headline .violet { color:#A78BFA; }
+  .headline .underline { position:relative; display:inline-block; }
+  .headline .underline::after {
+    content:''; position:absolute; left:0; right:0; bottom:6px; height:4px;
+    background:#A78BFA; border-radius:2px;
+  }
+
+  .lead { position:absolute; left:90px; top:380px; width:1300px; z-index:10;
+    margin:0; font-size:20px; font-weight:400; line-height:1.5; color:#CBD5E1;
+  }
+  .lead b { color:#F8FAFC; font-weight:600; }
+
+  /* TECH STACK - 3 BIG CARDS IN A ROW */
+  .stack-row { position:absolute; left:90px; top:470px; right:90px; z-index:10;
+    display:flex; gap:24px;
+  }
+  .stk-card {
+    flex:1; min-width:0; padding:22px 26px; border-radius:24px;
+    background: linear-gradient(180deg, rgba(20,30,48,0.85) 0%, rgba(11,15,26,0.92) 100%);
+    border:1px solid rgba(148,163,184,0.16);
+    position:relative; overflow:hidden;
+  }
+  .stk-card.fe::before { content:''; position:absolute; left:0; top:0; bottom:0; width:5px;
+    background:linear-gradient(180deg,#38BDF8,#0EA5E9); }
+  .stk-card.be::before { content:''; position:absolute; left:0; top:0; bottom:0; width:5px;
+    background:linear-gradient(180deg,#22C55E,#16A34A); }
+  .stk-card.dev::before { content:''; position:absolute; left:0; top:0; bottom:0; width:5px;
+    background:linear-gradient(180deg,#A78BFA,#8B5CF6); }
+
+  .stk-tag {
+    display:inline-flex; align-items:center; gap:8px; padding:6px 12px; border-radius:6px;
+    background:rgba(56,189,248,0.10); border:1px solid rgba(56,189,248,0.35);
+    color:#38BDF8; font-family:'JetBrains Mono',monospace; font-size:12px;
+    font-weight:600; letter-spacing:0.10em; margin-bottom:16px;
+  }
+  .stk-card.be .stk-tag { background:rgba(34,197,94,0.10); border-color:rgba(34,197,94,0.35); color:#22C55E; }
+  .stk-card.dev .stk-tag { background:rgba(167,139,250,0.10); border-color:rgba(167,139,250,0.35); color:#A78BFA; }
+
+  .stk-icon {
+    display:inline-flex; align-items:center; justify-content:center;
+    width:46px; height:46px; border-radius:14px; margin-bottom:10px;
+    background:rgba(56,189,248,0.12); border:1px solid rgba(56,189,248,0.40);
+  }
+  .stk-card.be .stk-icon { background:rgba(34,197,94,0.12); border-color:rgba(34,197,94,0.40); }
+  .stk-card.dev .stk-icon { background:rgba(167,139,250,0.12); border-color:rgba(167,139,250,0.40); }
+  .stk-icon svg { width:24px; height:24px; }
+
+  .stk-h { margin:0 0 4px; color:#F8FAFC; font-size:24px; font-weight:700; }
+  .stk-sub { margin:0 0 12px; color:#94A3B8; font-size:14px;
+    letter-spacing:0.10em; text-transform:uppercase; }
+
+  .stk-list { display:flex; flex-direction:column; gap:8px; }
+  .stk-it {
+    display:flex; align-items:center; gap:14px;
+    padding:8px 14px; border-radius:10px;
+    background:rgba(11,15,26,0.85); border:1px solid var(--border);
+  }
+  .stk-it-dot {
+    flex:none; width:8px; height:8px; border-radius:50%; background:#38BDF8;
+  }
+  .stk-card.be .stk-it-dot { background:#22C55E; }
+  .stk-card.dev .stk-it-dot { background:#A78BFA; }
+  .stk-it-name {
+    flex:1; color:#F8FAFC; font-size:16px; font-weight:600;
+  }
+  .stk-it-name small {
+    display:block; color:#94A3B8; font-size:12px; font-weight:400;
+    letter-spacing:0.05em; margin-top:2px; text-transform:uppercase;
+  }
+  .stk-it-ver {
+    color:#64748B; font-family:'JetBrains Mono',monospace; font-size:12px;
+    padding:4px 8px; border-radius:6px; background:rgba(11,15,26,0.95);
+    border:1px solid var(--border);
+  }
+
+  /* Code snippet in bottom-left */
+  .snippet { position:absolute; left:90px; top:885px; width:780px; z-index:10; }
+  .sn-head {
+    display:flex; align-items:center; gap:8px; padding:8px 14px;
+    background:rgba(11,15,26,0.95); border:1px solid var(--border);
+    border-bottom:none; border-radius:12px 12px 0 0;
+    font-family:'JetBrains Mono',monospace; font-size:13px; color:#94A3B8;
+  }
+  .sn-dot { width:10px; height:10px; border-radius:50%; background:#EF4444; }
+  .sn-dot.y { background:#F59E0B; }
+  .sn-dot.g { background:#22C55E; }
+  .sn-name { margin-left:8px; color:#CBD5E1; }
+  .sn-body {
+    background:rgba(11,15,26,0.95); border:1px solid var(--border);
+    border-radius:0 0 12px 12px; padding:12px 18px;
+    font-family:'JetBrains Mono',monospace; font-size:12px; line-height:1.45;
+    color:#F8FAFC;
+  }
+  .sn-body .k { color:#A78BFA; }
+  .sn-body .s { color:#22C55E; }
+  .sn-body .c { color:#64748B; font-style:italic; }
+  .sn-body .n { color:#F59E0B; }
+
+  /* Right bottom - stats / availability */
+  .rt-stack { position:absolute; right:90px; top:882px; width:770px; z-index:10;
+    display:grid; grid-template-columns:1fr 1fr; gap:16px;
+  }
+  .rt-card {
+    padding:14px 20px; border-radius:14px;
+    background:rgba(11,15,26,0.85); border:1px solid var(--border);
+  }
+  .rt-card-tag {
+    display:inline-block; padding:4px 10px; border-radius:6px;
+    font-family:'JetBrains Mono',monospace; font-size:11px; font-weight:600;
+    letter-spacing:0.10em; margin-bottom:10px;
+  }
+  .rt-card-tag.up { background:rgba(34,197,94,0.12); color:#22C55E; border:1px solid rgba(34,197,94,0.35); }
+  .rt-card-tag.cdn { background:rgba(56,189,248,0.12); color:#38BDF8; border:1px solid rgba(56,189,248,0.35); }
+  .rt-h { margin:0 0 6px; color:#F8FAFC; font-size:18px; font-weight:700; }
+  .rt-d { margin:0; color:#CBD5E1; font-size:13px; line-height:1.4; }
+  .rt-d b { color:#F8FAFC; font-weight:600; }
+
+  .footer-meta {
+    position:absolute; left:90px; bottom:50px; right:90px; z-index:10;
+    display:flex; justify-content:space-between; align-items:center;
+    color:#64748B; font-size:13px; letter-spacing:0.10em;
+    text-transform:uppercase; font-weight:500;
+  }
+  .footer-meta .pg { font-family:'JetBrains Mono',monospace; color:#A78BFA; font-weight:600; }
+  .footer-meta .url { color:#22C55E; font-family:'JetBrains Mono',monospace; }
+
+  h1.headline { margin:0; }
+</style>
+</head>
+<body>
+<div class="slide-container">
+
+  <div class="grid-bg"></div>
+  <div class="glow-c"></div>
+
+  <div data-object="true" data-object-type="textbox" style="z-index:10;">
+    <div class="eyebrow">
+      <span class="dot"></span>
+      <span>Texnologik Stek · 06 / 06</span>
+    </div>
+  </div>
+
+  <div data-object="true" data-object-type="textbox" style="width:1500px; z-index:10;">
+    <h1 class="headline">
+      Ishlab chiqish <span class="violet">zamonaviy stek</span><br>
+      <span class="underline">va arxitektura</span>
+    </h1>
+  </div>
+
+  <div data-object="true" data-object-type="textbox" style="width:1300px; z-index:10;">
+    <p class="lead">
+      Tracker <b>yagona sahifali (SPA) zamonaviy web-ilova</b> sifatida qurilgan.
+      Frontend — tezkor va interaktiv. Backend — xavfsiz va kengaytiriladigan.
+      Hosting — global tarqatish va <b>avtomatik deploy</b>.
+    </p>
+  </div>
+
+  <!-- 3 STACK CARDS -->
+  <div data-object="true" data-object-type="textbox" style="z-index:10;">
+    <div class="stack-row">
+
+      <div class="stk-card fe">
+        <span class="stk-tag">FRONTEND</span>
+        <div class="stk-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="#38BDF8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="16 18 22 12 16 6"/>
+            <polyline points="8 6 2 12 8 18"/>
+          </svg>
+        </div>
+        <h3 class="stk-h">Frontend Stack</h3>
+        <div class="stk-sub">UI va Interaktivlik</div>
+        <div class="stk-list">
+          <div class="stk-it">
+            <div class="stk-it-dot"></div>
+            <div class="stk-it-name">React 18<small>Library</small></div>
+            <div class="stk-it-ver">v18.x</div>
+          </div>
+          <div class="stk-it">
+            <div class="stk-it-dot"></div>
+            <div class="stk-it-name">TypeScript<small>Strict typing</small></div>
+            <div class="stk-it-ver">v5.x</div>
+          </div>
+          <div class="stk-it">
+            <div class="stk-it-dot"></div>
+            <div class="stk-it-name">Vite<small>Build tool</small></div>
+            <div class="stk-it-ver">v5.x</div>
+          </div>
+          <div class="stk-it">
+            <div class="stk-it-dot"></div>
+            <div class="stk-it-name">Tailwind CSS<small>Dark / Light rejim</small></div>
+            <div class="stk-it-ver">v3.x</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="stk-card be">
+        <span class="stk-tag">BACKEND & DB</span>
+        <div class="stk-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="#22C55E" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <ellipse cx="12" cy="6" rx="9" ry="3"/>
+            <path d="M3 6v6c0 1.66 4.03 3 9 3s9-1.34 9-3V6"/>
+            <path d="M3 12v6c0 1.66 4.03 3 9 3s9-1.34 9-3v-6"/>
+          </svg>
+        </div>
+        <h3 class="stk-h">Ma'lumotlar va Realtime</h3>
+        <div class="stk-sub">Backend va Xavfsizlik</div>
+        <div class="stk-list">
+          <div class="stk-it">
+            <div class="stk-it-dot"></div>
+            <div class="stk-it-name">Supabase<small>BaaS platforma</small></div>
+            <div class="stk-it-ver">Cloud</div>
+          </div>
+          <div class="stk-it">
+            <div class="stk-it-dot"></div>
+            <div class="stk-it-name">PostgreSQL<small>Relational DB</small></div>
+            <div class="stk-it-ver">v15.x</div>
+          </div>
+          <div class="stk-it">
+            <div class="stk-it-dot"></div>
+            <div class="stk-it-name">Row Level Security<small>Qatlamlarni boshqarish</small></div>
+            <div class="stk-it-ver">RLS</div>
+          </div>
+          <div class="stk-it">
+            <div class="stk-it-dot"></div>
+            <div class="stk-it-name">Realtime Sync<small>Live yangilanishlar</small></div>
+            <div class="stk-it-ver">WS</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="stk-card dev">
+        <span class="stk-tag">HOSTING & DEPLOY</span>
+        <div class="stk-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="#A78BFA" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M22 12h-4l-3 9L9 3l-3 9H2"/>
+          </svg>
+        </div>
+        <h3 class="stk-h">Hosting va CI/CD</h3>
+        <div class="stk-sub">Tezkor va barqaror</div>
+        <div class="stk-list">
+          <div class="stk-it">
+            <div class="stk-it-dot"></div>
+            <div class="stk-it-name">Vercel<small>Edge network hosting</small></div>
+            <div class="stk-it-ver">SSG</div>
+          </div>
+          <div class="stk-it">
+            <div class="stk-it-dot"></div>
+            <div class="stk-it-name">Auto Deploy<small>Git push = deploy</small></div>
+            <div class="stk-it-ver">CI/CD</div>
+          </div>
+          <div class="stk-it">
+            <div class="stk-it-dot"></div>
+            <div class="stk-it-name">HTTPS & CDN<small>Global trafik tezligi</small></div>
+            <div class="stk-it-ver">SSL</div>
+          </div>
+          <div class="stk-it">
+            <div class="stk-it-dot"></div>
+            <div class="stk-it-name">version.pkg<small>Hozirda ishlab turibdi</small></div>
+            <div class="stk-it-ver">v2.1.0</div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- CODE SNIPPET (left bottom) -->
+  <div data-object="true" data-object-type="textbox" style="width:780px; z-index:10;">
+    <div class="snippet">
+      <div class="sn-head">
+        <span class="sn-dot"></span><span class="sn-dot y"></span><span class="sn-dot g"></span>
+        <span class="sn-name">supabase/functions/verify-habit.ts</span>
+      </div>
+      <div class="sn-body">
+<span class="c">// Har bir isbotni validatsiya qilish</span>
+<span class="k">async function</span> <span>verifyHabit(</span><span class="n">userId</span><span>, </span><span class="n">proofUrl</span><span>) {</span>
+&nbsp;&nbsp;<span class="k">const</span> <span>{ data, error } = </span><span class="k">await</span> <span>supabase</span>
+&nbsp;&nbsp;&nbsp;&nbsp;.<span style="color:#38BDF8;">from</span>(<span class="s">'habits'</span>)
+&nbsp;&nbsp;&nbsp;&nbsp;.<span style="color:#38BDF8;">update</span>({ <span class="n">status</span>: <span class="s">'verified'</span>, coins: <span class="n">+1</span> })
+&nbsp;&nbsp;&nbsp;&nbsp;.<span style="color:#38BDF8;">eq</span>(<span class="s">'id'</span>, <span class="n">userId</span>);
+}
+      </div>
+    </div>
+  </div>
+
+  <!-- RIGHT BOTTOM -->
+  <div data-object="true" data-object-type="textbox" style="width:770px; z-index:10;">
+    <div class="rt-stack">
+      <div class="rt-card">
+        <span class="rt-card-tag up">● LIVE</span>
+        <h4 class="rt-h">99.9% Uptime</h4>
+        <p class="rt-d">Vercel va Supabase kafolati. <b>Tezkor, ishonchli.</b></p>
+      </div>
+      <div class="rt-card">
+        <span class="rt-card-tag cdn">▲ DEPLOY</span>
+        <h4 class="rt-h">CI/CD Avtomatlashtirilgan</h4>
+        <p class="rt-d">GitHub push = <b>global deploy</b>. Hech qanday konfiguratsiya talab qilinmaydi.</p>
+      </div>
+    </div>
+  </div>
+
+  <div data-object="true" data-object-type="textbox" style="z-index:10;">
+    <div class="footer-meta">
+      <span>Tracker · Odat Kuzatuvchi · <span class="pg">06 / 06</span></span>
+      <span>Live URL: <span class="url">habit-tracker-asadbek.vercel.app</span></span>
+    </div>
+  </div>
+
+</div>
+</body>
+</html>
