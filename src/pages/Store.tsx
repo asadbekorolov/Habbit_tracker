@@ -409,7 +409,7 @@ export function Store({ onProfileUpdate, onClose, isModal = false }: StoreProps)
     {
       id: "checklist_productivity",
       category: "resources",
-      name: "Kunlik Samaradorlik Cheklisti",
+      name: t('store_res_checklist_name'),
       desc: t('store_res_checklist_desc'),
       price: 150,
       icon: CheckSquare,
@@ -421,7 +421,7 @@ export function Store({ onProfileUpdate, onClose, isModal = false }: StoreProps)
     {
       id: "telegram_vip_access",
       category: "resources",
-      name: "Yopiq Telegram Jamiyatiga Kirish",
+      name: t('store_res_community_name'),
       desc: t('store_res_community_desc'),
       price: 1000,
       icon: Send,
@@ -471,9 +471,9 @@ export function Store({ onProfileUpdate, onClose, isModal = false }: StoreProps)
       {/* Category Tabs */}
       <div className="flex bg-slate-900/80 p-1.5 rounded-2xl border border-slate-800 mb-6 overflow-x-auto no-scrollbar gap-1">
         {[
-          { id: "all", label: "Hammasi" },
-          { id: "buffs", label: "Qalqonlar" },
-          { id: "frames", label: "Ramkalar" },
+          { id: "all", label: t('store_tab_all') },
+          { id: "buffs", label: t('store_tab_buffs') },
+          { id: "frames", label: t('store_tab_frames') },
           { id: "resources", label: t('store_tab_resources') },
         ].map((tab) => (
           <button
@@ -666,7 +666,7 @@ export function Store({ onProfileUpdate, onClose, isModal = false }: StoreProps)
                     <button
                       type="button"
                       disabled={buying === USERNAME_GLOW_ID}
-                      onClick={() => triggerBuyWithConfirmation({ id: USERNAME_GLOW_ID, name: "Yaltiroq Ism", price: USERNAME_GLOW_PRICE }, buyGlowName)}
+                      onClick={() => triggerBuyWithConfirmation({ id: USERNAME_GLOW_ID, name: t('store_glow_name'), price: USERNAME_GLOW_PRICE }, buyGlowName)}
                       className="h-9 px-3.5 rounded-xl text-xs font-bold bg-amber-500 hover:bg-amber-400 text-slate-950 flex items-center justify-center gap-1.5 transition-all shadow-md cursor-pointer whitespace-nowrap"
                     >
                       {buying === USERNAME_GLOW_ID ? (
@@ -837,7 +837,7 @@ export function Store({ onProfileUpdate, onClose, isModal = false }: StoreProps)
               <button
                 type="button"
                 data-modal-close-trigger
-                aria-label="yopish"
+                aria-label={t('close')}
                 onClick={() => setShowTopUpModal(false)}
                 className="absolute top-4 right-4 p-2 rounded-full bg-slate-800 text-slate-400 hover:text-white cursor-pointer"
               >

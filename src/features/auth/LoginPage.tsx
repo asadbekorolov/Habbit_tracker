@@ -371,9 +371,9 @@ export function LoginPage({ onLogin }: LoginPageProps) {
           animate={{ opacity: 1, y: 0 }}
           className="text-2xl font-extrabold tracking-tight text-white"
         >
-          {tab === "forgot" ? "Parolni tiklash" :
-           tab === "verify-email" ? "Emailni tasdiqlash" :
-           tab === "complete-google" ? "Profilni sozlash" : "IDROK"}
+          {tab === "forgot" ? t('login_title_reset') :
+           tab === "verify-email" ? t('login_title_verify') :
+           tab === "complete-google" ? t('login_title_setup') : "IDROK"}
         </motion.h1>
         <motion.p
           key={tab + "-sub"}
@@ -478,7 +478,7 @@ export function LoginPage({ onLogin }: LoginPageProps) {
                   <span>
                     {tab === "register"
                       ? t('login_google_register')
-                      : "Google orqali davom etish"}
+                      : t('auth_google_login')}
                   </span>
                 </button>
 
@@ -497,14 +497,14 @@ export function LoginPage({ onLogin }: LoginPageProps) {
               <div className="flex flex-col">
                 <InputField
                   icon={Mail}
-                  label="Email manzil"
-                  placeholder="misol@gmail.com"
+                  label={t('login_email_label')}
+                  placeholder={t('login_email_ph')}
                   value={loginEmail}
                   onChange={setLoginEmail}
                 />
                 <InputField
                   icon={Lock}
-                  label="Parol"
+                  label={t('login_password_label')}
                   placeholder="••••••••"
                   isPassword
                   showPassword={showLoginPass}
@@ -530,13 +530,13 @@ export function LoginPage({ onLogin }: LoginPageProps) {
                 <InputField
                   icon={UserIcon}
                   label={t('login_full_name_ph')}
-                  placeholder="Ism Sharif"
+                  placeholder={t('login_name_ph')}
                   value={regName}
                   onChange={setRegName}
                 />
                 <InputField
                   icon={AtSign}
-                  label="Foydalanuvchi nomi"
+                  label={t('login_username_label')}
                   placeholder="username"
                   value={regUsername}
                   onChange={(v: string) => setRegUsername(v.toLowerCase().replace(/[^a-z0-9_]/g, ""))}
@@ -544,15 +544,15 @@ export function LoginPage({ onLogin }: LoginPageProps) {
                 />
                 <InputField
                   icon={Mail}
-                  label="Email manzil"
-                  placeholder="misol@gmail.com"
+                  label={t('login_email_label')}
+                  placeholder={t('login_email_ph')}
                   value={regEmail}
                   onChange={setRegEmail}
                 />
                 <InputField
                   icon={Lock}
-                  label="Parol"
-                  placeholder="Kamida 6 belgi"
+                  label={t('login_password_label')}
+                  placeholder={t('login_password_min_ph')}
                   isPassword
                   showPassword={showRegPass}
                   onTogglePassword={() => setShowRegPass(!showRegPass)}
@@ -561,8 +561,8 @@ export function LoginPage({ onLogin }: LoginPageProps) {
                 />
                 <InputField
                   icon={ShieldCheck}
-                  label="Tasdiqlash"
-                  placeholder="Qayta kiriting"
+                  label={t('login_confirm_label')}
+                  placeholder={t('login_repeat_ph')}
                   isPassword
                   showPassword={showRegConfirm}
                   onTogglePassword={() => setShowRegConfirm(!showRegConfirm)}
@@ -584,8 +584,8 @@ export function LoginPage({ onLogin }: LoginPageProps) {
                 </button>
                 <InputField
                   icon={Mail}
-                  label="Email manzil"
-                  placeholder="misol@gmail.com"
+                  label={t('login_email_label')}
+                  placeholder={t('login_email_ph')}
                   value={forgotEmail}
                   onChange={setForgotEmail}
                   autoFocus
@@ -615,7 +615,7 @@ export function LoginPage({ onLogin }: LoginPageProps) {
                   onClick={handleResendOtp}
                   className="text-xs font-semibold text-slate-400 hover:text-emerald-400 transition-colors disabled:opacity-50"
                 >
-                  {otpCountdown > 0 ? t('login_resend_code').replace('{s}', String(otpCountdown)) : "Kodni qayta yuborish"}
+                  {otpCountdown > 0 ? t('login_resend_code').replace('{s}', String(otpCountdown)) : t('login_resend_plain')}
                 </button>
               </div>
             )}
@@ -652,7 +652,7 @@ export function LoginPage({ onLogin }: LoginPageProps) {
                 <InputField
                   icon={UserIcon}
                   label={t('login_full_name_ph')}
-                  placeholder="Ism Sharif"
+                  placeholder={t('login_name_ph')}
                   value={googleRegName}
                   onChange={setGoogleRegName}
                 />
@@ -703,10 +703,10 @@ export function LoginPage({ onLogin }: LoginPageProps) {
               {loading ? <Loader2 className="animate-spin text-slate-950" size={18} /> : (
                 <>
                   <span>
-                    {tab === "login" ? "Kirish" :
+                    {tab === "login" ? t('auth_tab_login') :
                      tab === "register" ? t('auth_tab_register') :
-                     tab === "forgot" ? "Havolani yuborish" :
-                     tab === "complete-google" ? t('login_finish_register') : "Tasdiqlash"}
+                     tab === "forgot" ? t('login_send_link') :
+                     tab === "complete-google" ? t('login_finish_register') : t('login_confirm_btn')}
                   </span>
                   <ArrowRight size={16} />
                 </>

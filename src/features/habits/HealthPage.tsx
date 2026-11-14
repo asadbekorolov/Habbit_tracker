@@ -42,7 +42,7 @@ export function HealthPage({}: HealthPageProps) {
   const METRICS = [
     {
       key: "steps" as Metric,
-      label: "Qadamlar",
+      label: t('health_steps_title'),
       icon: Footprints,
       color: "#10B981",
       unit: "qadam",
@@ -53,7 +53,7 @@ export function HealthPage({}: HealthPageProps) {
     },
     {
       key: "water_glasses" as Metric,
-      label: "Suv balansi",
+      label: t('health_water_balance'),
       icon: Droplets,
       color: "#06B6D4",
       unit: "L",
@@ -64,7 +64,7 @@ export function HealthPage({}: HealthPageProps) {
     },
     {
       key: "screen_time_hours" as Metric,
-      label: "Ekran vaqti",
+      label: t('health_screen_time'),
       icon: Smartphone,
       color: "#A855F7",
       unit: "soat",
@@ -76,7 +76,7 @@ export function HealthPage({}: HealthPageProps) {
     },
     {
       key: "sleep_hours" as Metric,
-      label: "Chuqur uyqu",
+      label: t('health_deep_sleep'),
       icon: Moon,
       color: "#6366F1",
       unit: "soat",
@@ -87,7 +87,7 @@ export function HealthPage({}: HealthPageProps) {
     },
     {
       key: "calories" as Metric,
-      label: "Kaloriyalar",
+      label: t('health_calories'),
       icon: Flame,
       color: "#F59E0B",
       unit: "kkal",
@@ -98,7 +98,7 @@ export function HealthPage({}: HealthPageProps) {
     },
     {
       key: "heart_rate" as Metric,
-      label: "Yurak urishi",
+      label: t('health_heart_rate'),
       icon: HeartPulse,
       color: "#F43F5E",
       unit: "BPM",
@@ -482,7 +482,7 @@ export function HealthPage({}: HealthPageProps) {
         <button
           type="button"
           onClick={() => loadData()}
-          aria-label="Sinxronlash"
+          aria-label={t('health_sync_aria')}
           className="w-10 h-10 rounded-2xl bg-slate-900 border border-slate-800 flex items-center justify-center text-slate-300 hover:text-emerald-400 active:rotate-180 duration-500 transition-all cursor-pointer shadow-sm"
         >
           <RefreshCw className="w-4 h-4 stroke-[2]" />
@@ -576,7 +576,7 @@ export function HealthPage({}: HealthPageProps) {
               <button
                 type="button"
                 onClick={() => handleQuickWaterAdd(-0.25)}
-                aria-label="Kamaytirish"
+                aria-label={t('health_decrease_aria')}
                 className="p-2 rounded-xl bg-slate-800/60 border border-slate-700/50 text-slate-300 hover:text-white active:scale-95 transition-all cursor-pointer"
               >
                 <Minus className="w-3.5 h-3.5 stroke-[2.5]" />

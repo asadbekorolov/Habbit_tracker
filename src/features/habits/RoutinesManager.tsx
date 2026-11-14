@@ -434,7 +434,7 @@ export function RoutinesManager({ profile, userHabits }: RoutinesManagerProps) {
                       type="button"
                       onClick={() => handleOpenEdit(routine)}
                       className="p-1.5 rounded-xl text-slate-400 hover:text-white hover:bg-slate-800 transition-colors cursor-pointer"
-                      title="Tahrirlash"
+                      title={t('edit')}
                     >
                       <Edit3 className="w-4 h-4" />
                     </button>
