@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { UserCheck, Calendar, Ruler, Scale, ArrowRight, Loader2, X, Plus, Minus } from 'lucide-react';
+import { UserCheck, Calendar, Ruler, Scale, ArrowRight, Loader2, X, Plus, Minus, AlertTriangle } from 'lucide-react';
 import { Capacitor } from '@capacitor/core';
 import { Haptics, ImpactStyle } from '@capacitor/haptics';
 import type { Profile } from '../services/supabase';
@@ -310,7 +310,7 @@ export const BiometricsOnboardingModal: React.FC<BiometricsOnboardingModalProps>
             </span>
           </div>
 
-          {error && <p className="text-xs text-rose-400 font-medium text-center">⚠ {error}</p>}
+          {error && <p className="text-xs text-rose-400 font-medium text-center"><AlertTriangle size={12} className="inline-block shrink-0 align-[-2px] mr-1" />{error}</p>}
 
           {/* Submit Button */}
           <button

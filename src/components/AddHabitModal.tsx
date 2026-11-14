@@ -4,7 +4,8 @@ import {
   BookOpen, Dumbbell, Wallet, Moon, Sun, Utensils, Droplets,
   Target, PenTool, Music, Smartphone, Zap, Activity, Flame,
   Gamepad2, Shield, Heart, Sparkles, Trophy, Coffee, X, Loader2,
-  ChevronDown, ChevronUp, Bell, BellOff, Plus, Clock
+  ChevronDown, ChevronUp, Bell, BellOff, Plus, Clock,
+  AlertTriangle
 } from 'lucide-react';
 import { useLang } from '../store/LangContext';
 import { useScrollLock } from '../hooks/useScrollLock';
@@ -342,7 +343,7 @@ export const AddHabitModal: React.FC<AddHabitModalProps> = ({
                 )}
               </div>
 
-              {error && <p className="text-xs text-rose-500 text-center">⚠ {error}</p>}
+              {error && <p className="text-xs text-rose-500 text-center"><AlertTriangle size={12} className="inline-block shrink-0 align-[-2px] mr-1" />{error}</p>}
 
               <div className="pt-2">
                 <button

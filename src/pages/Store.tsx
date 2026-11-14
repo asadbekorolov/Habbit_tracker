@@ -186,7 +186,7 @@ export function Store({ onProfileUpdate, onClose, isModal = false }: StoreProps)
       setActiveFrame(next);
       setProfile(updated);
       onProfileUpdate?.(updated);
-      toast.success(next ? "Ramka muvaffaqiyatli taqildi! ✨" : "Ramka yechildi.");
+      toast.success(next ? "Ramka muvaffaqiyatli taqildi!" : "Ramka yechildi.");
     } catch (e: any) {
       toast.error(e?.message || "Xatolik yuz berdi.");
     } finally {
@@ -203,7 +203,7 @@ export function Store({ onProfileUpdate, onClose, isModal = false }: StoreProps)
       setActiveTitle(next);
       setProfile(updated);
       onProfileUpdate?.(updated);
-      toast.success(next ? "Unvon muvaffaqiyatli taqildi! 👑" : "Unvon yechildi.");
+      toast.success(next ? "Unvon muvaffaqiyatli taqildi!" : "Unvon yechildi.");
     } catch (e: any) {
       toast.error(e?.message || "Xatolik yuz berdi.");
     } finally {
@@ -264,7 +264,7 @@ export function Store({ onProfileUpdate, onClose, isModal = false }: StoreProps)
       setProfile(updated);
       onProfileUpdate?.(updated);
 
-      toast.success("VIP Status (Yulduz) faollashtirildi! 🌟");
+      toast.success("VIP Status (Yulduz) faollashtirildi!");
     } catch (e: any) {
       toast.error(e?.message || "Xatolik yuz berdi.");
     } finally {
@@ -285,7 +285,7 @@ export function Store({ onProfileUpdate, onClose, isModal = false }: StoreProps)
       setProfile(updated);
       onProfileUpdate?.(updated);
 
-      toast.success("Yaltiroq ism effekti faollashtirildi! ✨");
+      toast.success("Yaltiroq ism effekti faollashtirildi!");
     } catch (e: any) {
       toast.error(e?.message || "Xatolik yuz berdi.");
     } finally {
@@ -307,13 +307,13 @@ export function Store({ onProfileUpdate, onClose, isModal = false }: StoreProps)
         setActiveFrame(itemId);
         setProfile(updated);
         onProfileUpdate?.(updated);
-        toast.success("Ramka xarid qilindi va taqildi! 🎨");
+        toast.success("Ramka xarid qilindi va taqildi!");
       } else if (isTitle) {
         const updated = (await getMyProfile()) || { ...profile, coins: newBalance, active_title: itemId };
         setActiveTitle(itemId);
         setProfile(updated);
         onProfileUpdate?.(updated);
-        toast.success("Unvon xarid qilindi va taqildi! 👑");
+        toast.success("Unvon xarid qilindi va taqildi!");
       } else {
         toast.success("Xarid qilindi!");
       }
@@ -330,7 +330,7 @@ export function Store({ onProfileUpdate, onClose, isModal = false }: StoreProps)
       id: "streak_repair",
       category: "buffs",
       name: "Streak Qutqaruvchi (Tiklash)",
-      desc: "Uzilib qolgan oxirgi seriyangizni (streak) qayta tiklang va natijangizni saqlab qoling! 🔥",
+      desc: "Uzilib qolgan oxirgi seriyangizni (streak) qayta tiklang va natijangizni saqlab qoling!",
       price: 250,
       icon: RotateCcw,
       color: "#10B981",
@@ -576,7 +576,7 @@ export function Store({ onProfileUpdate, onClose, isModal = false }: StoreProps)
                     <div className="flex flex-col items-center pt-1 pb-2">
                       <AvatarFrame frameId={frame.id} radius={14}>
                         <div className="w-12 h-12 rounded-xl bg-slate-800 flex items-center justify-center text-xl shadow-inner">
-                          👑
+                          <Crown size={20} className="text-amber-400" />
                         </div>
                       </AvatarFrame>
                       <p className="text-xs font-bold text-white tracking-tight mt-3 text-center line-clamp-1">

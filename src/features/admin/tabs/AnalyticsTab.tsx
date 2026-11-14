@@ -1,5 +1,5 @@
 // Admin panel — AnalyticsTab.
-import { ListChecks, Loader2, UserPlus, Coins, Sparkles, Palette, UsersRound, Clock, CheckCircle2 } from "lucide-react";
+import { ListChecks, Loader2, UserPlus, Coins, Sparkles, Palette, UsersRound, Clock, CheckCircle2, AlertTriangle } from "lucide-react";
 import type { AdminPanelState } from "../useAdminPanelState";
 
 export function AnalyticsTab({ s }: { s: AdminPanelState }) {
@@ -8,7 +8,7 @@ export function AnalyticsTab({ s }: { s: AdminPanelState }) {
   return (
     <>
       {dashboardError && (
-        <p className="text-xs px-1" style={{ color: "var(--coral-red)" }}>⚠ {dashboardError}</p>
+        <p className="text-xs px-1" style={{ color: "var(--coral-red)" }}><AlertTriangle size={12} className="inline-block shrink-0 align-[-2px] mr-1" />{dashboardError}</p>
       )}
 
       {dashboardLoading ? (
@@ -131,7 +131,7 @@ export function AnalyticsTab({ s }: { s: AdminPanelState }) {
       {analyticsLoading ? (
         <div className="flex justify-center py-6"><Loader2 size={20} className="animate-spin" style={{ color: "var(--neon-green)" }} /></div>
       ) : analyticsError ? (
-        <p className="text-sm text-center py-4" style={{ color: "var(--coral-red)" }}>⚠ {analyticsError}</p>
+        <p className="text-sm text-center py-4" style={{ color: "var(--coral-red)" }}><AlertTriangle size={12} className="inline-block shrink-0 align-[-2px] mr-1" />{analyticsError}</p>
       ) : analyticsSummary.length === 0 ? (
         <p className="text-sm text-center py-6" style={{ color: "var(--muted-foreground)" }}>{t('analytics_empty')}</p>
       ) : (

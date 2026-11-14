@@ -4,7 +4,8 @@ import {
   BookOpen, Dumbbell, Wallet, Moon, Sun, Utensils, Droplets,
   Target, PenTool, Music, Smartphone, Zap, Activity, Flame,
   Gamepad2, Shield, Heart, Sparkles, Trophy, Coffee, X, Loader2,
-  ChevronDown, ChevronUp
+  ChevronDown, ChevronUp,
+  AlertTriangle
 } from 'lucide-react';
 import { useLang } from '../store/LangContext';
 import { useScrollLock } from '../hooks/useScrollLock';
@@ -203,7 +204,7 @@ export const AddGroupHabitModal: React.FC<AddGroupHabitModalProps> = ({
                 </div>
               )}
 
-              {error && <p className="text-xs text-rose-500">⚠ {error}</p>}
+              {error && <p className="text-xs text-rose-500"><AlertTriangle size={12} className="inline-block shrink-0 align-[-2px] mr-1" />{error}</p>}
 
               <div className="flex gap-2 pt-1">
                 <button type="button" onClick={onClose} className="flex-1 py-2.5 rounded-xl text-sm font-medium"

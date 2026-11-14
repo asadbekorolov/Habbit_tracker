@@ -604,7 +604,7 @@ ${habitDataSummary}
 
         await Share.share({
           title: 'Mening Oylik Intizom Tahlilim',
-          text: "IDROK ilovasida mening yangi marralarim! 🔥",
+          text: "IDROK ilovasida mening yangi marralarim!",
           url: writeResult.uri,
           dialogTitle: 'Tahlilni ulashish',
         });

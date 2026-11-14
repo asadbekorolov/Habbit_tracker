@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { toast } from "sonner";
-import { Loader2, LogOut, Eye, EyeOff, Bell, BellOff, UserPen, Moon, Sun, ChevronDown, ChevronUp, Save, Globe, Shield, ClipboardList } from "lucide-react";
+import { Loader2, LogOut, Eye, EyeOff, Bell, BellOff, UserPen, Moon, Sun, ChevronDown, ChevronUp, Save, Globe, Shield, ClipboardList, KeyRound, Rocket } from "lucide-react";
 import { Capacitor } from "@capacitor/core";
 import { LocalNotifications } from "@capacitor/local-notifications";
 import { updateUserPassword } from "../../services/db";
@@ -181,7 +181,7 @@ export function SettingsPage({ onLogout, onNavigate, lang, onLangChange }: Setti
           style={{ background: passOpen ? ("rgba(255,255,255,0.03)") : "transparent" }}>
           <div className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0"
             style={{ background: "rgba(248,113,113,0.1)" }}>
-            <span style={{ fontSize: 16 }}>🔑</span>
+            <KeyRound size={16} style={{ color: "#F87171" }} />
           </div>
           <div className="flex-1 text-left">
             <p className="text-sm font-semibold" style={{ color: "var(--foreground)" }}>{t('settings_password')}</p>
@@ -295,7 +295,7 @@ export function SettingsPage({ onLogout, onNavigate, lang, onLangChange }: Setti
               className="w-full py-2 rounded-lg text-xs font-semibold transition-all"
               style={{ background: "rgba(255,255,255,0.05)", color: "var(--foreground)", border: `1px solid rgba(255,255,255,0.1)` }}
             >
-              🚀 Sinab ko'rish
+              <Rocket size={13} className="inline-block align-[-2px] mr-1" />Sinab ko'rish
             </button>
           </div>
         )}

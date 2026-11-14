@@ -218,7 +218,7 @@ export function School21BadgesModal({ isOpen, onClose, profile: propsProfile, st
       updateCoins(res.coins);
       setProfile({ ...profile, coins: res.coins, score: res.score });
 
-      toast.success(`${badge.title} mukofoti olindi! +${res.rewardXp} XP, +${res.rewardCoins} Tanga 🪙`, {
+      toast.success(`${badge.title} mukofoti olindi! +${res.rewardXp} XP, +${res.rewardCoins} Tanga`, {
         duration: 4000,
       });
 
@@ -447,7 +447,7 @@ export function School21BadgesModal({ isOpen, onClose, profile: propsProfile, st
                     <Gift className="w-4 h-4 text-amber-400" /> Mukofot:
                   </span>
                   <span className="text-xs font-black text-amber-400 font-mono">
-                    +{selectedBadge.reward.xp} XP, +{selectedBadge.reward.coins} Tanga 🪙
+                    +{selectedBadge.reward.xp} XP, +{selectedBadge.reward.coins} Tanga
                   </span>
                 </div>
 

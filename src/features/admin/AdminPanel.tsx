@@ -1,5 +1,5 @@
 // Admin panel.
-import { ShieldAlert, Loader2, X, Gift, Eye } from "lucide-react";
+import { ShieldAlert, Loader2, X, Gift, Eye, AlertTriangle, Coins, Star } from "lucide-react";
 import { AdminPanelProps } from "./adminShared";
 import { useAdminPanelState } from "./useAdminPanelState";
 import { OverviewTab } from "./tabs/OverviewTab";
@@ -39,7 +39,7 @@ export function AdminPanel(props: AdminPanelProps) {
 
       {error && (
         <p className="text-xs px-3 py-2.5 rounded-lg" style={{ color: "var(--coral-red)", background: "rgba(248,113,113,0.1)" }}>
-          ⚠ {error}
+          <AlertTriangle size={12} className="inline-block shrink-0 align-[-2px] mr-1" />{error}
         </p>
       )}
 
@@ -83,19 +83,19 @@ export function AdminPanel(props: AdminPanelProps) {
             <p className="text-[11px] mb-1" style={{ color: "var(--muted-foreground)" }}>{t('admin_bonus_hint')}</p>
             <div className="flex flex-col gap-3 mt-3">
               <div>
-                <label className="text-[11px] font-medium block mb-1" style={{ color: "var(--muted-foreground)" }}>🪙 {t('admin_bonus_coins')}</label>
+                <label className="text-[11px] font-medium block mb-1" style={{ color: "var(--muted-foreground)" }}><Coins size={11} className="inline-block align-[-1px] mr-1" />{t('admin_bonus_coins')}</label>
                 <input type="number" value={bonusCoins} onChange={(e) => setBonusCoins(e.target.value)}
                   className="w-full px-3 py-2 rounded-xl text-sm outline-none"
                   style={{ background: "rgba(255,255,255,0.05)", border: `1px solid rgba(255,255,255,0.1)`, color: "var(--foreground)" }} />
               </div>
               <div>
-                <label className="text-[11px] font-medium block mb-1" style={{ color: "var(--muted-foreground)" }}>⭐ {t('admin_bonus_score')}</label>
+                <label className="text-[11px] font-medium block mb-1" style={{ color: "var(--muted-foreground)" }}><Star size={11} className="inline-block align-[-1px] mr-1" />{t('admin_bonus_score')}</label>
                 <input type="number" value={bonusScore} onChange={(e) => setBonusScore(e.target.value)}
                   className="w-full px-3 py-2 rounded-xl text-sm outline-none"
                   style={{ background: "rgba(255,255,255,0.05)", border: `1px solid rgba(255,255,255,0.1)`, color: "var(--foreground)" }} />
               </div>
             </div>
-            {bonusError && <p className="text-xs mt-2" style={{ color: "var(--coral-red)" }}>⚠ {bonusError}</p>}
+            {bonusError && <p className="text-xs mt-2" style={{ color: "var(--coral-red)" }}><AlertTriangle size={12} className="inline-block shrink-0 align-[-2px] mr-1" />{bonusError}</p>}
             <button
               onClick={handleGrantBonus}
               disabled={grantingBonus}
@@ -131,8 +131,8 @@ export function AdminPanel(props: AdminPanelProps) {
                 <>
                   <div className="grid grid-cols-3 gap-2 mb-4">
                     {[
-                      { label: t('an_economy_coins'), value: `🪙${u.coins || 0}` },
-                      { label: t('admin_col_score'), value: `⭐${u.score || 0}` },
+                      { label: t('an_economy_coins'), value: `${u.coins || 0}` },
+                      { label: t('admin_col_score'), value: `${u.score || 0}` },
                       { label: t('admin_col_efficiency'), value: `${efficiencyMap[u.id] ?? 0}%` },
                     ].map((s) => (
                       <div key={s.label} className="rounded-xl p-2.5 text-center" style={{ background: "rgba(255,255,255,0.03)", border: `1px solid rgba(255,255,255,0.05)` }}>

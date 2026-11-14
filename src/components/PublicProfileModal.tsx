@@ -2,7 +2,11 @@ import { useState, useEffect, useRef } from "react";
 import {
   X, Star, Flame, Loader2, Check, Lock,
   Send, UserPlus, UserCheck, Crown, Instagram,
+  AlertTriangle,
+  Trophy, Target, CheckCircle2,
+  type LucideIcon,
 } from "lucide-react";
+import { HabitIcon } from "./HabitIcon";
 import {
   getPublicProfileStats,
   followUser, unfollowUser, checkFollowing, getFollowCounts,
@@ -17,16 +21,17 @@ import { UserBadge } from "./UserBadge";
 import { AvatarFrame } from "./AvatarFrame";
 import { useScrollLock } from "../hooks/useScrollLock";
 
-interface Badge { emoji: string; label: string; color: string }
+// icon: Lucide komponenti yoki HabitIcon nomi (masalan daraja ikonkasi)
+interface Badge { icon: LucideIcon | string; label: string; color: string }
 
 function computeBadges(totalCompleted: number, score: number, t: T): Badge[] {
   const b: Badge[] = [];
   const lv = getLevel(score);
-  if (lv.level >= 2) b.push({ emoji: lv.icon, label: t(`level_${lv.level}` as any), color: lv.color });
+  if (lv.level >= 2) b.push({ icon: lv.icon, label: t(`level_${lv.level}` as any), color: lv.color });
 
-  if (totalCompleted >= 100) b.push({ emoji: "🏆", label: t('pp_badge_100'), color: "#FBBF24" });
-  else if (totalCompleted >= 50) b.push({ emoji: "🎯", label: t('pp_badge_50'), color: "#4ADE80" });
-  else if (totalCompleted >= 10) b.push({ emoji: "✅", label: t('pp_badge_10'), color: "#4ADE80" });
+  if (totalCompleted >= 100) b.push({ icon: Trophy, label: t('pp_badge_100'), color: "#FBBF24" });
+  else if (totalCompleted >= 50) b.push({ icon: Target, label: t('pp_badge_50'), color: "#4ADE80" });
+  else if (totalCompleted >= 10) b.push({ icon: CheckCircle2, label: t('pp_badge_10'), color: "#4ADE80" });
 
   return b;
 }
@@ -140,7 +145,7 @@ export function PublicProfileModal({ viewingId, myProfile, onClose }: PublicProf
           <Loader2 size={28} className="animate-spin" style={{ color: "#4ADE80" }} />
         ) : (
           <div className="flex flex-col items-center gap-3 p-6 rounded-2xl" style={{ background: "#161B22" }}>
-            <p className="text-sm" style={{ color: "var(--coral-red)" }}>⚠ {loadError || t('err_loading')}</p>
+            <p className="text-sm" style={{ color: "var(--coral-red)" }}><AlertTriangle size={12} className="inline-block shrink-0 align-[-2px] mr-1" />{loadError || t('err_loading')}</p>
             <button onClick={onClose} className="text-xs underline" style={{ color: "var(--muted-foreground)" }}>
               {t('close')}
             </button>
@@ -322,7 +327,7 @@ export function PublicProfileModal({ viewingId, myProfile, onClose }: PublicProf
                   <span key={b.label}
                     className="flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold"
                     style={{ background: `${b.color}15`, color: b.color, border: `1px solid ${b.color}30` }}>
-                    {b.emoji} {b.label}
+                    {typeof b.icon === "string" ? <HabitIcon emoji={b.icon} size={12} noWrapper /> : <b.icon size={12} />} {b.label}
                   </span>
                 ))}
               </div>

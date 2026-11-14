@@ -127,7 +127,7 @@ export function LevelUpToast({ level, levelName, onClose }: LevelUpToastProps) {
             className="w-full py-3.5 rounded-2xl bg-gradient-to-r from-emerald-500 to-emerald-600 text-white font-black text-sm tracking-wide shadow-lg shadow-emerald-500/25 flex items-center justify-center gap-2 active:scale-95 transition-all"
           >
             <Sparkles size={18} />
-            <span>Davom etish 🔥</span>
+            <span>Davom etish</span>
           </motion.button>
         </motion.div>
       </div>

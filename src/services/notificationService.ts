@@ -74,20 +74,20 @@ export const notificationService = {
 
       // 2. Context-aware title & body based on scheduled target time
       let title = "Kun yakuni va sarhisob";
-      let body = "Bugungi odatlaringizni belgilashni unutmadingizmi? Seriyangizni saqlab qoling! 🔥";
+      let body = "Bugungi odatlaringizni belgilashni unutmadingizmi? Seriyangizni saqlab qoling!";
 
       if (targetHour >= 7 && targetHour < 12) {
         // Morning
         title = "Yangi kun, yangi imkoniyat!";
-        body = "Bugungi odatlaringizni ko'zdan kechiring va kunni samarali boshlang! 🚀";
+        body = "Bugungi odatlaringizni ko'zdan kechiring va kunni samarali boshlang!";
       } else if (targetHour >= 12 && targetHour < 18) {
         // Afternoon
         title = "Kunlik intizom davom etmoqda";
-        body = "Kun yarmiga yetdi. Rejalashtirilgan odatlaringizni unutmang! ⚡";
+        body = "Kun yarmiga yetdi. Rejalashtirilgan odatlaringizni unutmang!";
       } else {
         // Evening / Night (18:00 - 06:59)
         title = "Kun yakuni va sarhisob";
-        body = "Bugungi odatlaringizni belgilashni unutmadingizmi? Seriyangizni saqlab qoling! 🔥";
+        body = "Bugungi odatlaringizni belgilashni unutmadingizmi? Seriyangizni saqlab qoling!";
       }
 
       await LocalNotifications.schedule({

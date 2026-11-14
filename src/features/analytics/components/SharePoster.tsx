@@ -137,7 +137,7 @@ export function SharePoster({ s }: { s: AnalyticsData }) {
             <span className="text-xs font-bold text-slate-300 tracking-widest">IDROK</span>
           </div>
           <span className="text-[11px] font-medium text-slate-400 italic">
-            Kichik odatlar, buyuk natijalar ✨
+            Kichik odatlar, buyuk natijalar
           </span>
         </div>
       </div>

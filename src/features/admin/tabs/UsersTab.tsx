@@ -1,5 +1,5 @@
 // Admin panel — UsersTab.
-import { Loader2, Ban, ShieldCheck, Search, Download, Gift, Eye, Crown } from "lucide-react";
+import { Loader2, Ban, ShieldCheck, Search, Download, Gift, Eye, Crown, Coins, Star } from "lucide-react";
 import { AvatarFrame } from "../../../components/AvatarFrame";
 import { DATE_LOCALE } from "../adminShared";
 import type { AdminPanelState } from "../useAdminPanelState";
@@ -104,7 +104,7 @@ export function UsersTab({ s }: { s: AdminPanelState }) {
                     )}
                   </td>
                   <td className="py-2.5 pr-3 text-xs" style={{ color: "var(--foreground)", fontFamily: "'Geist Mono', monospace" }}>
-                    🪙{u.coins || 0} · ⭐{u.score || 0}
+                    <Coins size={11} className="inline-block align-[-1px] mr-0.5 text-amber-400" />{u.coins || 0} · <Star size={11} className="inline-block align-[-1px] mr-0.5 text-amber-400" />{u.score || 0}
                   </td>
                   <td className="py-2.5 pr-3 text-xs font-semibold" style={{ color: (efficiencyMap[u.id] ?? 0) >= 50 ? "#4ADE80" : "var(--muted-foreground)", fontFamily: "'Geist Mono', monospace" }}>
                     {efficiencyMap[u.id] ?? 0}%

@@ -1,5 +1,5 @@
 // Tahlil (Analytics) — HabitBreakdown.
-import { Trophy, AlertCircle, SlidersHorizontal, ChevronRight } from "lucide-react";
+import { Trophy, AlertCircle, SlidersHorizontal, ChevronRight, Flame } from "lucide-react";
 import { HabitIcon, cleanHabitName } from "../../../components/HabitIcon";
 import type { AnalyticsData } from "../useAnalyticsData";
 
@@ -76,7 +76,7 @@ export function HabitBreakdown({ s }: { s: AnalyticsData }) {
                         fontFamily: "'Geist Mono', monospace",
                       }}
                     >
-                      🔥 {h.streak}
+                      <Flame size={11} className="inline-block align-[-1px] mr-0.5" />{h.streak}
                     </span>
                   )}
                 </div>

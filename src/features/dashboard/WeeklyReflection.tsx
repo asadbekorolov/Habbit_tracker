@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
-import { ChevronLeft, ChevronRight, Save, Sparkles, TrendingUp, Lock } from "lucide-react";
+import { ChevronLeft, ChevronRight, Save, Sparkles, TrendingUp, Lock, AlertTriangle } from "lucide-react";
 import { getWeeklyReflection, upsertWeeklyReflection } from "../../services/db";
 import type { Profile } from "../../services/supabase";
 import { tashkentTodayAnchor, getTashkentHour, toDateStr } from "../../utils/date";
@@ -282,7 +282,7 @@ export function WeeklyReflection({ profile }: WeeklyReflectionProps) {
         {isReadOnly ? (isPastWeek ? t('reflect_readonly_locked') : t('reflect_time_locked_btn')) : saving ? t('notes_saving') : saved ? t('notes_saved') : t('reflect_save_btn')}
       </button>
       {saveError && (
-        <p className="text-xs text-center" style={{ color: "var(--coral-red)" }}>⚠ {saveError}</p>
+        <p className="text-xs text-center" style={{ color: "var(--coral-red)" }}><AlertTriangle size={12} className="inline-block shrink-0 align-[-2px] mr-1" />{saveError}</p>
       )}
     </div>
   );

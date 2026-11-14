@@ -1,5 +1,5 @@
 // Admin panel — MonitoringTab.
-import { Loader2, Activity, Flame } from "lucide-react";
+import { Loader2, Activity, Flame, AlertTriangle } from "lucide-react";
 import type { AdminPanelState } from "../useAdminPanelState";
 
 export function MonitoringTab({ s }: { s: AdminPanelState }) {
@@ -8,7 +8,7 @@ export function MonitoringTab({ s }: { s: AdminPanelState }) {
   return (
     <>
       {monitoringError && (
-        <p className="text-xs px-1" style={{ color: "var(--coral-red)" }}>⚠ {monitoringError}</p>
+        <p className="text-xs px-1" style={{ color: "var(--coral-red)" }}><AlertTriangle size={12} className="inline-block shrink-0 align-[-2px] mr-1" />{monitoringError}</p>
       )}
       <div style={cardStyle} className="flex flex-col">
         <div className="w-9 h-9 rounded-xl flex items-center justify-center mb-3" style={{ background: "rgba(74,222,128,0.12)" }}>

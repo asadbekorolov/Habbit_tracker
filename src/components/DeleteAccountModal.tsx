@@ -98,7 +98,7 @@ export function DeleteAccountModal({ profile, onClose, onDeleted }: DeleteAccoun
 
           {error && (
             <p className="text-xs mb-3 px-3 py-2 rounded-lg" style={{ background: "rgba(248,113,113,0.1)", color: "var(--coral-red)" }}>
-              ⚠ {error}
+              <AlertTriangle size={12} className="inline-block shrink-0 align-[-2px] mr-1" />{error}
             </p>
           )}
 

@@ -1,5 +1,5 @@
 // Tahlil (Analytics) — AiInsights.
-import { Loader2, Brain, Sparkles, RotateCw, Coins } from "lucide-react";
+import { Loader2, Brain, Sparkles, RotateCw, Coins, AlertTriangle } from "lucide-react";
 import type { AnalyticsData } from "../useAnalyticsData";
 
 export function AiInsights({ s }: { s: AnalyticsData }) {
@@ -89,7 +89,7 @@ export function AiInsights({ s }: { s: AnalyticsData }) {
             </div>
           )}
           {coachError && (
-            <p className="text-[11px] text-center mt-2" style={{ color: "var(--coral-red)" }}>⚠ {coachError}</p>
+            <p className="text-[11px] text-center mt-2" style={{ color: "var(--coral-red)" }}><AlertTriangle size={12} className="inline-block shrink-0 align-[-2px] mr-1" />{coachError}</p>
           )}
         </div>
 

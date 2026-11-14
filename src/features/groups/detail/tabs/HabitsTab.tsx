@@ -1,5 +1,5 @@
 // Guruh tafsilotlari — HabitsTab.
-import { Trash2, Circle, Clock, MessageSquare, Pencil, ClipboardList } from "lucide-react";
+import { Trash2, Circle, Clock, MessageSquare, Pencil, ClipboardList, AlertTriangle } from "lucide-react";
 import { cleanHabitName } from "../../../../components/HabitIcon";
 import { getHabitCategory, getCategoryTheme } from "../../../../utils/categoryTheme";
 import type { GroupDetailState } from "../useGroupDetail";
@@ -10,7 +10,7 @@ export function HabitsTab({ s }: { s: GroupDetailState }) {
   return (
     <div className="flex flex-col gap-3">
       {error && !proofHabitId && !showAddHabit && (
-        <p className="text-xs px-1" style={{ color: "var(--coral-red)" }}>⚠ {error}</p>
+        <p className="text-xs px-1" style={{ color: "var(--coral-red)" }}><AlertTriangle size={12} className="inline-block shrink-0 align-[-2px] mr-1" />{error}</p>
       )}
       {/* Legend */}
       <div className="flex items-center gap-3 px-1 pb-1 flex-wrap">

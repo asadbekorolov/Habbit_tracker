@@ -1,5 +1,5 @@
 // Guruh tafsilotlari — ApproveTab.
-import { Check, X, ShieldCheck, MessageSquare } from "lucide-react";
+import { Check, X, ShieldCheck, MessageSquare, AlertTriangle } from "lucide-react";
 import type { GroupDetailState } from "../useGroupDetail";
 
 export function ApproveTab({ s }: { s: GroupDetailState }) {
@@ -7,7 +7,7 @@ export function ApproveTab({ s }: { s: GroupDetailState }) {
 
   return (
     <div className="flex flex-col gap-3">
-      {error && <p className="text-xs px-1" style={{ color: "var(--coral-red)" }}>⚠ {error}</p>}
+      {error && <p className="text-xs px-1" style={{ color: "var(--coral-red)" }}><AlertTriangle size={12} className="inline-block shrink-0 align-[-2px] mr-1" />{error}</p>}
       {pendingApprovals.length === 0 ? (
         <div style={card} className="p-10 flex flex-col items-center gap-3">
           <ShieldCheck size={32} style={{ color: "#4ADE80" }} />

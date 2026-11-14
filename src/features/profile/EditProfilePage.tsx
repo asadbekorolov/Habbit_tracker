@@ -139,7 +139,7 @@ export function EditProfilePage({ onProfileUpdate, onBack }: EditProfilePageProp
       setProfile(updatedProfile);
       onProfileUpdate(updatedProfile);
 
-      toast.success(t('ep_success') || "Profil muvaffaqiyatli saqlandi ✨");
+      toast.success(t('ep_success') || "Profil muvaffaqiyatli saqlandi");
       onBack();
     } catch (e: any) {
       console.error("Save profile error:", e);
@@ -265,7 +265,7 @@ export function EditProfilePage({ onProfileUpdate, onBack }: EditProfilePageProp
                     type="button"
                     disabled={!owned}
                     onClick={() => setAvatarColor(c.gradient)}
-                    title={owned ? c.name : `${c.name} — 🪙${c.price}`}
+                    title={owned ? c.name : `${c.name} — ${c.price} tanga`}
                     className="w-8 h-8 rounded-full flex items-center justify-center transition-all relative"
                     style={{
                       background: c.gradient,
@@ -341,8 +341,8 @@ export function EditProfilePage({ onProfileUpdate, onBack }: EditProfilePageProp
             </button>
             <p className="text-[11px] mt-1.5 leading-relaxed text-slate-400">
               {profilePrivate
-                ? (t('ep_privacy_private_hint') || "🔒 Global reytingda ismingiz qisqartirilgan holda ko'rinadi")
-                : (t('ep_privacy_public_hint') || "🌐 Begonalar ham profilingizni ko'ra oladi")}
+                ? (t('ep_privacy_private_hint') || "Global reytingda ismingiz qisqartirilgan holda ko'rinadi")
+                : (t('ep_privacy_public_hint') || "Begonalar ham profilingizni ko'ra oladi")}
             </p>
           </Field>
 

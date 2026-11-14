@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Activity, X, Check, Loader2, Scale, Ruler } from 'lucide-react';
+import { Activity, X, Check, Loader2, Scale, Ruler, AlertTriangle } from 'lucide-react';
 import type { Profile } from '../services/supabase';
 import { updateUserProfile } from '../services/db';
 import { useScrollLock } from '../hooks/useScrollLock';
@@ -170,7 +170,7 @@ export const BiometricsModal: React.FC<BiometricsModalProps> = ({
             </div>
           </div>
 
-          {error && <p className="text-xs text-rose-400 font-medium text-center">⚠ {error}</p>}
+          {error && <p className="text-xs text-rose-400 font-medium text-center"><AlertTriangle size={12} className="inline-block shrink-0 align-[-2px] mr-1" />{error}</p>}
 
           {/* Action Buttons */}
           <div className="flex items-center gap-3 pt-2">

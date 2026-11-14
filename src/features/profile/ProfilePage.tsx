@@ -304,7 +304,7 @@ export function ProfilePage({ onNavigate, lang, onProfileUpdate }: ProfilePagePr
 
         <div className="flex items-center gap-2">
           <div className="flex items-center gap-1 text-amber-400 font-bold font-mono text-xs bg-amber-500/10 px-2.5 py-1 rounded-full border border-amber-500/20">
-            <span>🪙</span>
+            <Coins size={12} />
             <span>{freshCoins || profile.coins || 0}</span>
           </div>
           <ChevronRight size={16} className="text-slate-400 group-hover:text-amber-400 transition-colors" />

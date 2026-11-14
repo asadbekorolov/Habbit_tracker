@@ -1,5 +1,5 @@
 // Admin panel — FeedbackTab.
-import { Loader2, MessageSquare, Download } from "lucide-react";
+import { Loader2, MessageSquare, Download, AlertTriangle } from "lucide-react";
 import { DATE_LOCALE } from "../adminShared";
 import type { AdminPanelState } from "../useAdminPanelState";
 
@@ -24,7 +24,7 @@ export function FeedbackTab({ s }: { s: AdminPanelState }) {
       {feedbackLoading ? (
         <div className="flex justify-center py-6"><Loader2 size={20} className="animate-spin" style={{ color: "var(--neon-green)" }} /></div>
       ) : feedbackError ? (
-        <p className="text-sm text-center py-4" style={{ color: "var(--coral-red)" }}>⚠ {feedbackError}</p>
+        <p className="text-sm text-center py-4" style={{ color: "var(--coral-red)" }}><AlertTriangle size={12} className="inline-block shrink-0 align-[-2px] mr-1" />{feedbackError}</p>
       ) : feedback.length === 0 ? (
         <p className="text-sm text-center py-6" style={{ color: "var(--muted-foreground)" }}>{t('admin_feedback_empty')}</p>
       ) : (
@@ -80,7 +80,7 @@ export function FeedbackTab({ s }: { s: AdminPanelState }) {
               )}
             </div>
           ))}
-          {replyError && <p className="text-xs text-center" style={{ color: "var(--coral-red)" }}>⚠ {replyError}</p>}
+          {replyError && <p className="text-xs text-center" style={{ color: "var(--coral-red)" }}><AlertTriangle size={12} className="inline-block shrink-0 align-[-2px] mr-1" />{replyError}</p>}
         </div>
       )}
     </div>

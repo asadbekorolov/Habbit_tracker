@@ -5,7 +5,8 @@ import {
   Plus, Trash2, Loader2, CheckCircle2, XCircle, Pencil, Check, X,
   GripVertical, Sparkles, ChevronUp, ChevronDown, TrendingUp, Activity,
   ShieldAlert, Trees, Clock, Shield, ClipboardList, CheckSquare, CalendarCheck,
-  Footprints, Dumbbell, Utensils, Droplets, Moon, Target, BookOpen, PenTool, Music, Smartphone, Zap, Sun, Timer, Sunrise, Heart, ArrowRight, Flame, Trophy
+  Footprints, Dumbbell, Utensils, Droplets, Moon, Target, BookOpen, PenTool, Music, Smartphone, Zap, Sun, Timer, Sunrise, Heart, ArrowRight, Flame, Trophy,
+  AlertTriangle
 } from "lucide-react";
 import { RoutinesManager } from "./RoutinesManager";
 import { useNavigate } from "react-router-dom";
@@ -514,7 +515,7 @@ export function HabitsManager({}: HabitsManagerProps) {
                       <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">Joriy Seriya</span>
                     </div>
                     <p className="text-2xl font-black text-slate-900 dark:text-white font-mono">
-                      {analyticsStats.streak} <span className="text-xs font-normal text-slate-400">kun 🔥</span>
+                      {analyticsStats.streak} <span className="text-xs font-normal text-slate-400">kun</span>
                     </p>
                   </div>
 
@@ -525,7 +526,7 @@ export function HabitsManager({}: HabitsManagerProps) {
                       <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">Eng Yaxshi Rekord</span>
                     </div>
                     <p className="text-2xl font-black text-slate-900 dark:text-white font-mono">
-                      {analyticsStats.bestStreak} <span className="text-xs font-normal text-slate-400">kun 🏆</span>
+                      {analyticsStats.bestStreak} <span className="text-xs font-normal text-slate-400">kun</span>
                     </p>
                   </div>
 
@@ -723,7 +724,7 @@ export function HabitsManager({}: HabitsManagerProps) {
                             </button>
                           );
                         })}
-                        {addError && <p className="text-xs px-3 py-2 rounded-lg" style={{ background: "rgba(248,113,113,0.1)", color: "var(--coral-red)" }}>⚠ {addError}</p>}
+                        {addError && <p className="text-xs px-3 py-2 rounded-lg" style={{ background: "rgba(248,113,113,0.1)", color: "var(--coral-red)" }}><AlertTriangle size={12} className="inline-block shrink-0 align-[-2px] mr-1" />{addError}</p>}
                         <button type="button"
                           onClick={handleBulkAdd}
                           disabled={bulkAdding || checkedPack.size === 0}

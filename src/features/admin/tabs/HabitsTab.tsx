@@ -1,5 +1,5 @@
 // Admin panel — HabitsTab.
-import { Loader2, Search, Download } from "lucide-react";
+import { Loader2, Search, Download, AlertTriangle } from "lucide-react";
 import { DATE_LOCALE } from "../adminShared";
 import type { AdminPanelState } from "../useAdminPanelState";
 
@@ -40,7 +40,7 @@ export function HabitsTab({ s }: { s: AdminPanelState }) {
       </div>
 
       {habitsAdminError && (
-        <p className="text-xs px-1 mb-3" style={{ color: "var(--coral-red)" }}>⚠ {habitsAdminError}</p>
+        <p className="text-xs px-1 mb-3" style={{ color: "var(--coral-red)" }}><AlertTriangle size={12} className="inline-block shrink-0 align-[-2px] mr-1" />{habitsAdminError}</p>
       )}
 
       {habitsAdminLoading ? (

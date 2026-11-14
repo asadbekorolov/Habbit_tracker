@@ -1,14 +1,14 @@
 // Guruh tafsilotlari — TeamsTab.
-import { Users, Plus, Check, Loader2, Trash2, Pencil } from "lucide-react";
+import { Users, Plus, Check, Loader2, Trash2, Pencil, AlertTriangle } from "lucide-react";
 import type { GroupDetailState } from "../useGroupDetail";
 
 export function TeamsTab({ s }: { s: GroupDetailState }) {
-  const { profile, card, inputStyle, onUserClick, t, members, subteams, error, setError, showCreateTeam, setShowCreateTeam, newTeamName, setNewTeamName, newTeamEmoji, setNewTeamEmoji, creatingTeam, managingTeam, setManagingTeam, managingSelected, setManagingSelected, savingTeamMembers, deletingTeam, isAdmin, handleCreateTeam, openManageTeam, handleSaveTeamMembers, handleDeleteTeam, EMOJI_MAP } = s;
+  const { profile, card, inputStyle, onUserClick, t, members, subteams, error, setError, showCreateTeam, setShowCreateTeam, newTeamName, setNewTeamName, newTeamEmoji, setNewTeamEmoji, creatingTeam, managingTeam, setManagingTeam, managingSelected, setManagingSelected, savingTeamMembers, deletingTeam, isAdmin, handleCreateTeam, openManageTeam, handleSaveTeamMembers, handleDeleteTeam, EMOJI_MAP, TEAM_ICON_NAMES } = s;
 
   return (
     <div className="flex flex-col gap-3">
       {error && !showCreateTeam && !managingTeam && (
-        <p className="text-xs px-1" style={{ color: "var(--coral-red)" }}>⚠ {error}</p>
+        <p className="text-xs px-1" style={{ color: "var(--coral-red)" }}><AlertTriangle size={12} className="inline-block shrink-0 align-[-2px] mr-1" />{error}</p>
       )}
       <div className="flex items-center justify-between px-1">
         <p className="text-xs" style={{ color: "var(--muted-foreground)" }}>
@@ -48,8 +48,8 @@ export function TeamsTab({ s }: { s: GroupDetailState }) {
                   style={{ background: "rgba(255,255,255,0.07)" }}>
                   {(() => {
                      const TeamIcon = EMOJI_MAP[team.emoji] || Users;
-                     const colorClass = (team.emoji === '🔥' || team.emoji === 'Flame') ? 'text-orange-500'
-                                      : (team.emoji === '🏆' || team.emoji === 'Trophy') ? 'text-amber-400'
+                     const colorClass = (team.emoji === 'Flame' || team.emoji === '\u{1F525}') ? 'text-orange-500'
+                                      : (team.emoji === 'Trophy' || team.emoji === '\u{1F3C6}') ? 'text-amber-400'
                                       : 'text-emerald-400';
                      return <TeamIcon size={20} className={colorClass} />
                   })()}
@@ -132,14 +132,17 @@ export function TeamsTab({ s }: { s: GroupDetailState }) {
               {t('groups_new_team')}
             </h3>
             <div className="flex flex-wrap gap-1.5 mb-3">
-              {["⚡", "🔥", "🏆", "🚀", "💎", "🌟", "🎯", "🦁", "🐯", "🦅", "🌊", "⚽"].map((em) => (
+              {TEAM_ICON_NAMES.map((em) => {
+                const PickIcon = EMOJI_MAP[em] || Users;
+                return (
                 <button key={em} type="button" onClick={() => setNewTeamEmoji(em)}
                   className="w-9 h-9 rounded-lg text-lg"
                   style={{
                     background: newTeamEmoji === em ? ("rgba(74,222,128,0.2)") : ("rgba(255,255,255,0.05)"),
                     border: newTeamEmoji === em ? "1px solid rgba(74,222,128,0.5)" : "1px solid transparent",
-                  }}>{em}</button>
-              ))}
+                  }}><PickIcon size={16} className="mx-auto text-emerald-400" /></button>
+                );
+              })}
             </div>
             <input
               style={inputStyle}
@@ -150,7 +153,7 @@ export function TeamsTab({ s }: { s: GroupDetailState }) {
               autoFocus
               maxLength={30}
             />
-            {error && <p className="text-xs mt-2" style={{ color: "var(--coral-red)" }}>⚠ {error}</p>}
+            {error && <p className="text-xs mt-2" style={{ color: "var(--coral-red)" }}><AlertTriangle size={12} className="inline-block shrink-0 align-[-2px] mr-1" />{error}</p>}
             <div className="flex gap-2 mt-4">
               <button type="button" onClick={() => setShowCreateTeam(false)}
                 className="flex-1 py-2.5 rounded-xl text-sm font-medium"
@@ -223,7 +226,7 @@ export function TeamsTab({ s }: { s: GroupDetailState }) {
               })}
             </div>
             {error && (
-              <p className="text-xs px-4 pt-2" style={{ color: "var(--coral-red)" }}>⚠ {error}</p>
+              <p className="text-xs px-4 pt-2" style={{ color: "var(--coral-red)" }}><AlertTriangle size={12} className="inline-block shrink-0 align-[-2px] mr-1" />{error}</p>
             )}
             <div className="px-4 py-3 flex gap-2"
               style={{ borderTop: `1px solid rgba(255,255,255,0.07)`, paddingBottom: "calc(0.75rem + env(safe-area-inset-bottom))" }}>

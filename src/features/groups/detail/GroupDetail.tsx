@@ -1,5 +1,5 @@
 // Guruh tafsilotlari.
-import { Plus, ArrowLeft, Copy, Check, Crown, Loader2, Trash2, X, Send, Pencil, Settings, LogOut } from "lucide-react";
+import { Plus, ArrowLeft, Copy, Check, Crown, Loader2, Trash2, X, Send, Pencil, Settings, LogOut, AlertTriangle } from "lucide-react";
 import { addGroupHabit, updateGroupHabit } from "../../../services/db";
 import type { Profile } from "../../../services/supabase";
 import { AddGroupHabitModal } from "../../../components/AddGroupHabitModal";
@@ -107,7 +107,7 @@ export function GroupDetail(props: { profile: Profile; group: any; onBack: () =>
       </div>
 
       {loadError && (
-        <p className="text-xs px-1 mb-3" style={{ color: "var(--coral-red)" }}>⚠ {loadError}</p>
+        <p className="text-xs px-1 mb-3" style={{ color: "var(--coral-red)" }}><AlertTriangle size={12} className="inline-block shrink-0 align-[-2px] mr-1" />{loadError}</p>
       )}
 
       {/* Proof note modal */}
@@ -156,7 +156,7 @@ export function GroupDetail(props: { profile: Profile; group: any; onBack: () =>
               autoFocus
             />
             <p className="text-[11px] text-right mb-3" style={{ color: "var(--muted-foreground)" }}>{proofNote.length}/200</p>
-            {error && <p className="text-xs mb-3" style={{ color: "var(--coral-red)" }}>⚠ {error}</p>}
+            {error && <p className="text-xs mb-3" style={{ color: "var(--coral-red)" }}><AlertTriangle size={12} className="inline-block shrink-0 align-[-2px] mr-1" />{error}</p>}
             <div className="flex gap-2">
               <button onClick={() => { setProofHabitId(null); setProofNote(""); setProofCount(1); }}
                 data-modal-close-trigger
@@ -188,7 +188,7 @@ export function GroupDetail(props: { profile: Profile; group: any; onBack: () =>
             <h3 className="text-sm font-semibold mb-3" style={{ color: "var(--foreground)" }}>{t('groups_settings_title')}</h3>
 
             {leaveError && (
-              <p className="text-xs mb-3" style={{ color: "var(--coral-red)" }}>⚠ {leaveError}</p>
+              <p className="text-xs mb-3" style={{ color: "var(--coral-red)" }}><AlertTriangle size={12} className="inline-block shrink-0 align-[-2px] mr-1" />{leaveError}</p>
             )}
 
             <button type="button" onClick={handleLeaveGroup} disabled={leaving || deletingGroup}
@@ -237,7 +237,7 @@ export function GroupDetail(props: { profile: Profile; group: any; onBack: () =>
               onChange={(e) => setRejectReason(e.target.value)}
               rows={3} autoFocus
             />
-            {error && <p className="text-xs mt-2" style={{ color: "var(--coral-red)" }}>⚠ {error}</p>}
+            {error && <p className="text-xs mt-2" style={{ color: "var(--coral-red)" }}><AlertTriangle size={12} className="inline-block shrink-0 align-[-2px] mr-1" />{error}</p>}
             <div className="flex gap-2 mt-3">
               <button onClick={() => { setRejectLogId(null); setRejectReason(""); setError(""); }}
                 data-modal-close-trigger
@@ -277,7 +277,7 @@ export function GroupDetail(props: { profile: Profile; group: any; onBack: () =>
               onKeyDown={(e) => e.key === "Enter" && handleSaveTgLink()}
               autoFocus
             />
-            {error && <p className="text-xs mt-2" style={{ color: "var(--coral-red)" }}>⚠ {error}</p>}
+            {error && <p className="text-xs mt-2" style={{ color: "var(--coral-red)" }}><AlertTriangle size={12} className="inline-block shrink-0 align-[-2px] mr-1" />{error}</p>}
             <div className="flex gap-2 mt-4">
               <button type="button" onClick={() => { setShowTgEdit(false); setError(""); }}
                 data-modal-close-trigger

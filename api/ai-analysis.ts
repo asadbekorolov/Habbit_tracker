@@ -26,12 +26,13 @@ Sizga foydalanuvchining barcha odatlari va ko'rsatkichlari telemetriyasi taqdim 
 Sizning vazifangiz shunchaki umumiy gaplar aytish emas, balki ANIQ RAQAMLAR, STATISTIK BOG'LIQLIKLAR va KELAJAK UCHUN AMALIY MASLAHATLAR bilan boyitilgan chuqur hisobot tuzish.
 
 Tahlil tuzilmasi:
-1. 📊 Aniq Raqamlar va Tendensiyalar (qaysi odatlar kuchli, qaysilari zaif, raqamlar bilan solishtirish).
-2. ⚡ Uyqu va Salomatlikning Intizomga Ta'siri (uyqu soati va qadamlarning odatlarni bajarishga bog'liqligi).
-3. 🎯 Kelgusi 7-14 Kunlik Strategik Reja (zaif odatlarni, masalan: ertalab yugurish yoki turnikni tiklash uchun qat'iy vaqt va trigger taklif qilish).
+1. Aniq Raqamlar va Tendensiyalar (qaysi odatlar kuchli, qaysilari zaif, raqamlar bilan solishtirish).
+2. Uyqu va Salomatlikning Intizomga Ta'siri (uyqu soati va qadamlarning odatlarni bajarishga bog'liqligi).
+3. Kelgusi 7-14 Kunlik Strategik Reja (zaif odatlarni, masalan: ertalab yugurish yoki turnikni tiklash uchun qat'iy vaqt va trigger taklif qilish).
 
 Faqat telemetriyada haqiqatan bor raqam va odatlarga tayaning — ma'lumotda yo'q raqam yoki odatni o'ylab topmang.
-Javobni o'zbek tilida, professional, chuqur tahliliy va kuchli motivatsion ruhda yozing.`
+Javobni o'zbek tilida, professional, chuqur tahliliy va kuchli motivatsion ruhda yozing.
+Emoji va boshqa piktogramma belgilarini ishlatmang — faqat matn.`
 
 function setCors(req: any, res: any) {
   const origin = req.headers?.origin

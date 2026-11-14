@@ -1,7 +1,7 @@
 // Guruh tafsilotlari — holat va mantiq (UI'dan ajratilgan).
 import { useState, useEffect, useRef } from "react";
 import { useLang } from "../../../store/LangContext";
-import { Users, Trophy, CheckCircle2, Clock, BarChart3, ShieldCheck, AlertCircle, UsersRound, Target, Zap, Sparkles, Flame } from "lucide-react";
+import { Users, Trophy, CheckCircle2, Clock, BarChart3, ShieldCheck, AlertCircle, UsersRound, Target, Zap, Sparkles, Flame, Rocket, Gem, Star, Crown, Shield, Heart, Mountain } from "lucide-react";
 import { tashkentTodayAnchor, toDateStr } from "../../../utils/date";
 import { getGroupMembers, getGroupHabits, deleteGroupHabit, getGroupLeaderboard, logGroupHabit, getTodayGroupLogs, getPendingGroupApprovals, approveGroupLog, rejectGroupLog, getGroupMembersMonthlyStats, updateGroupTelegramLink, getGroupSubteams, createSubteam, addSubteamMember, removeSubteamMember, deleteSubteam, leaveGroup, kickMember, deleteGroup, setGroupMemberRole, transferGroupOwnership } from "../../../services/db";
 import { supabase } from "../../../services/supabase";
@@ -34,7 +34,7 @@ export function useGroupDetail({ profile, group, onBack, onGroupRemoved, card, i
   // Subteam state
   const [showCreateTeam, setShowCreateTeam] = useState(false);
   const [newTeamName, setNewTeamName] = useState("");
-  const [newTeamEmoji, setNewTeamEmoji] = useState("⚡");
+  const [newTeamEmoji, setNewTeamEmoji] = useState("Zap");
   const [creatingTeam, setCreatingTeam] = useState(false);
   const [managingTeam, setManagingTeam] = useState<any | null>(null);
   const [managingSelected, setManagingSelected] = useState<Set<string>>(new Set());
@@ -190,7 +190,7 @@ export function useGroupDetail({ profile, group, onBack, onGroupRemoved, card, i
       if (logItem) {
         postApi('/api/notify-group', {
           completer_name: logItem.profiles?.display_name || "A'zo",
-          habit_emoji: logItem.group_habits?.emoji || '🎯',
+          habit_emoji: logItem.group_habits?.emoji || 'Target',
           habit_name: logItem.group_habits?.name || '',
           group_id: group.id,
           completer_id: logItem.user_id,
@@ -311,7 +311,7 @@ export function useGroupDetail({ profile, group, onBack, onGroupRemoved, card, i
       const team = await createSubteam(group.id, newTeamName.trim(), newTeamEmoji, profile.id);
       setSubteams((prev) => [...prev, { ...team, group_subteam_members: [] }]);
       setNewTeamName("");
-      setNewTeamEmoji("⚡");
+      setNewTeamEmoji("Zap");
       setShowCreateTeam(false);
     } catch (e: any) {
       setError(e.message || t('groups_err_create_team'));
@@ -417,15 +417,19 @@ export function useGroupDetail({ profile, group, onBack, onGroupRemoved, card, i
     ...(isAdmin ? [{ id: "approve" as DetailTab, label: `${t('groups_tab_approve')}${pendingApprovals.length > 0 ? ` (${pendingApprovals.length})` : ""}`, icon: ShieldCheck }] : []),
   ];
 
+  // Jamoa belgisi: ikonka nomi. Eski jamoalarda bazada emoji saqlangan —
+  // ular ham shu xarita orqali ikonkaga aylanadi (kalitlar unicode escape).
   const EMOJI_MAP: Record<string, any> = {
-    '🔥': Flame,
-    '🏆': Trophy,
-    '🚀': Zap,
-    '💎': Zap,
-    '🌟': Sparkles,
-    '🎯': Target,
-    '⚡': Zap
+    Zap, Flame, Trophy, Rocket, Gem, Star, Target, Crown, Shield, Heart, Sparkles, Mountain,
+    '\u{1F525}': Flame,
+    '\u{1F3C6}': Trophy,
+    '\u{1F680}': Rocket,
+    '\u{1F48E}': Gem,
+    '\u{1F31F}': Star,
+    '\u{1F3AF}': Target,
+    '\u26A1': Zap,
   };
+  const TEAM_ICON_NAMES = ['Zap', 'Flame', 'Trophy', 'Rocket', 'Gem', 'Star', 'Target', 'Crown', 'Shield', 'Heart', 'Sparkles', 'Mountain'];
 
   function statusIcon(state?: LogState) {
     if (!state || !state.completed) return null;
@@ -495,7 +499,7 @@ export function useGroupDetail({ profile, group, onBack, onGroupRemoved, card, i
     if (!habitStatsMap[row.group_habit_id]) {
       habitStatsMap[row.group_habit_id] = {
         name: row.group_habits?.name || "?",
-        emoji: row.group_habits?.emoji || "🎯",
+        emoji: row.group_habits?.emoji || "Target",
         approved: 0,
         participants: new Set(),
       };
@@ -638,6 +642,7 @@ export function useGroupDetail({ profile, group, onBack, onGroupRemoved, card, i
     handleSaveTgLink,
     tabs,
     EMOJI_MAP,
+    TEAM_ICON_NAMES,
     statusIcon,
     statusBg,
     statusBorder,

@@ -3,7 +3,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { useMyGroupsQuery, queryKeys } from "../../hooks/queries";
 import { motion } from "framer-motion";
 import { useLang } from "../../store/LangContext";
-import { Users, Plus, LogIn, Copy, Crown, Loader2, X, ChevronRight, Compass } from "lucide-react";
+import { Users, Plus, LogIn, Copy, Crown, Loader2, X, ChevronRight, Compass, AlertTriangle } from "lucide-react";
 import { createGroup, joinGroup } from "../../services/db";
 import { trackEvent } from "../../utils/analytics";
 import { useProfile } from "../../store/UserContext";
@@ -195,7 +195,7 @@ export function GroupsPage({ onUserClick }: GroupsPageProps) {
                 />
               </div>
             </div>
-            {error && <p className="text-xs mt-3 text-rose-500 text-center">⚠ {error}</p>}
+            {error && <p className="text-xs mt-3 text-rose-500 text-center"><AlertTriangle size={12} className="inline-block shrink-0 align-[-2px] mr-1" />{error}</p>}
             <button
               onClick={handleCreate}
               disabled={creating || !newGroupName.trim()}
@@ -231,7 +231,7 @@ export function GroupsPage({ onUserClick }: GroupsPageProps) {
               placeholder="ABC123" value={joinCode}
               onChange={(e) => setJoinCode(e.target.value.toUpperCase().slice(0, 6))}
               onKeyDown={(e) => e.key === "Enter" && handleJoin()} autoFocus maxLength={6} />
-            {error && <p className="text-xs mt-3 text-rose-500 text-center">⚠ {error}</p>}
+            {error && <p className="text-xs mt-3 text-rose-500 text-center"><AlertTriangle size={12} className="inline-block shrink-0 align-[-2px] mr-1" />{error}</p>}
             <button
               onClick={handleJoin}
               disabled={joining || joinCode.length < 4}
