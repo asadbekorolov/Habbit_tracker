@@ -4,7 +4,8 @@ import { useUser, useProfile } from "../../store/UserContext";
 import {
   Settings, Coins, Zap, Trophy, Loader2, Award,
   Crown, ChevronRight, Star, Flame, Target, Sparkles, X, CheckCircle2, ShoppingBag,
-  Lock, Check, MessageSquarePlus, Send, ExternalLink, BookOpen, HelpCircle, Activity, Edit3
+  Lock, Check, MessageSquarePlus, Send, ExternalLink, BookOpen, HelpCircle, Activity, Edit3,
+  Users, Rss, HeartPulse
 } from "lucide-react";
 import { HabitIcon } from "../../components/HabitIcon";
 import {
@@ -211,6 +212,26 @@ export function ProfilePage({ onNavigate, lang, onProfileUpdate }: ProfilePagePr
           </div>
         </div>
       </div>
+
+      {/* Tezkor o'tishlar: dock'da yo'q bo'limlar (Guruhlar, Lenta, Salomatlik, Reyting) */}
+      <nav aria-label="Bo'limlar" className="grid grid-cols-4 gap-2 -mt-2">
+        {([
+          { id: "groups", label: "Guruhlar", icon: Users },
+          { id: "feed", label: "Lenta", icon: Rss },
+          { id: "health", label: "Salomatlik", icon: HeartPulse },
+          { id: "leaderboard", label: "Reyting", icon: Trophy },
+        ] as const).map(({ id, label, icon: Icon }) => (
+          <button
+            key={id}
+            type="button"
+            onClick={() => onNavigate(id)}
+            className="flex flex-col items-center justify-center gap-1.5 py-3 rounded-2xl bg-slate-900/50 border border-slate-800/80 backdrop-blur-xl text-slate-300 hover:text-emerald-400 hover:border-emerald-500/30 active:scale-95 transition-all cursor-pointer"
+          >
+            <Icon size={18} className="text-emerald-400" />
+            <span className="text-[11px] font-semibold leading-none">{label}</span>
+          </button>
+        ))}
+      </nav>
 
       {/* Anthropometrics / Biometrics Card */}
       <div
