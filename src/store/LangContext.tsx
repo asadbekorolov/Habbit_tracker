@@ -1,5 +1,5 @@
 import { createContext, useContext } from "react"
-import { type Lang, getT, translations } from "../utils/i18n"
+import { type Lang, getT } from "../utils/i18n"
 
 type T = ReturnType<typeof getT>
 
@@ -22,4 +22,3 @@ export function buildLangValue(lang: Lang): LangCtx {
 }
 
 export type { T, Lang }
-export { translations }

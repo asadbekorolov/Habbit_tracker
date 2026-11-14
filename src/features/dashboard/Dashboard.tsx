@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect, useMemo, lazy, Suspense } from "react";
 import { Plus } from "lucide-react";
 import { soundService } from "../../services/soundService";
 import { toDateStr } from "../../utils/date";
@@ -7,7 +7,8 @@ import { useHabitsQuery, useDayLogsQuery } from "../../hooks/queries";
 import { useAddHabit } from "../../hooks/useAddHabit";
 import type { Habit, Profile } from "../../services/supabase";
 import { useProfile } from "../../store/UserContext";
-import { AddHabitModal } from "../../components/AddHabitModal";
+// Modal faqat "+" bosilganda kerak — asosiy bundle'dan chiqarilgan.
+const AddHabitModal = lazy(() => import("../../components/AddHabitModal").then((m) => ({ default: m.AddHabitModal })));
 import { DisciplineProgressBar } from "./components/DisciplineProgressBar";
 import { ActiveRoutinePill } from "./components/ActiveRoutinePill";
 import { HeroCharacterStage } from "./components/HeroCharacterStage";
@@ -158,11 +159,13 @@ export function Dashboard({
 
       {/* Quick Add Habit Modal */}
       {isAddModalOpen && (
-        <AddHabitModal
-          isOpen={isAddModalOpen}
-          onClose={() => setIsAddModalOpen(false)}
-          onAdd={handleAddNewHabit}
-        />
+        <Suspense fallback={null}>
+          <AddHabitModal
+            isOpen={isAddModalOpen}
+            onClose={() => setIsAddModalOpen(false)}
+            onAdd={handleAddNewHabit}
+          />
+        </Suspense>
       )}
     </div>
   );

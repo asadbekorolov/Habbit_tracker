@@ -13,17 +13,16 @@ import { HabitIcon } from "./components/HabitIcon";
 import { soundService } from "./services/soundService";
 import { getLevel } from "./utils/levels";
 import { Sidebar } from "./components/Sidebar";
-import { LoginPage } from "./features/auth/LoginPage";
+
 import { NotificationBell } from "./components/NotificationBell";
 import { App as CapacitorApp } from "@capacitor/app";
 import { Browser } from "@capacitor/browser";
 import { Dashboard } from "./features/dashboard/Dashboard";
 import { MonthGrid } from "./features/dashboard/MonthGrid";
 import { DailyNotes } from "./features/dashboard/DailyNotes";
-import { LevelUpToast } from "./components/LevelUpToast";
+
 import { WeeklyReflection } from "./features/dashboard/WeeklyReflection";
-import { PublicProfileModal } from "./components/PublicProfileModal";
-import { ResetPasswordPage } from "./features/auth/ResetPasswordPage";
+
 import { supabase } from "./services/supabase";
 import { getProfileById, signOutUser, touchLastSeen, computeHabitProgress, addHabit } from "./services/db";
 import { clearQueryCache } from "./services/queryClient";
@@ -32,15 +31,14 @@ import { toDateStr } from "./utils/date";
 import type { Profile } from "./services/supabase";
 import { LangContext, buildLangValue, type Lang } from "./store/LangContext";
 import { useUser } from "./store/UserContext";
-import { MONTHS_FULL, DAYS_FULL } from "./utils/i18n";
+import { MONTHS_FULL, DAYS_FULL, isLangLoaded, loadLang } from "./utils/i18n";
 import { trackEvent } from "./utils/analytics";
 import { Toaster, toast } from "sonner";
 import { useMobileLifecycle } from "./hooks/useMobileLifecycle";
 import { nativeNotificationService } from "./services/nativeNotificationService";
 import { notificationService } from "./services/notificationService";
 import { useHaptics } from "./hooks/useHaptics";
-import { AddHabitModal } from "./components/AddHabitModal";
-import { BiometricsOnboardingModal } from "./components/BiometricsOnboardingModal";
+
 import { useQueryClient } from "@tanstack/react-query";
 
 // Lazy-loaded routes for code splitting & instant rendering
@@ -57,6 +55,13 @@ const EditProfilePage = lazy(() => import("./features/profile/EditProfilePage").
 const HealthPage = lazy(() => import("./features/habits/HealthPage").then(m => ({ default: m.HealthPage })));
 const JournalPage = lazy(() => import("./pages/JournalPage").then(m => ({ default: m.JournalPage })));
 const Store = lazy(() => import("./pages/Store").then(m => ({ default: m.Store })));
+// Ilova ochilishida kerak bo'lmaydigan ekranlar va modallar ham alohida bo'lak.
+const LoginPage = lazy(() => import("./features/auth/LoginPage").then(m => ({ default: m.LoginPage })));
+const ResetPasswordPage = lazy(() => import("./features/auth/ResetPasswordPage").then(m => ({ default: m.ResetPasswordPage })));
+const LevelUpToast = lazy(() => import("./components/LevelUpToast").then(m => ({ default: m.LevelUpToast })));
+const PublicProfileModal = lazy(() => import("./components/PublicProfileModal").then(m => ({ default: m.PublicProfileModal })));
+const AddHabitModal = lazy(() => import("./components/AddHabitModal").then(m => ({ default: m.AddHabitModal })));
+const BiometricsOnboardingModal = lazy(() => import("./components/BiometricsOnboardingModal").then(m => ({ default: m.BiometricsOnboardingModal })));
 
 function ScreenSkeleton() {
   return (
@@ -410,6 +415,15 @@ export default function App() {
     streakTimerRef.current = window.setTimeout(() => setStreakToast(null), 4000);
   }
 
+  // ru/en lug'ati alohida bo'lak: tanlanganda yuklanadi, so'ng qayta chiziladi.
+  const [, setLangLoadedTick] = useState(0);
+  useEffect(() => {
+    if (isLangLoaded(lang)) return;
+    let alive = true;
+    loadLang(lang).then(() => { if (alive) setLangLoadedTick((n) => n + 1); });
+    return () => { alive = false; };
+  }, [lang]);
+
   const langVal = buildLangValue(lang);
   const t = langVal.t;
 
@@ -637,11 +651,13 @@ export default function App() {
           )}
 
           {showLevelToast && profile && (
-            <LevelUpToast
-              level={getLevel(profile.score || 0).level}
-              levelName={t(LEVEL_LABELS[getLevel(profile.score || 0).level] as any)}
-              onClose={() => setShowLevelToast(false)}
-            />
+            <Suspense fallback={null}>
+              <LevelUpToast
+                level={getLevel(profile.score || 0).level}
+                levelName={t(LEVEL_LABELS[getLevel(profile.score || 0).level] as any)}
+                onClose={() => setShowLevelToast(false)}
+              />
+            </Suspense>
           )}
 
           {/* PWA Install Banner */}
@@ -754,7 +770,9 @@ export default function App() {
     return (
       <LangContext.Provider value={langVal}>
         <Toaster position="top-right" richColors theme={"dark"} />
-        <ResetPasswordPage onComplete={() => setIsResettingPassword(false)} />
+        <Suspense fallback={<ScreenSkeleton />}>
+          <ResetPasswordPage onComplete={() => setIsResettingPassword(false)} />
+        </Suspense>
       </LangContext.Provider>
     );
   }
@@ -764,7 +782,11 @@ export default function App() {
       <Toaster position="top-right" richColors theme={"dark"} />
       <Routes>
         <Route path="/login" element={
-          profile ? <Navigate to="/dashboard" replace /> : <LoginPage onLogin={handleLogin} />
+          profile ? <Navigate to="/dashboard" replace /> : (
+            <Suspense fallback={<ScreenSkeleton />}>
+              <LoginPage onLogin={handleLogin} />
+            </Suspense>
+          )
         } />
         <Route element={<ProtectedRoute />}>
           <Route path="/" element={<Navigate to="/dashboard" replace />} />
@@ -810,6 +832,7 @@ export default function App() {
         </Route>
       </Routes>
 
+      <Suspense fallback={null}>
       {viewingUserId && profile && (
         <PublicProfileModal
           viewingId={viewingUserId}
@@ -882,6 +905,7 @@ export default function App() {
           allowDismiss={true}
         />
       )}
+      </Suspense>
     </LangContext.Provider>
   );
 }
