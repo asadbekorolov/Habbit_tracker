@@ -32,12 +32,11 @@ import { trackEvent } from "../../utils/analytics";
 import { UserBadge } from "../../components/UserBadge";
 import { GroupWeeklyCompetition } from "./GroupWeeklyCompetition";
 import { AddGroupHabitModal } from "../../components/AddGroupHabitModal";
+import { useProfile } from "../../store/UserContext";
 
 const DATE_LOCALE: Record<string, string> = { uz: "uz-UZ", ru: "ru-RU", en: "en-US" };
 
 interface GroupsPageProps {
-  isDark: boolean;
-  profile: Profile;
   onUserClick?: (userId: string) => void;
 }
 
@@ -52,7 +51,8 @@ type LogState = {
   rejectReason?: string;
 };
 
-export function GroupsPage({ isDark, profile, onUserClick }: GroupsPageProps) {
+export function GroupsPage({ onUserClick }: GroupsPageProps) {
+  const profile = useProfile();
   const { t } = useLang();
   const [view, setView] = useState<View>("list");
   const [subView, setSubView] = useState<"my" | "explore">("my");
@@ -117,14 +117,14 @@ export function GroupsPage({ isDark, profile, onUserClick }: GroupsPageProps) {
   }
 
   const card: React.CSSProperties = {
-    background: isDark ? "rgba(22,27,34,0.85)" : "var(--card)",
-    border: `1px solid ${isDark ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.07)"}`,
+    background: "rgba(22,27,34,0.85)",
+    border: `1px solid rgba(255,255,255,0.06)`,
     borderRadius: 14,
   };
 
   const inputStyle: React.CSSProperties = {
-    background: isDark ? "rgba(255,255,255,0.05)" : "#F9FAFB",
-    border: `1px solid ${isDark ? "rgba(255,255,255,0.1)" : "rgba(0,0,0,0.1)"}`,
+    background: "rgba(255,255,255,0.05)",
+    border: `1px solid rgba(255,255,255,0.1)`,
     color: "var(--foreground)",
     borderRadius: 10,
     padding: "10px 14px",
@@ -136,7 +136,6 @@ export function GroupsPage({ isDark, profile, onUserClick }: GroupsPageProps) {
   if (view === "detail" && selectedGroup) {
     return (
       <GroupDetail
-        isDark={isDark}
         profile={profile}
         group={selectedGroup}
         onBack={() => { setView("list"); setSelectedGroup(null); }}
@@ -166,9 +165,9 @@ export function GroupsPage({ isDark, profile, onUserClick }: GroupsPageProps) {
             onClick={() => { setShowJoin(true); setError(""); }}
             className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-medium"
             style={{
-              background: isDark ? "rgba(255,255,255,0.06)" : "#fff",
-              color: isDark ? "var(--muted-foreground)" : "#64748B",
-              border: `1px solid ${isDark ? "rgba(255,255,255,0.08)" : "rgba(0,0,0,0.1)"}`,
+              background: "rgba(255,255,255,0.06)",
+              color: "var(--muted-foreground)",
+              border: `1px solid rgba(255,255,255,0.08)`,
             }}
           >
             <LogIn size={13} /> {t('groups_join')}
@@ -219,7 +218,7 @@ export function GroupsPage({ isDark, profile, onUserClick }: GroupsPageProps) {
             exit={{ y: "100%" }}
             transition={{ type: "spring", damping: 25, stiffness: 200 }}
             className="w-full sm:max-w-md p-8 rounded-t-[2.5rem] sm:rounded-3xl"
-            style={{ background: isDark ? "#0D1117" : "#fff", borderTop: isDark ? "1px solid rgba(255,255,255,0.1)" : "none" }}
+            style={{ background: "#0D1117", borderTop: "1px solid rgba(255,255,255,0.1)" }}
             onClick={(e) => e.stopPropagation()}>
             <div className="flex items-center justify-between mb-6">
               <h3 className="text-lg font-bold text-white">{t('groups_create_title')}</h3>
@@ -260,7 +259,7 @@ export function GroupsPage({ isDark, profile, onUserClick }: GroupsPageProps) {
             exit={{ y: "100%" }}
             transition={{ type: "spring", damping: 25, stiffness: 200 }}
             className="w-full sm:max-w-md p-8 rounded-t-[2.5rem] sm:rounded-3xl"
-            style={{ background: isDark ? "#0D1117" : "#fff", borderTop: isDark ? "1px solid rgba(255,255,255,0.1)" : "none" }}
+            style={{ background: "#0D1117", borderTop: "1px solid rgba(255,255,255,0.1)" }}
             onClick={(e) => e.stopPropagation()}>
             <div className="flex items-center justify-between mb-6">
               <h3 className="text-lg font-bold text-white">{t('groups_join_title')}</h3>
@@ -294,7 +293,7 @@ export function GroupsPage({ isDark, profile, onUserClick }: GroupsPageProps) {
       ) : groups.length === 0 ? (
         <div style={card} className="p-10 flex flex-col items-center gap-3">
           <div className="w-16 h-16 rounded-2xl flex items-center justify-center mb-2"
-            style={{ background: isDark ? "rgba(255,255,255,0.05)" : "#F3F4F6" }}>
+            style={{ background: "rgba(255,255,255,0.05)" }}>
             <Users size={28} style={{ color: "var(--muted-foreground)" }} />
           </div>
           <p className="font-semibold text-sm" style={{ color: "var(--foreground)" }}>{t('groups_empty')}</p>
@@ -304,7 +303,7 @@ export function GroupsPage({ isDark, profile, onUserClick }: GroupsPageProps) {
           <div className="flex gap-3 mt-2">
             <button onClick={() => { setShowJoin(true); setError(""); }}
               className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-medium"
-              style={{ background: isDark ? "rgba(255,255,255,0.06)" : "#F3F4F6", color: "var(--foreground)", border: `1px solid ${isDark ? "rgba(255,255,255,0.1)" : "rgba(0,0,0,0.1)"}` }}>
+              style={{ background: "rgba(255,255,255,0.06)", color: "var(--foreground)", border: `1px solid rgba(255,255,255,0.1)` }}>
               <LogIn size={14} /> {t('groups_join')}
             </button>
             <button onClick={() => { setShowCreate(true); setError(""); }}
@@ -387,10 +386,8 @@ export function GroupsPage({ isDark, profile, onUserClick }: GroupsPageProps) {
 }
 
 // ─── Group Detail ─────────────────────────────────────────────
-function GroupDetail({
-  isDark, profile, group, onBack, onGroupRemoved, card, inputStyle, onUserClick
-}: {
-  isDark: boolean; profile: Profile; group: any; onBack: () => void;
+function GroupDetail({ profile, group, onBack, onGroupRemoved, card, inputStyle, onUserClick
+}: { profile: Profile; group: any; onBack: () => void;
   onGroupRemoved: (groupId: string) => void;
   card: React.CSSProperties; inputStyle: React.CSSProperties;
   onUserClick?: (userId: string) => void;
@@ -757,7 +754,7 @@ function GroupDetail({
     try {
       const html2canvas = (await import("html2canvas")).default;
       const canvas = await html2canvas(statsRef.current, {
-        backgroundColor: isDark ? "#0D1117" : "#F9FAFB",
+        backgroundColor: "#0D1117",
         scale: 2,
         useCORS: true,
       });
@@ -815,11 +812,11 @@ function GroupDetail({
     return null;
   }
 
-  function statusBg(state?: LogState, dark = isDark): string {
+  function statusBg(state?: LogState): string {
     if (!state || !state.completed) return "";
-    if (state.status === "approved" || state.status === "auto") return dark ? "rgba(74,222,128,0.06)" : "rgba(74,222,128,0.04)";
-    if (state.status === "pending") return dark ? "rgba(251,191,36,0.06)" : "rgba(251,191,36,0.04)";
-    if (state.status === "rejected") return dark ? "rgba(248,113,113,0.06)" : "rgba(248,113,113,0.04)";
+    if (state.status === "approved" || state.status === "auto") return "rgba(74,222,128,0.06)";
+    if (state.status === "pending") return "rgba(251,191,36,0.06)";
+    if (state.status === "rejected") return "rgba(248,113,113,0.06)";
     return "";
   }
 
@@ -906,7 +903,7 @@ function GroupDetail({
       {/* Header */}
       <div className="flex items-center gap-3 mb-5">
         <button onClick={onBack} className="p-2 rounded-xl"
-          style={{ background: isDark ? "rgba(255,255,255,0.06)" : "#F3F4F6" }}>
+          style={{ background: "rgba(255,255,255,0.06)" }}>
           <ArrowLeft size={16} style={{ color: "var(--foreground)" }} />
         </button>
         <div className="flex-1 min-w-0">
@@ -919,7 +916,7 @@ function GroupDetail({
             {isAdmin && group.invite_code && (
               <button onClick={copyInviteCode}
                 className="flex items-center gap-1 text-xs px-2 py-0.5 rounded-lg"
-                style={{ background: isDark ? "rgba(74,222,128,0.1)" : "#DCFCE7", color: "#4ADE80", fontFamily: "'Geist Mono', monospace" }}>
+                style={{ background: "rgba(74,222,128,0.1)", color: "#4ADE80", fontFamily: "'Geist Mono', monospace" }}>
                 {copied ? <Check size={11} /> : <Copy size={11} />}
                 {copied ? t('copied') : t('groups_code_label').replace('{code}', group.invite_code)}
               </button>
@@ -959,7 +956,7 @@ function GroupDetail({
         )}
         <button onClick={() => { setShowSettings(true); setLeaveError(""); setConfirmDelete(false); }}
           className="p-2 rounded-xl shrink-0"
-          style={{ background: isDark ? "rgba(255,255,255,0.06)" : "#F3F4F6" }}>
+          style={{ background: "rgba(255,255,255,0.06)" }}>
           <Settings size={16} style={{ color: "var(--foreground)" }} />
         </button>
       </div>
@@ -971,13 +968,13 @@ function GroupDetail({
             className="flex-shrink-0 flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-medium transition-all"
             style={{
               background: activeTab === t.id
-                ? (t.id === "approve" ? "rgba(74,222,128,0.15)" : isDark ? "rgba(255,255,255,0.12)" : "#fff")
+                ? (t.id === "approve" ? "rgba(74,222,128,0.15)" : "rgba(255,255,255,0.12)")
                 : "transparent",
               color: activeTab === t.id
                 ? (t.id === "approve" ? "#4ADE80" : "var(--foreground)")
                 : "var(--muted-foreground)",
               border: activeTab === t.id
-                ? (t.id === "approve" ? "1px solid rgba(74,222,128,0.3)" : `1px solid ${isDark ? "rgba(255,255,255,0.1)" : "rgba(0,0,0,0.08)"}`)
+                ? (t.id === "approve" ? "1px solid rgba(74,222,128,0.3)" : `1px solid rgba(255,255,255,0.1)`)
                 : "1px solid transparent",
               fontWeight: t.id === "approve" && pendingApprovals.length > 0 ? 700 : undefined,
             }}>
@@ -1000,7 +997,7 @@ function GroupDetail({
           style={{ background: "rgba(0,0,0,0.6)", backdropFilter: "blur(4px)" }}
           onClick={() => { setProofHabitId(null); setProofNote(""); setProofCount(1); }}>
           <div className="w-full max-w-sm p-5 rounded-2xl"
-            style={{ background: isDark ? "#161B22" : "#fff", border: `1px solid ${isDark ? "rgba(255,255,255,0.1)" : "rgba(0,0,0,0.1)"}` }}
+            style={{ background: "#161B22", border: `1px solid rgba(255,255,255,0.1)` }}
             onClick={(e) => e.stopPropagation()}>
             <h3 className="text-sm font-semibold mb-1" style={{ color: "var(--foreground)" }}>
               {proofHabit?.emoji} {proofHabit?.name}
@@ -1042,7 +1039,7 @@ function GroupDetail({
               <button onClick={() => { setProofHabitId(null); setProofNote(""); setProofCount(1); }}
                 data-modal-close-trigger
                 className="flex-1 py-2.5 rounded-xl text-sm font-medium"
-                style={{ background: isDark ? "rgba(255,255,255,0.06)" : "#F3F4F6", color: "var(--muted-foreground)" }}>
+                style={{ background: "rgba(255,255,255,0.06)", color: "var(--muted-foreground)" }}>
                 {t('cancel_short')}
               </button>
               <button onClick={submitHabit} disabled={submitting}
@@ -1064,7 +1061,7 @@ function GroupDetail({
           style={{ background: "rgba(0,0,0,0.6)", backdropFilter: "blur(4px)" }}
           onClick={() => setShowSettings(false)}>
           <div className="w-full max-w-sm p-5 rounded-2xl"
-            style={{ background: isDark ? "#161B22" : "#fff", border: `1px solid ${isDark ? "rgba(255,255,255,0.1)" : "rgba(0,0,0,0.1)"}` }}
+            style={{ background: "#161B22", border: `1px solid rgba(255,255,255,0.1)` }}
             onClick={(e) => e.stopPropagation()}>
             <h3 className="text-sm font-semibold mb-3" style={{ color: "var(--foreground)" }}>{t('groups_settings_title')}</h3>
 
@@ -1074,7 +1071,7 @@ function GroupDetail({
 
             <button type="button" onClick={handleLeaveGroup} disabled={leaving || deletingGroup}
               className="w-full flex items-center gap-2.5 p-3 rounded-xl text-sm font-medium mb-2"
-              style={{ background: isDark ? "rgba(255,255,255,0.05)" : "#F3F4F6", color: "var(--foreground)", opacity: leaving ? 0.6 : 1 }}>
+              style={{ background: "rgba(255,255,255,0.05)", color: "var(--foreground)", opacity: leaving ? 0.6 : 1 }}>
               {leaving ? <Loader2 size={16} className="animate-spin" /> : <LogOut size={16} />}
               {t('groups_leave')}
             </button>
@@ -1083,7 +1080,7 @@ function GroupDetail({
               <button type="button" onClick={handleDeleteGroup} disabled={leaving || deletingGroup}
                 className="w-full flex items-center gap-2.5 p-3 rounded-xl text-sm font-medium"
                 style={{
-                  background: confirmDelete ? "rgba(248,113,113,0.15)" : isDark ? "rgba(248,113,113,0.08)" : "rgba(248,113,113,0.06)",
+                  background: confirmDelete ? "rgba(248,113,113,0.15)" : "rgba(248,113,113,0.08)",
                   color: "#F87171", border: `1px solid rgba(248,113,113,${confirmDelete ? 0.4 : 0.2})`,
                   opacity: deletingGroup ? 0.6 : 1,
                 }}>
@@ -1107,7 +1104,7 @@ function GroupDetail({
           style={{ background: "rgba(0,0,0,0.6)", backdropFilter: "blur(4px)" }}
           onClick={() => { setRejectLogId(null); setRejectReason(""); }}>
           <div className="w-full max-w-sm p-5 rounded-2xl"
-            style={{ background: isDark ? "#161B22" : "#fff", border: `1px solid rgba(248,113,113,0.3)` }}
+            style={{ background: "#161B22", border: `1px solid rgba(248,113,113,0.3)` }}
             onClick={(e) => e.stopPropagation()}>
             <h3 className="text-sm font-semibold mb-1" style={{ color: "var(--foreground)" }}>{t('groups_reject_reason')}</h3>
             <p className="text-xs mb-3" style={{ color: "var(--muted-foreground)" }}>{t('groups_reject_hint')}</p>
@@ -1123,7 +1120,7 @@ function GroupDetail({
               <button onClick={() => { setRejectLogId(null); setRejectReason(""); setError(""); }}
                 data-modal-close-trigger
                 className="flex-1 py-2.5 rounded-xl text-sm font-medium"
-                style={{ background: isDark ? "rgba(255,255,255,0.06)" : "#F3F4F6", color: "var(--muted-foreground)" }}>
+                style={{ background: "rgba(255,255,255,0.06)", color: "var(--muted-foreground)" }}>
                 {t('cancel_short')}
               </button>
               <button onClick={handleRejectSubmit} disabled={rejecting || !rejectReason.trim()}
@@ -1143,7 +1140,7 @@ function GroupDetail({
           style={{ background: "rgba(0,0,0,0.6)", backdropFilter: "blur(4px)" }}
           onClick={() => setShowTgEdit(false)}>
           <div className="w-full max-w-sm p-5 rounded-2xl"
-            style={{ background: isDark ? "#161B22" : "#fff", border: `1px solid ${isDark ? "rgba(255,255,255,0.1)" : "rgba(0,0,0,0.1)"}` }}
+            style={{ background: "#161B22", border: `1px solid rgba(255,255,255,0.1)` }}
             onClick={(e) => e.stopPropagation()}>
             <div className="flex items-center gap-2 mb-1">
               <Send size={15} style={{ color: "#38BDF8" }} />
@@ -1163,7 +1160,7 @@ function GroupDetail({
               <button type="button" onClick={() => { setShowTgEdit(false); setError(""); }}
                 data-modal-close-trigger
                 className="flex-1 py-2.5 rounded-xl text-sm font-medium"
-                style={{ background: isDark ? "rgba(255,255,255,0.06)" : "#F3F4F6", color: "var(--muted-foreground)" }}>
+                style={{ background: "rgba(255,255,255,0.06)", color: "var(--muted-foreground)" }}>
                 {t('cancel_short')}
               </button>
               <button type="button" onClick={handleSaveTgLink} disabled={savingTg}
@@ -1180,7 +1177,6 @@ function GroupDetail({
       <AddGroupHabitModal
         isOpen={showAddHabit}
         onClose={resetHabitForm}
-        isDark={isDark}
         initialData={editingHabitId ? habits.find(h => h.id === editingHabitId) : undefined}
         onAdd={async (habitData) => {
           if (editingHabitId) {
@@ -1272,7 +1268,7 @@ function GroupDetail({
                             </p>
                             {habit.target_value > 1 && habit.unit && (
                               <span className="text-[11px] px-1.5 py-0.5 rounded-md font-medium"
-                                style={{ background: isDark ? "rgba(255,255,255,0.07)" : "#F3F4F6", color: "var(--muted-foreground)", fontFamily: "'Geist Mono', monospace" }}>
+                                style={{ background: "rgba(255,255,255,0.07)", color: "var(--muted-foreground)", fontFamily: "'Geist Mono', monospace" }}>
                                 {habit.target_value} {habit.unit}
                               </span>
                             )}
@@ -1433,7 +1429,7 @@ function GroupDetail({
           {/* ── LEADERBOARD TAB ── */}
           {activeTab === "leaderboard" && (
             <div className="flex flex-col gap-3">
-              <GroupWeeklyCompetition isDark={isDark} groupId={group.id} myUserId={profile.id} card={card} />
+              <GroupWeeklyCompetition groupId={group.id} myUserId={profile.id} card={card} />
               <div className="px-1 pb-1">
                 <p className="text-xs" style={{ color: "var(--muted-foreground)" }}>
                   {t('groups_only_approved_counted')}
@@ -1452,7 +1448,7 @@ function GroupDetail({
                     <div key={entry.userId} className="flex items-center gap-3 p-3.5 rounded-2xl"
                       style={{
                         ...card,
-                        background: isMe ? (isDark ? "rgba(74,222,128,0.06)" : "rgba(74,222,128,0.04)") : card.background,
+                        background: isMe ? ("rgba(74,222,128,0.06)") : card.background,
                         border: isMe ? "1px solid rgba(74,222,128,0.25)" : card.border,
                       }}>
                       <div className="w-8 flex justify-center shrink-0">
@@ -1480,7 +1476,7 @@ function GroupDetail({
                             style={{
                               width: `${Math.min((entry.score / (leaderboard[0]?.score || 1)) * 100, 100)}%`,
                               maxWidth: 100,
-                              background: isMe ? "#4ADE80" : isDark ? "rgba(255,255,255,0.15)" : "rgba(0,0,0,0.12)",
+                              background: isMe ? "#4ADE80" : "rgba(255,255,255,0.15)",
                             }} />
                           <span className="text-xs" style={{ color: "var(--muted-foreground)", fontFamily: "'Geist Mono', monospace" }}>
                             {entry.completed} ta
@@ -1510,7 +1506,7 @@ function GroupDetail({
                     disabled={downloading}
                     className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-medium transition-all"
                     style={{
-                      background: isDark ? "rgba(74,222,128,0.12)" : "#DCFCE7",
+                      background: "rgba(74,222,128,0.12)",
                       color: "#4ADE80",
                       border: "1px solid rgba(74,222,128,0.25)",
                       opacity: downloading ? 0.6 : 1,
@@ -1523,7 +1519,7 @@ function GroupDetail({
               </div>
 
               <div ref={statsRef} className="flex flex-col gap-4 rounded-2xl p-4"
-                style={{ background: isDark ? "#0D1117" : "#F9FAFB" }}>
+                style={{ background: "#0D1117" }}>
                 {/* Report header (visible in downloaded image) */}
                 <div className="flex items-center justify-between mb-1">
                   <div className="flex items-center gap-2.5">
@@ -1549,8 +1545,8 @@ function GroupDetail({
                   ].map((kpi) => (
                     <div key={kpi.label} className="rounded-xl p-3.5"
                       style={{
-                        background: isDark ? "rgba(255,255,255,0.03)" : "#ffffff",
-                        border: `1px solid ${isDark ? "rgba(255,255,255,0.05)" : "rgba(0,0,0,0.06)"}`,
+                        background: "rgba(255,255,255,0.03)",
+                        border: `1px solid rgba(255,255,255,0.05)`,
                       }}>
                       <div className="w-7 h-7 rounded-lg flex items-center justify-center mb-2.5" style={{ background: `${kpi.color}20` }}>
                         <kpi.icon size={14} style={{ color: kpi.color }} />
@@ -1567,7 +1563,7 @@ function GroupDetail({
 
                 {totalApprovedMonth === 0 ? (
                   <div className="p-8 flex flex-col items-center gap-2 rounded-xl"
-                    style={{ background: isDark ? "rgba(255,255,255,0.03)" : "#ffffff", border: `1px solid ${isDark ? "rgba(255,255,255,0.05)" : "rgba(0,0,0,0.06)"}` }}>
+                    style={{ background: "rgba(255,255,255,0.03)", border: `1px solid rgba(255,255,255,0.05)` }}>
                     <BarChart3 size={28} style={{ color: "var(--muted-foreground)" }} />
                     <p className="text-sm text-center" style={{ color: "var(--muted-foreground)" }}>{t('groups_stats_no_activity')}</p>
                   </div>
@@ -1575,19 +1571,19 @@ function GroupDetail({
                   <>
                     {/* Daily trend chart */}
                     <div className="rounded-xl p-4"
-                      style={{ background: isDark ? "rgba(255,255,255,0.03)" : "#ffffff", border: `1px solid ${isDark ? "rgba(255,255,255,0.05)" : "rgba(0,0,0,0.06)"}` }}>
+                      style={{ background: "rgba(255,255,255,0.03)", border: `1px solid rgba(255,255,255,0.05)` }}>
                       <p className="text-sm font-semibold" style={{ color: "var(--foreground)" }}>{t('groups_stats_trend_title')}</p>
                       <p className="text-[11px] mt-0.5 mb-3" style={{ color: "var(--muted-foreground)" }}>{t('groups_stats_trend_sub')}</p>
                       <div style={{ height: 160, marginLeft: -12 }}>
                         <ResponsiveContainer width="100%" height="100%">
                           <ComposedChart data={dailyTrend} margin={{ top: 8, right: 12, left: 0, bottom: 0 }}>
-                            <CartesianGrid vertical={false} stroke={isDark ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.06)"} />
-                            <XAxis dataKey="label" tick={{ fontSize: 9, fill: isDark ? "#8B949E" : "#6B7280" }}
+                            <CartesianGrid vertical={false} stroke={"rgba(255,255,255,0.06)"} />
+                            <XAxis dataKey="label" tick={{ fontSize: 9, fill: "#8B949E" }}
                               interval={Math.max(0, Math.ceil(dailyTrend.length / 7) - 1)} axisLine={false} tickLine={false} />
-                            <YAxis allowDecimals={false} tick={{ fontSize: 9, fill: isDark ? "#8B949E" : "#6B7280" }} axisLine={false} tickLine={false} width={24} />
+                            <YAxis allowDecimals={false} tick={{ fontSize: 9, fill: "#8B949E" }} axisLine={false} tickLine={false} width={24} />
                             <Tooltip
-                              contentStyle={{ background: isDark ? "#161B22" : "#ffffff", border: `1px solid ${isDark ? "rgba(255,255,255,0.1)" : "rgba(0,0,0,0.1)"}`, borderRadius: 10, fontSize: 11 }}
-                              labelStyle={{ color: isDark ? "#8B949E" : "#6B7280" }}
+                              contentStyle={{ background: "#161B22", border: `1px solid rgba(255,255,255,0.1)`, borderRadius: 10, fontSize: 11 }}
+                              labelStyle={{ color: "#8B949E" }}
                               formatter={(value: number) => [value, t('groups_stats_total_approved')]}
                             />
                             <Area type="monotone" dataKey="count" stroke="#4ADE80" strokeWidth={2} fill="#4ADE80" fillOpacity={0.15} />
@@ -1599,7 +1595,7 @@ function GroupDetail({
                     {/* Per-habit breakdown */}
                     {habitBreakdown.length > 0 && (
                       <div className="rounded-xl p-4"
-                        style={{ background: isDark ? "rgba(255,255,255,0.03)" : "#ffffff", border: `1px solid ${isDark ? "rgba(255,255,255,0.05)" : "rgba(0,0,0,0.06)"}` }}>
+                        style={{ background: "rgba(255,255,255,0.03)", border: `1px solid rgba(255,255,255,0.05)` }}>
                         <p className="text-sm font-semibold" style={{ color: "var(--foreground)" }}>{t('groups_stats_habit_breakdown_title')}</p>
                         <p className="text-[11px] mt-0.5 mb-3" style={{ color: "var(--muted-foreground)" }}>{t('groups_stats_habit_breakdown_sub')}</p>
                         <div className="flex flex-col gap-3">
@@ -1623,7 +1619,7 @@ function GroupDetail({
                                     {h.approved} ta · {h.participants} {t('groups_stats_participants_suffix')}
                                   </span>
                                 </div>
-                                <div className="w-full h-1.5 rounded-full overflow-hidden" style={{ background: isDark ? "rgba(255,255,255,0.07)" : "rgba(0,0,0,0.07)" }}>
+                                <div className="w-full h-1.5 rounded-full overflow-hidden" style={{ background: "rgba(255,255,255,0.07)" }}>
                                   <div className="h-full rounded-full transition-all duration-700" style={{ width: `${pct}%`, background: theme.color }} />
                                 </div>
                               </div>
@@ -1647,8 +1643,8 @@ function GroupDetail({
                         return (
                           <div key={uid} className="p-4 rounded-xl"
                             style={{
-                              background: isDark ? "rgba(22,27,34,0.85)" : "#ffffff",
-                              border: `1px solid ${isDark ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.07)"}`,
+                              background: "rgba(22,27,34,0.85)",
+                              border: `1px solid rgba(255,255,255,0.06)`,
                             }}>
                             <div className="flex items-center gap-2 mb-3">
                               {i === 0 ? <Crown size={16} className="text-amber-300 drop-shadow-[0_0_6px_rgba(251,191,36,0.5)]" />
@@ -1675,7 +1671,7 @@ function GroupDetail({
                                 {approvedPct}%
                               </div>
                             </div>
-                            <div className="w-full h-2 rounded-full overflow-hidden" style={{ background: isDark ? "rgba(255,255,255,0.07)" : "rgba(0,0,0,0.07)" }}>
+                            <div className="w-full h-2 rounded-full overflow-hidden" style={{ background: "rgba(255,255,255,0.07)" }}>
                               <div className="h-full rounded-full" style={{ width: `${approvedPct}%`, background: "#4ADE80" }} />
                             </div>
                           </div>
@@ -1712,7 +1708,7 @@ function GroupDetail({
               {subteams.length === 0 ? (
                 <div style={card} className="p-10 flex flex-col items-center gap-3">
                   <div className="w-14 h-14 rounded-2xl flex items-center justify-center text-3xl"
-                    style={{ background: isDark ? "rgba(255,255,255,0.05)" : "#F3F4F6" }}>
+                    style={{ background: "rgba(255,255,255,0.05)" }}>
                     <Users size={28} style={{ color: "var(--muted-foreground)" }} />
                   </div>
                   <p className="text-sm font-semibold" style={{ color: "var(--foreground)" }}>{t('groups_no_teams')}</p>
@@ -1729,7 +1725,7 @@ function GroupDetail({
                       className="p-4 rounded-2xl">
                       <div className="flex items-center gap-3 mb-3">
                         <div className="w-10 h-10 rounded-xl flex items-center justify-center text-xl shrink-0"
-                          style={{ background: isDark ? "rgba(255,255,255,0.07)" : "#F3F4F6" }}>
+                          style={{ background: "rgba(255,255,255,0.07)" }}>
                           {(() => {
                              const TeamIcon = EMOJI_MAP[team.emoji] || Users;
                              const colorClass = (team.emoji === '🔥' || team.emoji === 'Flame') ? 'text-orange-500'
@@ -1759,7 +1755,7 @@ function GroupDetail({
                             <button
                               onClick={() => openManageTeam(team)}
                               className="flex items-center gap-1 px-2.5 py-1.5 rounded-xl text-xs font-medium"
-                              style={{ background: isDark ? "rgba(255,255,255,0.07)" : "#F3F4F6", color: "var(--muted-foreground)" }}
+                              style={{ background: "rgba(255,255,255,0.07)", color: "var(--muted-foreground)" }}
                             >
                               <Pencil size={11} /> {t('groups_manage')}
                             </button>
@@ -1784,7 +1780,7 @@ function GroupDetail({
                               <div key={m.user_id}
                                 onClick={() => onUserClick?.(m.user_id)}
                                 className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl cursor-pointer"
-                                style={{ background: isDark ? "rgba(255,255,255,0.05)" : "#F9FAFB", border: `1px solid ${isDark ? "rgba(255,255,255,0.08)" : "rgba(0,0,0,0.06)"}` }}>
+                                style={{ background: "rgba(255,255,255,0.05)", border: `1px solid rgba(255,255,255,0.08)` }}>
                                 <div className="w-5 h-5 rounded-full flex items-center justify-center text-[9px] font-bold shrink-0 overflow-hidden"
                                   style={{ background: p.avatar_color || "#4ADE80", color: "#0E1117" }}>
                                   {p.avatar_url ? <img src={p.avatar_url} alt="" className="w-5 h-5 object-cover" /> : initials}
@@ -1810,7 +1806,7 @@ function GroupDetail({
                   style={{ background: "rgba(0,0,0,0.6)", backdropFilter: "blur(4px)" }}
                   onClick={() => setShowCreateTeam(false)}>
                   <div className="w-full max-w-sm p-5 rounded-2xl"
-                    style={{ background: isDark ? "#161B22" : "#fff", border: `1px solid ${isDark ? "rgba(255,255,255,0.1)" : "rgba(0,0,0,0.1)"}` }}
+                    style={{ background: "#161B22", border: `1px solid rgba(255,255,255,0.1)` }}
                     onClick={(e) => e.stopPropagation()}>
                     <h3 className="text-sm font-semibold mb-4" style={{ color: "var(--foreground)" }}>
                       {t('groups_new_team')}
@@ -1820,7 +1816,7 @@ function GroupDetail({
                         <button key={em} type="button" onClick={() => setNewTeamEmoji(em)}
                           className="w-9 h-9 rounded-lg text-lg"
                           style={{
-                            background: newTeamEmoji === em ? (isDark ? "rgba(74,222,128,0.2)" : "#DCFCE7") : (isDark ? "rgba(255,255,255,0.05)" : "#F9FAFB"),
+                            background: newTeamEmoji === em ? ("rgba(74,222,128,0.2)") : ("rgba(255,255,255,0.05)"),
                             border: newTeamEmoji === em ? "1px solid rgba(74,222,128,0.5)" : "1px solid transparent",
                           }}>{em}</button>
                       ))}
@@ -1838,7 +1834,7 @@ function GroupDetail({
                     <div className="flex gap-2 mt-4">
                       <button type="button" onClick={() => setShowCreateTeam(false)}
                         className="flex-1 py-2.5 rounded-xl text-sm font-medium"
-                        style={{ background: isDark ? "rgba(255,255,255,0.06)" : "#F3F4F6", color: "var(--muted-foreground)" }}>
+                        style={{ background: "rgba(255,255,255,0.06)", color: "var(--muted-foreground)" }}>
                         {t('cancel_short')}
                       </button>
                       <button type="button" onClick={handleCreateTeam} disabled={creatingTeam || !newTeamName.trim()}
@@ -1858,9 +1854,9 @@ function GroupDetail({
                   style={{ background: "rgba(0,0,0,0.6)", backdropFilter: "blur(4px)" }}
                   onClick={() => setManagingTeam(null)}>
                   <div className="w-full sm:max-w-sm rounded-t-3xl sm:rounded-2xl overflow-hidden"
-                    style={{ background: isDark ? "#161B22" : "#fff", border: `1px solid ${isDark ? "rgba(255,255,255,0.1)" : "rgba(0,0,0,0.1)"}`, maxHeight: "80vh" }}
+                    style={{ background: "#161B22", border: `1px solid rgba(255,255,255,0.1)`, maxHeight: "80vh" }}
                     onClick={(e) => e.stopPropagation()}>
-                    <div className="px-5 py-4" style={{ borderBottom: `1px solid ${isDark ? "rgba(255,255,255,0.07)" : "rgba(0,0,0,0.07)"}` }}>
+                    <div className="px-5 py-4" style={{ borderBottom: `1px solid rgba(255,255,255,0.07)` }}>
                       <p className="text-sm font-semibold" style={{ color: "var(--foreground)" }}>
                         {managingTeam.emoji} {managingTeam.name} — {t('groups_manage_members_suffix')}
                       </p>
@@ -1886,8 +1882,8 @@ function GroupDetail({
                             })}
                             className="w-full flex items-center gap-3 p-3 rounded-xl transition-all text-left"
                             style={{
-                              background: isChecked ? (isDark ? "rgba(74,222,128,0.1)" : "rgba(74,222,128,0.08)") : (isDark ? "rgba(255,255,255,0.03)" : "#F9FAFB"),
-                              border: `1px solid ${isChecked ? "rgba(74,222,128,0.3)" : (isDark ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.06)")}`,
+                              background: isChecked ? ("rgba(74,222,128,0.1)") : ("rgba(255,255,255,0.03)"),
+                              border: `1px solid ${isChecked ? "rgba(74,222,128,0.3)" : ("rgba(255,255,255,0.06)")}`,
                             }}
                           >
                             <div className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold shrink-0 overflow-hidden"
@@ -1899,7 +1895,7 @@ function GroupDetail({
                               <p className="text-xs" style={{ color: "var(--muted-foreground)" }}>@{p.username}</p>
                             </div>
                             <div className="w-5 h-5 rounded-md flex items-center justify-center shrink-0"
-                              style={{ background: isChecked ? "#4ADE80" : (isDark ? "rgba(255,255,255,0.08)" : "rgba(0,0,0,0.07)") }}>
+                              style={{ background: isChecked ? "#4ADE80" : ("rgba(255,255,255,0.08)") }}>
                               {isChecked && <Check size={12} style={{ color: "#0E1117" }} />}
                             </div>
                           </button>
@@ -1910,10 +1906,10 @@ function GroupDetail({
                       <p className="text-xs px-4 pt-2" style={{ color: "var(--coral-red)" }}>⚠ {error}</p>
                     )}
                     <div className="px-4 py-3 flex gap-2"
-                      style={{ borderTop: `1px solid ${isDark ? "rgba(255,255,255,0.07)" : "rgba(0,0,0,0.07)"}`, paddingBottom: "calc(0.75rem + env(safe-area-inset-bottom))" }}>
+                      style={{ borderTop: `1px solid rgba(255,255,255,0.07)`, paddingBottom: "calc(0.75rem + env(safe-area-inset-bottom))" }}>
                       <button type="button" onClick={() => { setManagingTeam(null); setError(""); }}
                         className="flex-1 py-2.5 rounded-xl text-sm font-medium"
-                        style={{ background: isDark ? "rgba(255,255,255,0.06)" : "#F3F4F6", color: "var(--muted-foreground)" }}>
+                        style={{ background: "rgba(255,255,255,0.06)", color: "var(--muted-foreground)" }}>
                         {t('cancel_short')}
                       </button>
                       <button type="button" onClick={handleSaveTeamMembers} disabled={savingTeamMembers}
@@ -1976,7 +1972,7 @@ function GroupDetail({
 
                         {item.proof_note && (
                           <div className="mb-3 p-2.5 rounded-xl flex items-start gap-2"
-                            style={{ background: isDark ? "rgba(255,255,255,0.04)" : "#F9FAFB" }}>
+                            style={{ background: "rgba(255,255,255,0.04)" }}>
                             <MessageSquare size={13} style={{ color: "var(--muted-foreground)", flexShrink: 0, marginTop: 1 }} />
                             <p className="text-xs leading-relaxed" style={{ color: "var(--foreground)" }}>{item.proof_note}</p>
                           </div>

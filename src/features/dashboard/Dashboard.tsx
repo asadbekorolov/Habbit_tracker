@@ -6,79 +6,14 @@ import { habitSyncQueue } from "../../services/habitSyncQueue";
 import { useHabitsQuery, useDayLogsQuery } from "../../hooks/queries";
 import { useAddHabit } from "../../hooks/useAddHabit";
 import type { Habit, Profile } from "../../services/supabase";
+import { useProfile } from "../../store/UserContext";
 import { AddHabitModal } from "../../components/AddHabitModal";
 import { DisciplineProgressBar } from "./components/DisciplineProgressBar";
 import { ActiveRoutinePill } from "./components/ActiveRoutinePill";
 import { HeroCharacterStage } from "./components/HeroCharacterStage";
 import { HabitItem } from "../habits/components/HabitItem";
 
-// Fallback initial habits for offline/demo state (100% Uzbek titles, Lucide SVG icon names only)
-const DEFAULT_HABITS: Habit[] = [
-  {
-    id: "demo-1",
-    user_id: "demo",
-    name: "Dasturlash va kod tahlili",
-    emoji: "Code",
-    streak_count: 14,
-    created_at: new Date().toISOString(),
-    type: "positive",
-    is_active: true
-  },
-  {
-    id: "demo-2",
-    user_id: "demo",
-    name: "Kitob mutolaasi (20 bet)",
-    emoji: "BookOpen",
-    streak_count: 21,
-    created_at: new Date().toISOString(),
-    type: "positive",
-    is_active: true
-  },
-  {
-    id: "demo-3",
-    user_id: "demo",
-    name: "Ertalabki trenirovka",
-    emoji: "Dumbbell",
-    streak_count: 8,
-    created_at: new Date().toISOString(),
-    type: "positive",
-    is_active: true
-  },
-  {
-    id: "demo-4",
-    user_id: "demo",
-    name: "2 litr suv ichish",
-    emoji: "Droplets",
-    streak_count: 5,
-    created_at: new Date().toISOString(),
-    type: "positive",
-    is_active: true
-  },
-  {
-    id: "demo-5",
-    user_id: "demo",
-    name: "Kunlik meditatsiya",
-    emoji: "Sparkles",
-    streak_count: 30,
-    created_at: new Date().toISOString(),
-    type: "positive",
-    is_active: true
-  },
-  {
-    id: "demo-6",
-    user_id: "demo",
-    name: "Ingliz tili lug'ati (15 so'z)",
-    emoji: "Brain",
-    streak_count: 12,
-    created_at: new Date().toISOString(),
-    type: "positive",
-    is_active: true
-  }
-];
-
 export interface DashboardProps {
-  isDark?: boolean;
-  profile?: Profile;
   completedToday?: number;
   totalHabits?: number;
   onNavigate?: (tab: string) => void;
@@ -88,68 +23,41 @@ export interface DashboardProps {
 }
 
 export function Dashboard({
-  isDark = true,
-  profile: propsProfile,
   onNavigate,
   onCompletedChange,
   onProfileUpdate
 }: DashboardProps) {
-  const profile: Profile = propsProfile || {
-    id: "user-1",
-    username: "asadbek",
-    display_name: "Asadbek",
-    avatar_url: "",
-    avatar_color: "#10b981",
-    score: 350,
-    coins: 120,
-    height_cm: 175,
-    weight_kg: 70,
-    created_at: new Date().toISOString()
-  };
-
-  // Demo rejim faqat tizimga kirilmaganda (profil yo'q) — haqiqiy
-  // foydalanuvchida demo odatlar ko'rsatilmaydi (ular serverda yo'q).
-  const isDemo = !propsProfile || profile.id === "user-1";
+  const profile = useProfile();
   const today = toDateStr();
-  const { data: habitsData } = useHabitsQuery(isDemo ? null : profile.id);
+  const { data: habitsData } = useHabitsQuery(profile.id);
   // Kunlik loglar keshi navbatdagi (hali yuborilmagan) belgilarni ham o'z
   // ichiga oladi va har bosishda darhol yangilanadi — alohida holat kerak emas.
-  const { data: todayLogs } = useDayLogsQuery(isDemo ? null : profile.id, today);
+  const { data: todayLogs } = useDayLogsQuery(profile.id, today);
   const addHabitMutation = useAddHabit();
 
-  const [demoDoneIds, setDemoDoneIds] = useState<Set<string>>(new Set(["demo-2", "demo-3"]));
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
 
   const habits: Habit[] = useMemo(
-    () => (isDemo ? DEFAULT_HABITS : (habitsData || []).filter((h: Habit) => h.type !== "negative")),
-    [isDemo, habitsData]
+    () => (habitsData || []).filter((h: Habit) => h.type !== "negative"),
+    [habitsData]
   );
 
   const doneIds: Set<string> = useMemo(() => {
-    if (isDemo) return demoDoneIds;
     const set = new Set<string>();
     for (const log of todayLogs || []) if (log.completed) set.add(log.habit_id);
     return set;
-  }, [isDemo, demoDoneIds, todayLogs]);
+  }, [todayLogs]);
 
   useEffect(() => {
-    if (isDemo || !habitsData || !todayLogs) return;
+    if (!habitsData || !todayLogs) return;
     const visible = new Set(habits.map((h) => h.id));
     onCompletedChange?.([...doneIds].filter((id) => visible.has(id)).length, habits.length);
-  }, [isDemo, habitsData, todayLogs, habits, doneIds]);
+  }, [habitsData, todayLogs, habits, doneIds]);
 
   // Handle instant 0ms optimistic UI toggle
   const handleToggleHabit = (habitId: string) => {
     const isCurrentlyDone = doneIds.has(habitId);
     if (!isCurrentlyDone) soundService.play("task_complete");
-
-    if (isDemo) {
-      const next = new Set(demoDoneIds);
-      if (isCurrentlyDone) next.delete(habitId); else next.add(habitId);
-      setDemoDoneIds(next);
-      onCompletedChange?.(next.size, habits.length);
-      return;
-    }
 
     // Navbat kunlik loglar keshini darhol yangilaydi (optimistik); server
     // rad etsa — kesh serverdan qayta yuklanadi.
@@ -164,7 +72,7 @@ export function Dashboard({
   };
 
   const handleAddNewHabit = async (habitData: any) => {
-    if (!isDemo) {
+    {
       try {
         await addHabitMutation.mutateAsync({
           userId: profile.id,
@@ -254,7 +162,6 @@ export function Dashboard({
           isOpen={isAddModalOpen}
           onClose={() => setIsAddModalOpen(false)}
           onAdd={handleAddNewHabit}
-          isDark={isDark}
         />
       )}
     </div>

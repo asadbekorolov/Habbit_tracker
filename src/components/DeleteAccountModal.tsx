@@ -7,13 +7,12 @@ import { useLang } from "../store/LangContext";
 import { useScrollLock } from "../hooks/useScrollLock";
 
 interface DeleteAccountModalProps {
-  isDark: boolean;
   profile: Profile;
   onClose: () => void;
   onDeleted: () => void;
 }
 
-export function DeleteAccountModal({ isDark, profile, onClose, onDeleted }: DeleteAccountModalProps) {
+export function DeleteAccountModal({ profile, onClose, onDeleted }: DeleteAccountModalProps) {
   const { t } = useLang();
   useScrollLock(true);
   const [confirmText, setConfirmText] = useState("");
@@ -49,7 +48,7 @@ export function DeleteAccountModal({ isDark, profile, onClose, onDeleted }: Dele
     >
       <div
         className="w-full sm:max-w-md rounded-t-3xl sm:rounded-2xl overflow-hidden max-h-[85vh] overflow-y-auto overscroll-contain touch-pan-y"
-        style={{ background: isDark ? "#161B22" : "#fff", paddingBottom: "env(safe-area-inset-bottom)" }}
+        style={{ background: "#161B22", paddingBottom: "env(safe-area-inset-bottom)" }}
         onClick={(e) => e.stopPropagation()}
       >
         <div className="p-5">
@@ -69,7 +68,7 @@ export function DeleteAccountModal({ isDark, profile, onClose, onDeleted }: Dele
               data-modal-close-trigger
               disabled={deleting}
               className="p-1.5 rounded-lg"
-              style={{ background: isDark ? "rgba(255,255,255,0.07)" : "#F3F4F6" }}
+              style={{ background: "rgba(255,255,255,0.07)" }}
             >
               <X size={15} style={{ color: "var(--muted-foreground)" }} />
             </button>
@@ -91,8 +90,8 @@ export function DeleteAccountModal({ isDark, profile, onClose, onDeleted }: Dele
             disabled={deleting}
             className="w-full rounded-xl p-3 text-sm outline-none mb-3"
             style={{
-              background: isDark ? "rgba(255,255,255,0.04)" : "#F9FAFB",
-              border: `1px solid ${isDark ? "rgba(255,255,255,0.07)" : "rgba(0,0,0,0.08)"}`,
+              background: "rgba(255,255,255,0.04)",
+              border: `1px solid rgba(255,255,255,0.07)`,
               color: "var(--foreground)",
             }}
           />
@@ -109,7 +108,7 @@ export function DeleteAccountModal({ isDark, profile, onClose, onDeleted }: Dele
               onClick={onClose}
               disabled={deleting}
               className="flex-1 py-3 rounded-xl text-sm font-semibold"
-              style={{ background: isDark ? "rgba(255,255,255,0.06)" : "#F3F4F6", color: "var(--foreground)" }}
+              style={{ background: "rgba(255,255,255,0.06)", color: "var(--foreground)" }}
             >
               {t('delete_account_modal_cancel')}
             </button>

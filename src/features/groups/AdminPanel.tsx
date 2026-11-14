@@ -14,14 +14,13 @@ import { downloadCsv } from "../../utils/csv";
 import { AvatarFrame } from "../../components/AvatarFrame";
 
 interface AdminPanelProps {
-  isDark: boolean;
   profile: Profile;
 }
 
 const DATE_LOCALE: Record<string, string> = { uz: "uz-UZ", ru: "ru-RU", en: "en-US" };
 type AdminTab = "overview" | "users" | "habits" | "feedback" | "analytics" | "monitoring" | "health";
 
-export function AdminPanel({ isDark, profile }: AdminPanelProps) {
+export function AdminPanel({ profile }: AdminPanelProps) {
   const { t, lang } = useLang();
   const [activeTab, setActiveTab] = useState<AdminTab>("overview");
 
@@ -409,8 +408,8 @@ export function AdminPanel({ isDark, profile }: AdminPanelProps) {
   }
 
   const cardStyle: React.CSSProperties = {
-    background: isDark ? "rgba(22,27,34,0.85)" : "var(--card)",
-    border: `1px solid ${isDark ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.07)"}`,
+    background: "rgba(22,27,34,0.85)",
+    border: `1px solid rgba(255,255,255,0.06)`,
     borderRadius: 14,
     padding: 20,
   };
@@ -448,20 +447,20 @@ export function AdminPanel({ isDark, profile }: AdminPanelProps) {
       </div>
 
       {error && (
-        <p className="text-xs px-3 py-2.5 rounded-lg" style={{ color: "var(--coral-red)", background: isDark ? "rgba(248,113,113,0.1)" : "#FEF2F2" }}>
+        <p className="text-xs px-3 py-2.5 rounded-lg" style={{ color: "var(--coral-red)", background: "rgba(248,113,113,0.1)" }}>
           ⚠ {error}
         </p>
       )}
 
       {/* Tabs */}
-      <div className="flex gap-1 rounded-xl p-1 overflow-x-auto" style={{ background: isDark ? "rgba(255,255,255,0.05)" : "#F3F4F6" }}>
+      <div className="flex gap-1 rounded-xl p-1 overflow-x-auto" style={{ background: "rgba(255,255,255,0.05)" }}>
         {tabs.map((tb) => (
           <button
             key={tb.id}
             onClick={() => setActiveTab(tb.id)}
             className="shrink-0 flex items-center justify-center gap-1.5 px-3.5 py-2.5 rounded-lg text-xs font-medium transition-all min-h-[44px] whitespace-nowrap"
             style={{
-              background: activeTab === tb.id ? (isDark ? "rgba(255,255,255,0.1)" : "#fff") : "transparent",
+              background: activeTab === tb.id ? ("rgba(255,255,255,0.1)") : "transparent",
               color: activeTab === tb.id ? "var(--foreground)" : "var(--muted-foreground)",
               boxShadow: activeTab === tb.id ? "0 1px 4px rgba(0,0,0,0.1)" : "none",
             }}
@@ -525,7 +524,7 @@ export function AdminPanel({ isDark, profile }: AdminPanelProps) {
             ) : (
               <div className="space-y-3">
                 {pendingApprovals.map((item) => (
-                  <div key={item.id} className="p-3 rounded-xl" style={{ background: isDark ? "rgba(255,255,255,0.03)" : "#F9FAFB" }}>
+                  <div key={item.id} className="p-3 rounded-xl" style={{ background: "rgba(255,255,255,0.03)" }}>
                     <div className="flex items-start gap-3">
                       <div className="w-9 h-9 rounded-full flex items-center justify-center text-xs font-bold shrink-0"
                         style={{ background: item.profiles?.avatar_color || "#4ADE80", color: "#000" }}>
@@ -551,7 +550,7 @@ export function AdminPanel({ isDark, profile }: AdminPanelProps) {
                           onChange={(e) => setRejectReason(e.target.value)}
                           placeholder={t('mod_reject_placeholder')}
                           className="flex-1 px-3 py-1.5 rounded-lg text-xs outline-none"
-                          style={{ background: isDark ? "rgba(255,255,255,0.05)" : "#fff", border: `1px solid ${isDark ? "rgba(255,255,255,0.1)" : "rgba(0,0,0,0.1)"}`, color: "var(--foreground)" }}
+                          style={{ background: "rgba(255,255,255,0.05)", border: `1px solid rgba(255,255,255,0.1)`, color: "var(--foreground)" }}
                         />
                         <button onClick={handleRejectSubmit} disabled={actioningId === item.id}
                           className="px-3 py-2.5 rounded-lg text-xs font-semibold min-h-[44px]" style={{ background: "rgba(248,113,113,0.15)", color: "#F87171" }}>
@@ -583,7 +582,7 @@ export function AdminPanel({ isDark, profile }: AdminPanelProps) {
           </div>
 
           {/* Ommaviy Xabar (Global Push) */}
-          <div style={{ ...cardStyle, border: `1px solid ${isDark ? "rgba(59,130,246,0.2)" : "rgba(59,130,246,0.3)"}` }}>
+          <div style={{ ...cardStyle, border: `1px solid rgba(59,130,246,0.2)` }}>
             <div className="flex items-center gap-2 mb-4">
               <Megaphone size={18} style={{ color: "#3B82F6" }} />
               <h3 className="font-semibold text-sm" style={{ color: "var(--foreground)" }}>{t('admin_broadcast_title')}</h3>
@@ -598,7 +597,7 @@ export function AdminPanel({ isDark, profile }: AdminPanelProps) {
                 value={pushTitle}
                 onChange={(e) => setPushTitle(e.target.value)}
                 className="w-full px-4 py-2 rounded-xl text-sm outline-none transition-colors"
-                style={{ background: isDark ? "rgba(255,255,255,0.05)" : "#F3F4F6", border: `1px solid ${isDark ? "rgba(255,255,255,0.1)" : "rgba(0,0,0,0.1)"}`, color: "var(--foreground)" }}
+                style={{ background: "rgba(255,255,255,0.05)", border: `1px solid rgba(255,255,255,0.1)`, color: "var(--foreground)" }}
               />
               <textarea
                 placeholder={t('admin_broadcast_body_ph')}
@@ -606,7 +605,7 @@ export function AdminPanel({ isDark, profile }: AdminPanelProps) {
                 onChange={(e) => setPushBody(e.target.value)}
                 rows={3}
                 className="w-full px-4 py-2 rounded-xl text-sm outline-none transition-colors resize-none"
-                style={{ background: isDark ? "rgba(255,255,255,0.05)" : "#F3F4F6", border: `1px solid ${isDark ? "rgba(255,255,255,0.1)" : "rgba(0,0,0,0.1)"}`, color: "var(--foreground)" }}
+                style={{ background: "rgba(255,255,255,0.05)", border: `1px solid rgba(255,255,255,0.1)`, color: "var(--foreground)" }}
               />
             </div>
             <button
@@ -626,7 +625,7 @@ export function AdminPanel({ isDark, profile }: AdminPanelProps) {
           </div>
 
           {/* Xavfli Hudud */}
-          <div style={{ ...cardStyle, border: `1px solid ${isDark ? "rgba(239,68,68,0.2)" : "rgba(239,68,68,0.3)"}` }}>
+          <div style={{ ...cardStyle, border: `1px solid rgba(239,68,68,0.2)` }}>
             <div className="flex items-center gap-2 mb-4">
               <AlertTriangle size={18} style={{ color: "#EF4444" }} />
               <h3 className="font-semibold text-sm" style={{ color: "var(--foreground)" }}>{t('admin_danger_zone')}</h3>
@@ -663,7 +662,7 @@ export function AdminPanel({ isDark, profile }: AdminPanelProps) {
               <button
                 onClick={exportUsersCsv}
                 className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-[11px] font-semibold shrink-0 transition-all"
-                style={{ background: isDark ? "rgba(96,165,250,0.12)" : "#EFF6FF", color: "#60A5FA", border: "1px solid rgba(96,165,250,0.25)" }}
+                style={{ background: "rgba(96,165,250,0.12)", color: "#60A5FA", border: "1px solid rgba(96,165,250,0.25)" }}
               >
                 <Download size={12} /> {t('admin_export_csv')}
               </button>
@@ -676,8 +675,8 @@ export function AdminPanel({ isDark, profile }: AdminPanelProps) {
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="w-full pl-9 pr-4 py-2.5 rounded-xl text-xs outline-none transition-colors min-h-[44px]"
                 style={{
-                  background: isDark ? "rgba(255,255,255,0.05)" : "#F3F4F6",
-                  border: `1px solid ${isDark ? "rgba(255,255,255,0.1)" : "rgba(0,0,0,0.1)"}`,
+                  background: "rgba(255,255,255,0.05)",
+                  border: `1px solid rgba(255,255,255,0.1)`,
                   color: "var(--foreground)"
                 }}
               />
@@ -688,7 +687,7 @@ export function AdminPanel({ isDark, profile }: AdminPanelProps) {
           <div className="overflow-x-auto">
             <table className="w-full border-collapse" style={{ minWidth: 860 }}>
               <thead>
-                <tr style={{ borderBottom: `1px solid ${isDark ? "rgba(255,255,255,0.08)" : "rgba(0,0,0,0.08)"}` }}>
+                <tr style={{ borderBottom: `1px solid rgba(255,255,255,0.08)` }}>
                   {[t('admin_col_name'), t('admin_col_status'), t('admin_col_role'), t('admin_col_balance'), t('admin_col_efficiency'), t('admin_col_joined'), ""].map((h, i) => (
                     <th key={i} className="text-left pb-2 pr-3" style={{ fontSize: 10, color: "var(--muted-foreground)", fontFamily: "'Geist Mono', monospace", textTransform: "uppercase" }}>
                       {h}
@@ -709,7 +708,7 @@ export function AdminPanel({ isDark, profile }: AdminPanelProps) {
                     <tr
                       key={u.id}
                       className={u.is_banned ? "opacity-50" : ""}
-                      style={{ borderBottom: `1px solid ${isDark ? "rgba(255,255,255,0.05)" : "rgba(0,0,0,0.05)"}` }}
+                      style={{ borderBottom: `1px solid rgba(255,255,255,0.05)` }}
                     >
                       <td className="py-2.5 pr-3">
                         <div className="flex items-center gap-2 min-w-0">
@@ -804,7 +803,7 @@ export function AdminPanel({ isDark, profile }: AdminPanelProps) {
               <button
                 onClick={exportHabitsCsv}
                 className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-[11px] font-semibold shrink-0 transition-all"
-                style={{ background: isDark ? "rgba(96,165,250,0.12)" : "#EFF6FF", color: "#60A5FA", border: "1px solid rgba(96,165,250,0.25)" }}
+                style={{ background: "rgba(96,165,250,0.12)", color: "#60A5FA", border: "1px solid rgba(96,165,250,0.25)" }}
               >
                 <Download size={12} /> {t('admin_export_csv')}
               </button>
@@ -817,8 +816,8 @@ export function AdminPanel({ isDark, profile }: AdminPanelProps) {
                 onChange={(e) => setHabitsSearchQuery(e.target.value)}
                 className="w-full pl-9 pr-4 py-2.5 rounded-xl text-xs outline-none transition-colors min-h-[44px]"
                 style={{
-                  background: isDark ? "rgba(255,255,255,0.05)" : "#F3F4F6",
-                  border: `1px solid ${isDark ? "rgba(255,255,255,0.1)" : "rgba(0,0,0,0.1)"}`,
+                  background: "rgba(255,255,255,0.05)",
+                  border: `1px solid rgba(255,255,255,0.1)`,
                   color: "var(--foreground)"
                 }}
               />
@@ -838,7 +837,7 @@ export function AdminPanel({ isDark, profile }: AdminPanelProps) {
             <div className="overflow-x-auto">
               <table className="w-full border-collapse" style={{ minWidth: 720 }}>
                 <thead>
-                  <tr style={{ borderBottom: `1px solid ${isDark ? "rgba(255,255,255,0.08)" : "rgba(0,0,0,0.08)"}` }}>
+                  <tr style={{ borderBottom: `1px solid rgba(255,255,255,0.08)` }}>
                     {[t('admin_col_habit_name'), t('admin_col_creator'), t('admin_col_category'), t('admin_col_frequency'), t('admin_col_date')].map((h, i) => (
                       <th key={i} className="text-left pb-2 pr-3" style={{ fontSize: 10, color: "var(--muted-foreground)", fontFamily: "'Geist Mono', monospace", textTransform: "uppercase" }}>
                         {h}
@@ -855,7 +854,7 @@ export function AdminPanel({ isDark, profile }: AdminPanelProps) {
                     )
                     .slice(0, habitsSearchQuery ? 200 : 50)
                     .map((h) => (
-                      <tr key={h.id} style={{ borderBottom: `1px solid ${isDark ? "rgba(255,255,255,0.05)" : "rgba(0,0,0,0.05)"}` }}>
+                      <tr key={h.id} style={{ borderBottom: `1px solid rgba(255,255,255,0.05)` }}>
                         <td className="py-2.5 pr-3">
                           <span className="text-xs font-medium" style={{ color: "var(--foreground)" }}>{h.emoji} {h.name}</span>
                         </td>
@@ -890,7 +889,7 @@ export function AdminPanel({ isDark, profile }: AdminPanelProps) {
       {bonusUserId && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: "rgba(0,0,0,0.6)", backdropFilter: "blur(4px)" }}
           onClick={(e) => { if (e.target === e.currentTarget) setBonusUserId(null); }}>
-          <div className="w-full max-w-sm rounded-2xl p-5" style={{ background: isDark ? "#161B22" : "#fff", border: `1px solid ${isDark ? "rgba(255,255,255,0.08)" : "rgba(0,0,0,0.08)"}` }}>
+          <div className="w-full max-w-sm rounded-2xl p-5" style={{ background: "#161B22", border: `1px solid rgba(255,255,255,0.08)` }}>
             <div className="flex items-center justify-between mb-4">
               <h3 className="font-semibold text-sm flex items-center gap-2" style={{ color: "var(--foreground)" }}>
                 <Gift size={15} style={{ color: "#A78BFA" }} /> {t('admin_grant_bonus')}
@@ -905,13 +904,13 @@ export function AdminPanel({ isDark, profile }: AdminPanelProps) {
                 <label className="text-[11px] font-medium block mb-1" style={{ color: "var(--muted-foreground)" }}>🪙 {t('admin_bonus_coins')}</label>
                 <input type="number" value={bonusCoins} onChange={(e) => setBonusCoins(e.target.value)}
                   className="w-full px-3 py-2 rounded-xl text-sm outline-none"
-                  style={{ background: isDark ? "rgba(255,255,255,0.05)" : "#F3F4F6", border: `1px solid ${isDark ? "rgba(255,255,255,0.1)" : "rgba(0,0,0,0.1)"}`, color: "var(--foreground)" }} />
+                  style={{ background: "rgba(255,255,255,0.05)", border: `1px solid rgba(255,255,255,0.1)`, color: "var(--foreground)" }} />
               </div>
               <div>
                 <label className="text-[11px] font-medium block mb-1" style={{ color: "var(--muted-foreground)" }}>⭐ {t('admin_bonus_score')}</label>
                 <input type="number" value={bonusScore} onChange={(e) => setBonusScore(e.target.value)}
                   className="w-full px-3 py-2 rounded-xl text-sm outline-none"
-                  style={{ background: isDark ? "rgba(255,255,255,0.05)" : "#F3F4F6", border: `1px solid ${isDark ? "rgba(255,255,255,0.1)" : "rgba(0,0,0,0.1)"}`, color: "var(--foreground)" }} />
+                  style={{ background: "rgba(255,255,255,0.05)", border: `1px solid rgba(255,255,255,0.1)`, color: "var(--foreground)" }} />
               </div>
             </div>
             {bonusError && <p className="text-xs mt-2" style={{ color: "var(--coral-red)" }}>⚠ {bonusError}</p>}
@@ -935,7 +934,7 @@ export function AdminPanel({ isDark, profile }: AdminPanelProps) {
         return (
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: "rgba(0,0,0,0.6)", backdropFilter: "blur(4px)" }}
             onClick={(e) => { if (e.target === e.currentTarget) setDetailsUserId(null); }}>
-            <div className="w-full max-w-sm rounded-2xl p-5" style={{ background: isDark ? "#161B22" : "#fff", border: `1px solid ${isDark ? "rgba(255,255,255,0.08)" : "rgba(0,0,0,0.08)"}`, maxHeight: "80vh", overflowY: "auto" }}>
+            <div className="w-full max-w-sm rounded-2xl p-5" style={{ background: "#161B22", border: `1px solid rgba(255,255,255,0.08)`, maxHeight: "80vh", overflowY: "auto" }}>
               <div className="flex items-center justify-between mb-4">
                 <h3 className="font-semibold text-sm flex items-center gap-2" style={{ color: "var(--foreground)" }}>
                   <Eye size={15} style={{ color: "#60A5FA" }} /> {u.display_name}
@@ -954,7 +953,7 @@ export function AdminPanel({ isDark, profile }: AdminPanelProps) {
                       { label: t('admin_col_score'), value: `⭐${u.score || 0}` },
                       { label: t('admin_col_efficiency'), value: `${efficiencyMap[u.id] ?? 0}%` },
                     ].map((s) => (
-                      <div key={s.label} className="rounded-xl p-2.5 text-center" style={{ background: isDark ? "rgba(255,255,255,0.03)" : "#F9FAFB", border: `1px solid ${isDark ? "rgba(255,255,255,0.05)" : "rgba(0,0,0,0.05)"}` }}>
+                      <div key={s.label} className="rounded-xl p-2.5 text-center" style={{ background: "rgba(255,255,255,0.03)", border: `1px solid rgba(255,255,255,0.05)` }}>
                         <p className="text-sm font-bold" style={{ color: "var(--foreground)", fontFamily: "'Geist Mono', monospace" }}>{s.value}</p>
                         <p className="text-[9px] mt-1" style={{ color: "var(--muted-foreground)" }}>{s.label}</p>
                       </div>
@@ -969,7 +968,7 @@ export function AdminPanel({ isDark, profile }: AdminPanelProps) {
                   ) : (
                     <div className="flex flex-col gap-1.5">
                       {detailsHabits.map((h) => (
-                        <div key={h.id} className="flex items-center gap-2 px-2.5 py-2 rounded-lg" style={{ background: isDark ? "rgba(255,255,255,0.03)" : "#F9FAFB" }}>
+                        <div key={h.id} className="flex items-center gap-2 px-2.5 py-2 rounded-lg" style={{ background: "rgba(255,255,255,0.03)" }}>
                           <span className="text-sm">{h.emoji}</span>
                           <span className="text-xs flex-1 truncate" style={{ color: "var(--foreground)" }}>{h.name}</span>
                           <span className="text-[9px] px-1.5 py-0.5 rounded-full" style={{ background: h.type === "negative" ? "rgba(248,113,113,0.12)" : "rgba(74,222,128,0.12)", color: h.type === "negative" ? "#F87171" : "#4ADE80" }}>
@@ -996,7 +995,7 @@ export function AdminPanel({ isDark, profile }: AdminPanelProps) {
             <button
               onClick={exportFeedbackCsv}
               className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-[11px] font-semibold shrink-0 transition-all"
-              style={{ background: isDark ? "rgba(96,165,250,0.12)" : "#EFF6FF", color: "#60A5FA", border: "1px solid rgba(96,165,250,0.25)" }}
+              style={{ background: "rgba(96,165,250,0.12)", color: "#60A5FA", border: "1px solid rgba(96,165,250,0.25)" }}
             >
               <Download size={12} /> {t('admin_export_csv')}
             </button>
@@ -1010,7 +1009,7 @@ export function AdminPanel({ isDark, profile }: AdminPanelProps) {
           ) : (
             <div className="space-y-3">
               {feedback.map((f) => (
-                <div key={f.id} className="p-3.5 rounded-xl" style={{ background: isDark ? "rgba(255,255,255,0.03)" : "#F9FAFB", border: `1px solid ${isDark ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.06)"}` }}>
+                <div key={f.id} className="p-3.5 rounded-xl" style={{ background: "rgba(255,255,255,0.03)", border: `1px solid rgba(255,255,255,0.06)` }}>
                   <div className="flex items-center justify-between mb-1.5">
                     <span className="text-xs font-semibold" style={{ color: "var(--foreground)" }}>
                       {f.display_name} <span className="font-normal" style={{ color: "var(--muted-foreground)" }}>@{f.username}</span>
@@ -1022,7 +1021,7 @@ export function AdminPanel({ isDark, profile }: AdminPanelProps) {
                   <p className="text-sm leading-relaxed whitespace-pre-wrap" style={{ color: "var(--muted-foreground)" }}>{f.content}</p>
 
                   {f.admin_reply ? (
-                    <div className="mt-3 pl-3 flex flex-col gap-1" style={{ borderLeft: `2px solid ${isDark ? "rgba(74,222,128,0.4)" : "rgba(74,222,128,0.5)"}` }}>
+                    <div className="mt-3 pl-3 flex flex-col gap-1" style={{ borderLeft: `2px solid rgba(74,222,128,0.4)` }}>
                       <span className="text-[10px] font-semibold" style={{ color: "#4ADE80" }}>
                         {t('admin_feedback_your_reply')}
                         {f.admin_replied_at && (
@@ -1041,7 +1040,7 @@ export function AdminPanel({ isDark, profile }: AdminPanelProps) {
                         placeholder={t('admin_feedback_reply_ph')}
                         rows={2}
                         className="w-full px-3 py-2 rounded-xl text-sm outline-none resize-none"
-                        style={{ background: isDark ? "rgba(255,255,255,0.05)" : "#fff", border: `1px solid ${isDark ? "rgba(255,255,255,0.1)" : "rgba(0,0,0,0.1)"}`, color: "var(--foreground)" }}
+                        style={{ background: "rgba(255,255,255,0.05)", border: `1px solid rgba(255,255,255,0.1)`, color: "var(--foreground)" }}
                       />
                       <button
                         type="button"
@@ -1091,7 +1090,7 @@ export function AdminPanel({ isDark, profile }: AdminPanelProps) {
                     { label: t('an_users_new_week'), value: dashboard.users.new_week, color: "#4ADE80" },
                     { label: t('an_users_banned'), value: dashboard.users.banned, color: "#F87171" },
                   ].map((s) => (
-                    <div key={s.label} className="rounded-xl p-3" style={{ background: isDark ? "rgba(255,255,255,0.03)" : "#F9FAFB", border: `1px solid ${isDark ? "rgba(255,255,255,0.05)" : "rgba(0,0,0,0.05)"}` }}>
+                    <div key={s.label} className="rounded-xl p-3" style={{ background: "rgba(255,255,255,0.03)", border: `1px solid rgba(255,255,255,0.05)` }}>
                       <p className="text-lg font-bold leading-none" style={{ color: s.color, fontFamily: "'Geist Mono', monospace" }}>{s.value}</p>
                       <p className="text-[11px] mt-1.5" style={{ color: "var(--muted-foreground)" }}>{s.label}</p>
                     </div>
@@ -1106,11 +1105,11 @@ export function AdminPanel({ isDark, profile }: AdminPanelProps) {
                   <h3 className="font-semibold text-sm" style={{ color: "var(--foreground)" }}>{t('an_habits_title')}</h3>
                 </div>
                 <div className="grid grid-cols-2 gap-2 sm:gap-3 mb-4">
-                  <div className="rounded-xl p-3" style={{ background: isDark ? "rgba(255,255,255,0.03)" : "#F9FAFB", border: `1px solid ${isDark ? "rgba(255,255,255,0.05)" : "rgba(0,0,0,0.05)"}` }}>
+                  <div className="rounded-xl p-3" style={{ background: "rgba(255,255,255,0.03)", border: `1px solid rgba(255,255,255,0.05)` }}>
                     <p className="text-lg font-bold leading-none" style={{ color: "#4ADE80", fontFamily: "'Geist Mono', monospace" }}>{dashboard.habits.active_total}</p>
                     <p className="text-[11px] mt-1.5" style={{ color: "var(--muted-foreground)" }}>{t('an_habits_active')}</p>
                   </div>
-                  <div className="rounded-xl p-3" style={{ background: isDark ? "rgba(255,255,255,0.03)" : "#F9FAFB", border: `1px solid ${isDark ? "rgba(255,255,255,0.05)" : "rgba(0,0,0,0.05)"}` }}>
+                  <div className="rounded-xl p-3" style={{ background: "rgba(255,255,255,0.03)", border: `1px solid rgba(255,255,255,0.05)` }}>
                     <p className="text-lg font-bold leading-none" style={{ color: "#60A5FA", fontFamily: "'Geist Mono', monospace" }}>{dashboard.habits.completion_rate_pct}%</p>
                     <p className="text-[11px] mt-1.5" style={{ color: "var(--muted-foreground)" }}>{t('an_habits_completion')}</p>
                   </div>
@@ -1118,7 +1117,7 @@ export function AdminPanel({ isDark, profile }: AdminPanelProps) {
                 <p className="text-[11px] mb-1.5" style={{ color: "var(--muted-foreground)" }}>
                   {t('an_habits_split')} · {dashboard.habits.positive_count} {t('an_habits_positive')} / {dashboard.habits.negative_count} {t('an_habits_negative')}
                 </p>
-                <div className="w-full h-2 rounded-full overflow-hidden flex" style={{ background: isDark ? "rgba(255,255,255,0.07)" : "rgba(0,0,0,0.07)" }}>
+                <div className="w-full h-2 rounded-full overflow-hidden flex" style={{ background: "rgba(255,255,255,0.07)" }}>
                   <div style={{
                     width: `${dashboard.habits.active_total > 0 ? (dashboard.habits.positive_count / dashboard.habits.active_total) * 100 : 0}%`,
                     background: "#4ADE80",
@@ -1142,7 +1141,7 @@ export function AdminPanel({ isDark, profile }: AdminPanelProps) {
                     { icon: Sparkles, label: t('an_economy_xp'), value: dashboard.economy.total_xp, color: "#A78BFA" },
                     { icon: Palette, label: t('an_economy_frames'), value: dashboard.economy.active_frames, color: "#F97316" },
                   ].map((s) => (
-                    <div key={s.label} className="rounded-xl p-3 flex flex-col items-center text-center" style={{ background: isDark ? "rgba(255,255,255,0.03)" : "#F9FAFB", border: `1px solid ${isDark ? "rgba(255,255,255,0.05)" : "rgba(0,0,0,0.05)"}` }}>
+                    <div key={s.label} className="rounded-xl p-3 flex flex-col items-center text-center" style={{ background: "rgba(255,255,255,0.03)", border: `1px solid rgba(255,255,255,0.05)` }}>
                       <s.icon size={14} style={{ color: s.color, marginBottom: 6 }} />
                       <p className="text-base font-bold leading-none" style={{ color: "var(--foreground)", fontFamily: "'Geist Mono', monospace" }}>{s.value}</p>
                       <p className="text-[10px] mt-1.5" style={{ color: "var(--muted-foreground)" }}>{s.label}</p>
@@ -1158,11 +1157,11 @@ export function AdminPanel({ isDark, profile }: AdminPanelProps) {
                   <h3 className="font-semibold text-sm" style={{ color: "var(--foreground)" }}>{t('an_groups_title')}</h3>
                 </div>
                 <div className="grid grid-cols-2 gap-2 sm:gap-3 mb-4">
-                  <div className="rounded-xl p-3" style={{ background: isDark ? "rgba(255,255,255,0.03)" : "#F9FAFB", border: `1px solid ${isDark ? "rgba(255,255,255,0.05)" : "rgba(0,0,0,0.05)"}` }}>
+                  <div className="rounded-xl p-3" style={{ background: "rgba(255,255,255,0.03)", border: `1px solid rgba(255,255,255,0.05)` }}>
                     <p className="text-lg font-bold leading-none" style={{ color: "#34D399", fontFamily: "'Geist Mono', monospace" }}>{dashboard.groups.total_groups}</p>
                     <p className="text-[11px] mt-1.5" style={{ color: "var(--muted-foreground)" }}>{t('an_groups_total')}</p>
                   </div>
-                  <div className="rounded-xl p-3" style={{ background: isDark ? "rgba(255,255,255,0.03)" : "#F9FAFB", border: `1px solid ${isDark ? "rgba(255,255,255,0.05)" : "rgba(0,0,0,0.05)"}` }}>
+                  <div className="rounded-xl p-3" style={{ background: "rgba(255,255,255,0.03)", border: `1px solid rgba(255,255,255,0.05)` }}>
                     <p className="text-lg font-bold leading-none" style={{ color: "#60A5FA", fontFamily: "'Geist Mono', monospace" }}>{dashboard.groups.avg_members}</p>
                     <p className="text-[11px] mt-1.5" style={{ color: "var(--muted-foreground)" }}>{t('an_groups_avg_members')}</p>
                   </div>
@@ -1199,7 +1198,7 @@ export function AdminPanel({ isDark, profile }: AdminPanelProps) {
             <div className="overflow-x-auto">
               <table className="w-full text-xs">
                 <thead>
-                  <tr style={{ borderBottom: `1px solid ${isDark ? "rgba(255,255,255,0.08)" : "rgba(0,0,0,0.08)"}` }}>
+                  <tr style={{ borderBottom: `1px solid rgba(255,255,255,0.08)` }}>
                     <th className="text-left py-2 pr-3 font-medium" style={{ color: "var(--muted-foreground)" }}>{t('analytics_col_event')}</th>
                     <th className="text-right py-2 px-3 font-medium" style={{ color: "var(--muted-foreground)" }}>{t('analytics_col_total')}</th>
                     <th className="text-right py-2 px-3 font-medium" style={{ color: "var(--muted-foreground)" }}>{t('analytics_col_users')}</th>
@@ -1208,7 +1207,7 @@ export function AdminPanel({ isDark, profile }: AdminPanelProps) {
                 </thead>
                 <tbody>
                   {analyticsSummary.map((row) => (
-                    <tr key={row.event_name} style={{ borderBottom: `1px solid ${isDark ? "rgba(255,255,255,0.04)" : "rgba(0,0,0,0.04)"}` }}>
+                    <tr key={row.event_name} style={{ borderBottom: `1px solid rgba(255,255,255,0.04)` }}>
                       <td className="py-2 pr-3 font-mono" style={{ color: "var(--foreground)" }}>{row.event_name}</td>
                       <td className="text-right py-2 px-3" style={{ color: "var(--foreground)" }}>{row.total_count}</td>
                       <td className="text-right py-2 px-3" style={{ color: "var(--muted-foreground)" }}>{row.unique_users}</td>
@@ -1267,7 +1266,7 @@ export function AdminPanel({ isDark, profile }: AdminPanelProps) {
                             {h.completions} {t('mon_completions_suffix')}
                           </span>
                         </div>
-                        <div className="w-full h-1.5 rounded-full overflow-hidden" style={{ background: isDark ? "rgba(255,255,255,0.07)" : "rgba(0,0,0,0.07)" }}>
+                        <div className="w-full h-1.5 rounded-full overflow-hidden" style={{ background: "rgba(255,255,255,0.07)" }}>
                           <div className="h-full rounded-full" style={{ width: `${(h.completions / maxCompletions) * 100}%`, background: "#F97316" }} />
                         </div>
                       </div>
@@ -1294,7 +1293,7 @@ export function AdminPanel({ isDark, profile }: AdminPanelProps) {
             <div className="space-y-3">
               {inactiveGroups.map((g) => (
                 <div key={g.group_id} className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3 rounded-xl"
-                  style={{ background: isDark ? "rgba(255,255,255,0.03)" : "#F9FAFB" }}>
+                  style={{ background: "rgba(255,255,255,0.03)" }}>
                   <div className="min-w-0">
                     <p className="text-sm font-semibold truncate" style={{ color: "var(--foreground)" }}>{g.group_name}</p>
                     <p className="text-xs mt-0.5" style={{ color: "var(--muted-foreground)" }}>

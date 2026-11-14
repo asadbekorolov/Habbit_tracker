@@ -7,12 +7,11 @@ import { useLang } from "../store/LangContext";
 import { useScrollLock } from "../hooks/useScrollLock";
 
 interface FeedbackModalProps {
-  isDark: boolean;
   profile: Profile;
   onClose: () => void;
 }
 
-export function FeedbackModal({ isDark, profile, onClose }: FeedbackModalProps) {
+export function FeedbackModal({ profile, onClose }: FeedbackModalProps) {
   const { t } = useLang();
   useScrollLock(true);
   const [content, setContent] = useState("");
@@ -48,7 +47,7 @@ export function FeedbackModal({ isDark, profile, onClose }: FeedbackModalProps) 
     >
       <div
         className="w-full sm:max-w-md rounded-t-3xl sm:rounded-2xl overflow-hidden max-h-[85vh] overflow-y-auto overscroll-contain touch-pan-y"
-        style={{ background: isDark ? "#161B22" : "#fff", paddingBottom: "env(safe-area-inset-bottom)" }}
+        style={{ background: "#161B22", paddingBottom: "env(safe-area-inset-bottom)" }}
         onClick={(e) => e.stopPropagation()}
       >
         <div className="p-5">
@@ -62,7 +61,7 @@ export function FeedbackModal({ isDark, profile, onClose }: FeedbackModalProps) 
               onClick={onClose}
               data-modal-close-trigger
               className="p-1.5 rounded-lg"
-              style={{ background: isDark ? "rgba(255,255,255,0.07)" : "#F3F4F6" }}
+              style={{ background: "rgba(255,255,255,0.07)" }}
             >
               <X size={15} style={{ color: "var(--muted-foreground)" }} />
             </button>
@@ -84,8 +83,8 @@ export function FeedbackModal({ isDark, profile, onClose }: FeedbackModalProps) 
                 autoFocus
                 className="w-full resize-none rounded-xl p-3.5 text-sm outline-none transition-all"
                 style={{
-                  background: isDark ? "rgba(255,255,255,0.04)" : "#F9FAFB",
-                  border: `1px solid ${isDark ? "rgba(255,255,255,0.07)" : "rgba(0,0,0,0.08)"}`,
+                  background: "rgba(255,255,255,0.04)",
+                  border: `1px solid rgba(255,255,255,0.07)`,
                   color: "var(--foreground)",
                   fontFamily: "'Inter', sans-serif",
                   lineHeight: 1.7,

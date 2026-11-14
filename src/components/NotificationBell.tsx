@@ -13,7 +13,6 @@ import { useScrollLock } from "../hooks/useScrollLock";
 import { useHaptics } from "../hooks/useHaptics";
 
 interface NotificationBellProps {
-  isDark: boolean;
   profile: Profile;
   onNavigate?: (tab: string) => void;
   onUserClick?: (userId: string) => void;
@@ -66,7 +65,7 @@ function triggerNativeNotif(title: string, body: string, type: string) {
   );
 }
 
-export function NotificationBell({ isDark, profile, onNavigate, onUserClick }: NotificationBellProps) {
+export function NotificationBell({ profile, onNavigate, onUserClick }: NotificationBellProps) {
   const { t } = useLang();
   const haptics = useHaptics();
   const [notifications, setNotifications] = useState<AppNotification[]>([]);

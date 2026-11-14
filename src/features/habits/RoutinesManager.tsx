@@ -18,7 +18,6 @@ import { useHaptics } from "../../hooks/useHaptics";
 import { useRoutines } from "../../hooks/useRoutines";
 
 interface RoutinesManagerProps {
-  isDark: boolean;
   profile: Profile;
   userHabits: Habit[];
 }
@@ -40,7 +39,7 @@ const ROUTINE_ICONS: Record<string, React.ElementType> = {
 
 const DAY_LABELS = ["", "Du", "Se", "Chor", "Pay", "Ju", "Shan", "Yak"];
 
-export function RoutinesManager({ isDark, profile, userHabits }: RoutinesManagerProps) {
+export function RoutinesManager({ profile, userHabits }: RoutinesManagerProps) {
   const haptics = useHaptics();
   const queryClient = useQueryClient();
 
@@ -524,7 +523,6 @@ export function RoutinesManager({ isDark, profile, userHabits }: RoutinesManager
         onSave={handleSaveModal}
         initialRoutine={editingRoutine}
         userHabits={userHabits}
-        isDark={isDark}
       />
     </div>
   );

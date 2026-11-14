@@ -12,7 +12,6 @@ import { useRoutines } from "../../hooks/useRoutines";
 
 interface DailyRoutineTimelineProps {
   profile: Profile;
-  isDark: boolean;
   onNavigate?: (tab: string) => void;
 }
 
@@ -31,7 +30,7 @@ const ROUTINE_ICONS: Record<string, React.ElementType> = {
   Shield,
 };
 
-export function DailyRoutineTimeline({ profile, isDark, onNavigate }: DailyRoutineTimelineProps) {
+export function DailyRoutineTimeline({ profile, onNavigate }: DailyRoutineTimelineProps) {
   const haptics = useHaptics();
   const queryClient = useQueryClient();
 

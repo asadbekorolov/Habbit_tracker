@@ -19,10 +19,9 @@ import { HabitIcon } from "../../components/HabitIcon";
 import { getHabitCategory, getCategoryTheme } from "../../utils/categoryTheme";
 import { useScrollLock } from "../../hooks/useScrollLock";
 import { useHaptics } from "../../hooks/useHaptics";
+import { useProfile } from "../../store/UserContext";
 
 interface HealthPageProps {
-  isDark: boolean;
-  profile: Profile;
 }
 
 type Metric = "steps" | "water_glasses" | "screen_time_hours" | "sleep_hours" | "calories" | "heart_rate";
@@ -34,7 +33,8 @@ const getCustomDayIndex = (date: Date) => {
   return jsDay === 6 ? 0 : jsDay + 1;
 };
 
-export function HealthPage({ isDark, profile }: HealthPageProps) {
+export function HealthPage({}: HealthPageProps) {
+  const profile = useProfile();
   const { t, lang } = useLang();
   const haptics = useHaptics();
   const today = toDateStr();

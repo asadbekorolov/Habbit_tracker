@@ -49,14 +49,13 @@ function getWeekDays(dateStr: string): Date[] {
 }
 
 interface HabitsLogProps {
-  isDark: boolean;
   profile: Profile;
   onCompletedChange: (completed: number, total: number) => void;
   onScoreChange?: (delta: number) => void;
   onStreakMilestone?: (name: string, emoji: string, days: number) => void;
 }
 
-export function HabitsLog({ isDark, profile, onCompletedChange, onScoreChange, onStreakMilestone }: HabitsLogProps) {
+export function HabitsLog({ profile, onCompletedChange, onScoreChange, onStreakMilestone }: HabitsLogProps) {
   const { t } = useLang();
   const navigate = useNavigate();
   const [positiveHabits, setPositiveHabits] = useState<Habit[]>([]);
@@ -457,15 +456,15 @@ export function HabitsLog({ isDark, profile, onCompletedChange, onScoreChange, o
   const weekDays = getWeekDays(selectedDate);
 
   const card = {
-    background: isDark ? "rgba(22,27,34,0.95)" : "#fff",
-    border: `1px solid ${isDark ? "rgba(255,255,255,0.08)" : "rgba(0,0,0,0.08)"}`,
+    background: "rgba(22,27,34,0.95)",
+    border: `1px solid rgba(255,255,255,0.08)`,
     borderRadius: 20,
-    boxShadow: isDark ? "0 4px 20px rgba(0,0,0,0.2)" : "0 4px 12px rgba(0,0,0,0.03)",
+    boxShadow: "0 4px 20px rgba(0,0,0,0.2)",
   };
 
   const inputStyle: React.CSSProperties = {
-    background: isDark ? "rgba(255,255,255,0.05)" : "#F9FAFB",
-    border: `1px solid ${isDark ? "rgba(255,255,255,0.1)" : "rgba(0,0,0,0.1)"}`,
+    background: "rgba(255,255,255,0.05)",
+    border: `1px solid rgba(255,255,255,0.1)`,
     color: "var(--foreground)",
     borderRadius: 8,
     padding: "9px 12px",
@@ -482,7 +481,7 @@ export function HabitsLog({ isDark, profile, onCompletedChange, onScoreChange, o
     <div className="flex flex-col gap-4 pb-28">
 
       {/* ─── Journal Header ─── */}
-      <div style={{ ...card, background: isDark ? "rgba(22,27,34,0.95)" : "#fff", boxShadow: isDark ? "0 4px 20px rgba(0,0,0,0.2)" : "0 4px 12px rgba(0,0,0,0.03)" }}>
+      <div style={{ ...card, background: "rgba(22,27,34,0.95)", boxShadow: "0 4px 20px rgba(0,0,0,0.2)" }}>
         <div className="flex items-center justify-between mb-4">
           <span className="text-xs font-black uppercase tracking-widest text-slate-500">
             {UZ_MONTHS[selDateObj.getMonth()]} {selDateObj.getFullYear()}
@@ -949,12 +948,11 @@ export function HabitsLog({ isDark, profile, onCompletedChange, onScoreChange, o
       )}
 
       {/* ─── Numeric Metrics ─── */}
-      <NumericMetrics isDark={isDark} inputStyle={inputStyle} profile={profile} logDate={selectedDate} locked={dateLocked} />
+      <NumericMetrics inputStyle={inputStyle} profile={profile} logDate={selectedDate} locked={dateLocked} />
 
       <AnimatePresence>
         {activeLogHabit && (
           <QuickLogModal
-            isDark={isDark}
             habit={activeLogHabit}
             initialValue={logValues[activeLogHabit.id] || 0}
             onSave={async (val) => handleValueChange(activeLogHabit, val)}
@@ -966,8 +964,7 @@ export function HabitsLog({ isDark, profile, onCompletedChange, onScoreChange, o
   );
 }
 
-function NumericMetrics({ isDark, inputStyle, profile, logDate, locked }: {
-  isDark: boolean; inputStyle: React.CSSProperties; profile: Profile; logDate: string; locked: boolean;
+function NumericMetrics({ inputStyle, profile, logDate, locked }: { inputStyle: React.CSSProperties; profile: Profile; logDate: string; locked: boolean;
 }) {
   const { t } = useLang();
   const [natureTime, setNatureTime] = useState(0);

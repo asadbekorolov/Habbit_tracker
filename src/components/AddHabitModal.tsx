@@ -37,12 +37,11 @@ interface AddHabitModalProps {
   isOpen: boolean;
   onClose: () => void;
   onAdd: (habit: any) => Promise<void>;
-  isDark: boolean;
   initialData?: any;
 }
 
 export const AddHabitModal: React.FC<AddHabitModalProps> = ({
-  isOpen, onClose, onAdd, isDark, initialData
+  isOpen, onClose, onAdd, initialData
 }) => {
   const { t } = useLang();
   useScrollLock(isOpen);
@@ -162,7 +161,7 @@ export const AddHabitModal: React.FC<AddHabitModalProps> = ({
                     className="flex-1 py-3 rounded-xl text-xs font-bold uppercase tracking-widest transition-all"
                     style={{
                       background: newType === typ ? (typ === "positive" ? "rgba(16, 185, 129, 0.2)" : "rgba(244, 63, 94, 0.2)") : "transparent",
-                      color: newType === typ ? (typ === "positive" ? (isDark ? "#10B981" : "#059669") : (isDark ? "#F43F5E" : "#DC2626")) : (isDark ? "rgba(255,255,255,0.4)" : "#64748B"),
+                      color: newType === typ ? (typ === "positive" ? ("#10B981") : ("#F43F5E")) : ("rgba(255,255,255,0.4)"),
                     }}
                   >
                     {typ === "positive" ? t('habits_positive_tab') : t('habits_negative_tab')}
@@ -374,7 +373,6 @@ export const AddHabitModal: React.FC<AddHabitModalProps> = ({
           if (timePickerTarget === 'reminder') setNewReminderTime(timeStr);
         }}
         onClose={() => setTimePickerTarget(null)}
-        isDark={isDark}
       />
     </AnimatePresence>
   );

@@ -39,8 +39,6 @@ export function getFrameStyle(frameId: string | null | undefined): { border: str
 export const USERNAME_GLOW_ID = "username_glow";
 export const USERNAME_GLOW_PRICE = 40;
 
-export function getUsernameGlowStyle(isDark: boolean): { textShadow: string } {
-  return isDark
-    ? { textShadow: "0 0 6px #4ADE80, 0 0 14px rgba(74,222,128,0.65), 0 0 22px rgba(74,222,128,0.35)" }
-    : { textShadow: "0 0 3px rgba(22,163,74,0.55), 0 0 8px rgba(22,163,74,0.35)" };
+export function getUsernameGlowStyle(): { textShadow: string } {
+  return { textShadow: "0 0 6px #4ADE80, 0 0 14px rgba(74,222,128,0.65), 0 0 22px rgba(74,222,128,0.35)" };
 }

@@ -6,6 +6,7 @@ import { getLast30DaysLogs, getProfileById, getAchievements, type Achievement } 
 import type { Profile } from "../../services/supabase";
 import { getLevel } from "../../utils/levels";
 import { School21BadgesModal, computeTieredBadges } from "../../components/School21BadgesModal";
+import { useProfile } from "../../store/UserContext";
 
 // check_and_unlock_achievements (013_achievements_i18n_keys.sql) barqaror
 // achievement_key qaytaradi — matn (sarlavha/tavsif) butunlay client i18n
@@ -21,11 +22,10 @@ const SERVER_BADGE_META: Record<string, { icon: typeof Flame; color: string }> =
 const SERVER_ACHIEVEMENT_KEYS = ["iron_will", "early_bird", "negative_killer"] as const;
 
 interface AchievementsProps {
-  isDark: boolean;
-  profile: Profile;
 }
 
-export function Achievements({ isDark, profile }: AchievementsProps) {
+export function Achievements({}: AchievementsProps) {
+  const profile = useProfile();
   const { t } = useLang();
   const [logs, setLogs] = useState<any[]>([]);
   const [freshScore, setFreshScore] = useState<number | null>(null);
@@ -111,7 +111,7 @@ export function Achievements({ isDark, profile }: AchievementsProps) {
         <button
           onClick={() => setShowSchool21Modal(true)}
           className="text-xs px-3.5 py-1.5 rounded-full font-bold flex items-center gap-1.5 transition-all hover:scale-105 active:scale-95 shadow-sm"
-          style={{ background: isDark ? "rgba(74,222,128,0.15)" : "#DCFCE7", color: "var(--neon-green)", fontFamily: "'Geist Mono', monospace" }}
+          style={{ background: "rgba(74,222,128,0.15)", color: "var(--neon-green)", fontFamily: "'Geist Mono', monospace" }}
         >
           <Award size={14} /> Nishonlar ({unlockedTieredCount}/{tieredBadges.length})
         </button>
@@ -121,7 +121,7 @@ export function Achievements({ isDark, profile }: AchievementsProps) {
       <div
         className="p-5 rounded-2xl mb-6"
         style={{
-          background: isDark ? "rgba(22,27,34,0.85)" : "var(--card)",
+          background: "rgba(22,27,34,0.85)",
           border: `1px solid ${lv.color}33`,
           boxShadow: `0 0 24px ${lv.color}12`,
         }}
@@ -180,7 +180,7 @@ export function Achievements({ isDark, profile }: AchievementsProps) {
                 {score} / {lv.next}
               </span>
             </div>
-            <div className="w-full h-2.5 rounded-full overflow-hidden" style={{ background: isDark ? "rgba(255,255,255,0.07)" : "rgba(0,0,0,0.07)" }}>
+            <div className="w-full h-2.5 rounded-full overflow-hidden" style={{ background: "rgba(255,255,255,0.07)" }}>
               <div
                 className="h-full rounded-full transition-all duration-700"
                 style={{ width: `${lv.progress}%`, background: lv.color, boxShadow: `0 0 8px ${lv.color}66` }}
@@ -201,9 +201,9 @@ export function Achievements({ isDark, profile }: AchievementsProps) {
         {BADGES.map(badge => {
           const Icon = badge.icon;
           return (
-            <div key={badge.id} className={`p-5 rounded-2xl flex flex-col items-center text-center transition-all ${badge.unlocked ? 'opacity-100' : 'opacity-40 grayscale hover:grayscale-0'}`} style={{ background: isDark ? "rgba(22,27,34,0.85)" : "var(--card)", border: `1px solid ${isDark ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.07)"}` }}>
-              <div className="w-14 h-14 rounded-full flex items-center justify-center mb-3 transition-colors" style={{ background: badge.unlocked ? `${badge.color}25` : (isDark ? '#30363D' : '#F3F4F6'), border: `2px solid ${badge.unlocked ? badge.color : 'transparent'}` }}>
-                <Icon size={24} style={{ color: badge.unlocked ? badge.color : (isDark ? '#8B949E' : '#9CA3AF') }} />
+            <div key={badge.id} className={`p-5 rounded-2xl flex flex-col items-center text-center transition-all ${badge.unlocked ? 'opacity-100' : 'opacity-40 grayscale hover:grayscale-0'}`} style={{ background: "rgba(22,27,34,0.85)", border: `1px solid rgba(255,255,255,0.06)` }}>
+              <div className="w-14 h-14 rounded-full flex items-center justify-center mb-3 transition-colors" style={{ background: badge.unlocked ? `${badge.color}25` : ('#30363D'), border: `2px solid ${badge.unlocked ? badge.color : 'transparent'}` }}>
+                <Icon size={24} style={{ color: badge.unlocked ? badge.color : ('#8B949E') }} />
               </div>
               <h3 className="text-sm font-bold mb-1 leading-tight" style={{ color: "var(--foreground)" }}>{badge.title}</h3>
               <p className="text-[10px] leading-tight mt-1" style={{ color: "var(--muted-foreground)" }}>{badge.desc}</p>
@@ -229,9 +229,9 @@ export function Achievements({ isDark, profile }: AchievementsProps) {
             const title = t(`ach_${key}_title` as any);
             const desc = t(`ach_${key}_desc` as any);
             return (
-              <div key={key} className={`p-5 rounded-2xl flex flex-col items-center text-center transition-all ${unlocked ? 'opacity-100' : 'opacity-40 grayscale hover:grayscale-0'}`} style={{ background: isDark ? "rgba(22,27,34,0.85)" : "var(--card)", border: `1px solid ${isDark ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.07)"}` }}>
-                <div className="w-14 h-14 rounded-full flex items-center justify-center mb-3 transition-colors" style={{ background: unlocked ? `${meta.color}25` : (isDark ? '#30363D' : '#F3F4F6'), border: `2px solid ${unlocked ? meta.color : 'transparent'}` }}>
-                  <Icon size={24} style={{ color: unlocked ? meta.color : (isDark ? '#8B949E' : '#9CA3AF') }} />
+              <div key={key} className={`p-5 rounded-2xl flex flex-col items-center text-center transition-all ${unlocked ? 'opacity-100' : 'opacity-40 grayscale hover:grayscale-0'}`} style={{ background: "rgba(22,27,34,0.85)", border: `1px solid rgba(255,255,255,0.06)` }}>
+                <div className="w-14 h-14 rounded-full flex items-center justify-center mb-3 transition-colors" style={{ background: unlocked ? `${meta.color}25` : ('#30363D'), border: `2px solid ${unlocked ? meta.color : 'transparent'}` }}>
+                  <Icon size={24} style={{ color: unlocked ? meta.color : ('#8B949E') }} />
                 </div>
                 <h3 className="text-sm font-bold mb-1 leading-tight" style={{ color: "var(--foreground)" }}>{title}</h3>
                 <p className="text-[10px] leading-tight mt-1" style={{ color: "var(--muted-foreground)" }}>{desc}</p>
@@ -245,7 +245,6 @@ export function Achievements({ isDark, profile }: AchievementsProps) {
       <School21BadgesModal
         isOpen={showSchool21Modal}
         onClose={() => setShowSchool21Modal(false)}
-        isDark={isDark}
         profile={profile}
         stats={statsForBadges}
       />

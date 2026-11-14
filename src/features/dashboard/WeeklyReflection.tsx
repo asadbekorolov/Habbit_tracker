@@ -7,7 +7,6 @@ import { useLang } from "../../store/LangContext";
 import { MONTHS_SHORT, DAYS_FULL, type Lang } from "../../utils/i18n";
 
 interface WeeklyReflectionProps {
-  isDark: boolean;
   profile: Profile;
 }
 
@@ -32,7 +31,7 @@ function formatWeekRange(weekStart: string, lang: Lang): string {
   return `${start.getDate()} ${MONTHS_SHORT[lang][start.getMonth()]} — ${end.getDate()} ${MONTHS_SHORT[lang][end.getMonth()]} ${end.getFullYear()}`;
 }
 
-export function WeeklyReflection({ isDark, profile }: WeeklyReflectionProps) {
+export function WeeklyReflection({ profile }: WeeklyReflectionProps) {
   const { t, lang } = useLang();
   const todayWeekStart = getWeekStart();
   const [weekStart, setWeekStart] = useState(todayWeekStart);
@@ -103,14 +102,14 @@ export function WeeklyReflection({ isDark, profile }: WeeklyReflectionProps) {
   }
 
   const card: React.CSSProperties = {
-    background: isDark ? "rgba(22,27,34,0.85)" : "var(--card)",
-    border: `1px solid ${isDark ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.07)"}`,
+    background: "rgba(22,27,34,0.85)",
+    border: `1px solid rgba(255,255,255,0.06)`,
     borderRadius: 14,
   };
 
   const textarea: React.CSSProperties = {
-    background: isDark ? "rgba(255,255,255,0.04)" : "#F9FAFB",
-    border: `1px solid ${isDark ? "rgba(255,255,255,0.07)" : "rgba(0,0,0,0.08)"}`,
+    background: "rgba(255,255,255,0.04)",
+    border: `1px solid rgba(255,255,255,0.07)`,
     color: "var(--foreground)",
     borderRadius: 12,
     padding: "12px 14px",
@@ -131,7 +130,7 @@ export function WeeklyReflection({ isDark, profile }: WeeklyReflectionProps) {
           <button
             onClick={prevWeek}
             className="p-1.5 rounded-lg"
-            style={{ background: isDark ? "rgba(255,255,255,0.06)" : "#F3F4F6" }}
+            style={{ background: "rgba(255,255,255,0.06)" }}
           >
             <ChevronLeft size={16} style={{ color: "var(--foreground)" }} />
           </button>
@@ -150,14 +149,14 @@ export function WeeklyReflection({ isDark, profile }: WeeklyReflectionProps) {
             onClick={nextWeek}
             disabled={isCurrentWeek}
             className="p-1.5 rounded-lg"
-            style={{ background: isDark ? "rgba(255,255,255,0.06)" : "#F3F4F6", opacity: isCurrentWeek ? 0.3 : 1 }}
+            style={{ background: "rgba(255,255,255,0.06)", opacity: isCurrentWeek ? 0.3 : 1 }}
           >
             <ChevronRight size={16} style={{ color: "var(--foreground)" }} />
           </button>
         </div>
 
         {isReadOnly && !loading && (
-          <p className="text-[11px] mt-3 pt-3 text-center flex items-center justify-center gap-1.5" style={{ color: "var(--muted-foreground)", borderTop: `1px solid ${isDark ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.06)"}` }}>
+          <p className="text-[11px] mt-3 pt-3 text-center flex items-center justify-center gap-1.5" style={{ color: "var(--muted-foreground)", borderTop: `1px solid rgba(255,255,255,0.06)` }}>
             <Lock size={12} /> {isPastWeek ? t('reflect_readonly_hint') : t('reflect_time_locked_hint')}
           </p>
         )}
@@ -176,7 +175,7 @@ export function WeeklyReflection({ isDark, profile }: WeeklyReflectionProps) {
                 key={i}
                 className="flex-1 flex flex-col items-center gap-0.5 py-1.5 rounded-lg"
                 style={{
-                  background: isToday ? "#4ADE80" : isDark ? "rgba(255,255,255,0.03)" : "#F3F4F6",
+                  background: isToday ? "#4ADE80" : "rgba(255,255,255,0.03)",
                   opacity: isPast ? 1 : 0.35,
                   minWidth: 36,
                 }}
@@ -197,7 +196,7 @@ export function WeeklyReflection({ isDark, profile }: WeeklyReflectionProps) {
       <div style={card} className="p-4">
         <div className="flex items-center gap-2 mb-3">
           <div className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0"
-            style={{ background: isDark ? "rgba(74,222,128,0.15)" : "#DCFCE7" }}>
+            style={{ background: "rgba(74,222,128,0.15)" }}>
             <Sparkles size={14} style={{ color: "#4ADE80" }} />
           </div>
           <div>
@@ -233,7 +232,7 @@ export function WeeklyReflection({ isDark, profile }: WeeklyReflectionProps) {
       <div style={card} className="p-4">
         <div className="flex items-center gap-2 mb-3">
           <div className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0"
-            style={{ background: isDark ? "rgba(96,165,250,0.15)" : "#EFF6FF" }}>
+            style={{ background: "rgba(96,165,250,0.15)" }}>
             <TrendingUp size={14} style={{ color: "#60A5FA" }} />
           </div>
           <div>
@@ -272,8 +271,8 @@ export function WeeklyReflection({ isDark, profile }: WeeklyReflectionProps) {
         className="w-full flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-semibold transition-all"
         style={{
           background: isReadOnly
-            ? isDark ? "rgba(255,255,255,0.06)" : "#F3F4F6"
-            : saved ? (isDark ? "rgba(74,222,128,0.15)" : "#DCFCE7") : "#4ADE80",
+            ? "rgba(255,255,255,0.06)"
+            : saved ? ("rgba(74,222,128,0.15)") : "#4ADE80",
           color: isReadOnly ? "var(--muted-foreground)" : saved ? "#4ADE80" : "#0a0a0a",
           border: !isReadOnly && saved ? "1px solid rgba(74,222,128,0.4)" : "none",
           opacity: saving ? 0.7 : 1,

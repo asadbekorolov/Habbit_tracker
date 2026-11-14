@@ -18,11 +18,10 @@ const MOOD_MAP: Record<number, string> = {
 };
 
 interface MonthGridProps {
-  isDark: boolean;
   profile: Profile;
 }
 
-export function MonthGrid({ isDark, profile }: MonthGridProps) {
+export function MonthGrid({ profile }: MonthGridProps) {
   const { t, lang } = useLang();
   const haptics = useHaptics();
 

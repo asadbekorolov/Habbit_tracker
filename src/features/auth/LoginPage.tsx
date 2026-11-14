@@ -65,13 +65,12 @@ const InputField = ({
 );
 
 interface LoginPageProps {
-  isDark: boolean;
   onLogin: (profile: Profile) => void;
 }
 
 type Tab = "login" | "register" | "forgot" | "verify-email" | "complete-google";
 
-export function LoginPage({ isDark, onLogin }: LoginPageProps) {
+export function LoginPage({ onLogin }: LoginPageProps) {
   const { t } = useLang();
   const [tab, setTab] = useState<Tab>("login");
 

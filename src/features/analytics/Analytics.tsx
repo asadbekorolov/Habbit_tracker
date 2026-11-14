@@ -15,7 +15,7 @@ import { useHabitsMetaQuery, useLogsRangeQuery, useHealthRangeQuery, useMonthNot
 import { supabase } from "../../services/supabase";
 import { requestClaudeHabitAnalysis } from "../../services/aiService";
 import { getLevel } from "../../utils/levels";
-import { useUser } from "../../store/UserContext";
+import { useUser, useProfile } from "../../store/UserContext";
 import { tashkentTodayAnchor, toDateStr, addDays, getTashkentToday } from "../../utils/date";
 import type { Profile } from "../../services/supabase";
 import { useLang } from "../../store/LangContext";
@@ -24,21 +24,19 @@ import { MiniPipAvatar } from "../../components/MiniPipAvatar";
 import { GlobalLeaderboardPage } from "../leaderboard/GlobalLeaderboardPage";
 
 interface AnalyticsProps {
-  isDark: boolean;
   completedToday: number;
   totalHabits: number;
-  profile: Profile;
   onUserClick?: (userId: string) => void;
   onProfileUpdate?: (p: Profile) => void;
 }
 
 const uzMonths = ["Yan","Fev","Mar","Apr","May","Iyn","Iyl","Avg","Sen","Okt","Noy","Dek"];
 
-export function Analytics({ isDark, completedToday, totalHabits, profile: propsProfile, onUserClick, onProfileUpdate }: AnalyticsProps) {
+export function Analytics({ completedToday, totalHabits, onUserClick, onProfileUpdate }: AnalyticsProps) {
   const { t, lang } = useLang();
   const navigate = useNavigate();
-  const { profile: contextProfile, updateCoins, refreshUserProfile } = useUser();
-  const profile = contextProfile || propsProfile;
+  const { updateCoins, refreshUserProfile } = useUser();
+  const profile = useProfile();
 
   const [downloadingPoster, setDownloadingPoster] = useState(false);
   const posterRef = useRef<HTMLDivElement | null>(null);
@@ -565,14 +563,14 @@ ${habitDataSummary}
   }, [byDate, totalHabits]);
 
   const card = {
-    background: isDark ? "rgba(22,27,34,0.85)" : "var(--card)",
-    border: `1px solid ${isDark ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.07)"}`,
+    background: "rgba(22,27,34,0.85)",
+    border: `1px solid rgba(255,255,255,0.06)`,
     borderRadius: 12,
     padding: 20,
   };
 
   const getHeatColor = (score: number) => {
-    if (score === 0) return isDark ? "#1f2937" : "#e5e7eb"; // gray-800 or gray-200
+    if (score === 0) return "#1f2937"; // gray-800 or gray-200
     if (score === 1) return "#064e3b"; // emerald-950
     if (score === 2) return "#065f46"; // emerald-800
     if (score === 3) return "#059669"; // emerald-600
@@ -779,7 +777,7 @@ ${habitDataSummary}
       )}
 
       {viewMode === 'leaderboard' ? (
-        <GlobalLeaderboardPage isDark={isDark} profile={profile} onUserClick={onUserClick} />
+        <GlobalLeaderboardPage onUserClick={onUserClick} />
       ) : (
         <>
           {/* Time Filter Pills */}
@@ -962,7 +960,7 @@ ${habitDataSummary}
       <div id="analytics-content" className="flex flex-col gap-5 p-1 -m-1 rounded-xl" style={{ background: "transparent" }}>
 
       {/* KPI Grid */}
-      <div style={{ ...card, background: isDark ? "rgba(22,27,34,0.85)" : "#fff" }}>
+      <div style={{ ...card, background: "rgba(22,27,34,0.85)" }}>
         <div className="flex items-center gap-2 mb-4">
           <div className="p-2 rounded-xl bg-emerald-400/10">
             <BarChart3 size={16} className="text-emerald-500 dark:text-emerald-400" />
@@ -977,8 +975,8 @@ ${habitDataSummary}
               key={kpi.label}
               className="rounded-2xl p-3.5 flex flex-col justify-between overflow-hidden min-w-0"
               style={{
-                background: isDark ? "rgba(255,255,255,0.03)" : "#F9FAFB",
-                border: `1px solid ${isDark ? "rgba(255,255,255,0.05)" : "rgba(0,0,0,0.05)"}`,
+                background: "rgba(255,255,255,0.03)",
+                border: `1px solid rgba(255,255,255,0.05)`,
               }}
             >
               <div className="min-w-0">
@@ -1008,7 +1006,7 @@ ${habitDataSummary}
       </div>
 
       {/* Weekly completion chart */}
-      <div style={{ ...card, background: isDark ? "rgba(22,27,34,0.85)" : "#fff" }}>
+      <div style={{ ...card, background: "rgba(22,27,34,0.85)" }}>
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-3">
             <div className="p-2 rounded-xl bg-cyan-400/10">
@@ -1026,8 +1024,8 @@ ${habitDataSummary}
           <span
             className="text-xs px-2.5 py-1 rounded-full font-medium"
             style={{
-              background: isDark ? "rgba(74,222,128,0.12)" : "#DCFCE7",
-              color: isDark ? "var(--neon-green)" : "#16A34A",
+              background: "rgba(74,222,128,0.12)",
+              color: "var(--neon-green)",
               fontFamily: "'Geist Mono', monospace",
             }}
           >
@@ -1062,8 +1060,8 @@ ${habitDataSummary}
                         background: d.isToday
                           ? "#4ADE80"
                           : d.pct > 0
-                          ? isDark ? "rgba(74,222,128,0.35)" : "rgba(74,222,128,0.5)"
-                          : isDark ? "rgba(255,255,255,0.05)" : "rgba(0,0,0,0.06)",
+                          ? "rgba(74,222,128,0.35)"
+                          : "rgba(255,255,255,0.05)",
                         boxShadow: d.isToday ? "0 0 10px rgba(74,222,128,0.4)" : "none",
                       }}
                     />
@@ -1093,7 +1091,7 @@ ${habitDataSummary}
 
       {/* Weekly Comparison */}
       {totalHabits > 0 && (
-        <div style={{ ...card, background: isDark ? "rgba(22,27,34,0.85)" : "#fff" }}>
+        <div style={{ ...card, background: "rgba(22,27,34,0.85)" }}>
           <div className="flex items-center justify-between mb-4">
             <div>
               <h3 className="font-semibold text-sm text-slate-900 dark:text-white">
@@ -1110,7 +1108,7 @@ ${habitDataSummary}
                   ? "rgba(74,222,128,0.12)"
                   : weeklyComparison.diff < 0
                   ? "rgba(248,113,113,0.12)"
-                  : isDark ? "rgba(255,255,255,0.06)" : "#F3F4F6",
+                  : "rgba(255,255,255,0.06)",
                 color: weeklyComparison.diff > 0 ? "#16A34A" : weeklyComparison.diff < 0 ? "#DC2626" : "#64748B",
                 fontFamily: "'Geist Mono', monospace",
               }}
@@ -1124,7 +1122,7 @@ ${habitDataSummary}
             <div
               className="p-4 rounded-xl"
               style={{
-                background: isDark ? "rgba(74,222,128,0.06)" : "#F0FDF4",
+                background: "rgba(74,222,128,0.06)",
                 border: "1px solid rgba(74,222,128,0.18)",
               }}
             >
@@ -1141,8 +1139,8 @@ ${habitDataSummary}
             <div
               className="p-4 rounded-xl"
               style={{
-                background: isDark ? "rgba(255,255,255,0.03)" : "#F9FAFB",
-                border: `1px solid ${isDark ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.07)"}`,
+                background: "rgba(255,255,255,0.03)",
+                border: `1px solid rgba(255,255,255,0.06)`,
               }}
             >
               <p className="text-[11px] font-semibold mb-1" style={{ color: "var(--muted-foreground)" }}>{t('analytics_prev_7')}</p>
@@ -1167,7 +1165,7 @@ ${habitDataSummary}
                     <div className="flex-1 rounded-t-sm transition-all duration-500"
                       style={{
                         height: `${Math.max((prevPct / maxPct) * 100, prevPct > 0 ? 6 : 0)}%`,
-                        background: isDark ? "rgba(255,255,255,0.12)" : "rgba(0,0,0,0.1)",
+                        background: "rgba(255,255,255,0.12)",
                       }}
                     />
                     <div className="flex-1 rounded-t-sm transition-all duration-500"
@@ -1182,7 +1180,7 @@ ${habitDataSummary}
             </div>
             <div className="flex items-center gap-3 mt-3">
               <div className="flex items-center gap-1.5">
-                <div className="w-2.5 h-2.5 rounded-sm" style={{ background: isDark ? "rgba(255,255,255,0.12)" : "rgba(0,0,0,0.1)" }} />
+                <div className="w-2.5 h-2.5 rounded-sm" style={{ background: "rgba(255,255,255,0.12)" }} />
                 <span className="text-[10px]" style={{ color: "var(--muted-foreground)" }}>{t('analytics_prev_week')}</span>
               </div>
               <div className="flex items-center gap-1.5">
@@ -1196,7 +1194,7 @@ ${habitDataSummary}
 
       {/* AI Advice Card */}
       <div id="ai-tahlil-card" className="rounded-2xl p-5 mb-5 relative overflow-hidden group border border-amber-500/20"
-           style={{ background: isDark ? "linear-gradient(135deg, rgba(251, 191, 36, 0.1) 0%, rgba(245, 158, 11, 0.05) 100%)" : "#fffbeb" }}>
+           style={{ background: "linear-gradient(135deg, rgba(251, 191, 36, 0.1) 0%, rgba(245, 158, 11, 0.05) 100%)" }}>
         <div className="absolute top-0 right-0 w-32 h-32 bg-amber-500/10 blur-3xl pointer-events-none" />
         <div className="flex items-start gap-4 relative z-10">
           <div className="w-12 h-12 rounded-2xl flex items-center justify-center bg-amber-500/20 shrink-0">
@@ -1218,7 +1216,7 @@ ${habitDataSummary}
       </div>
 
       {/* Heatmap */}
-      <div style={{ ...card, background: isDark ? "rgba(22,27,34,0.85)" : "#fff" }}>
+      <div style={{ ...card, background: "rgba(22,27,34,0.85)" }}>
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-3">
             <div className="p-2 rounded-xl bg-slate-400/10">
@@ -1274,7 +1272,7 @@ ${habitDataSummary}
 
       {/* 30 kunlik tendensiya chizig'i */}
       {totalHabits > 0 && (
-        <div style={{ ...card, background: isDark ? "rgba(22,27,34,0.85)" : "#fff" }}>
+        <div style={{ ...card, background: "rgba(22,27,34,0.85)" }}>
           <div className="mb-1">
             <h3 className="font-semibold text-sm text-slate-900 dark:text-white">
               {t('analytics_trend')}
@@ -1296,10 +1294,10 @@ ${habitDataSummary}
           <div style={{ height: 180, marginLeft: -12 }}>
             <ResponsiveContainer width="100%" height="100%">
               <ComposedChart data={trendData} margin={{ top: 8, right: 12, left: 0, bottom: 0 }}>
-                <CartesianGrid vertical={false} stroke={isDark ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.06)"} />
+                <CartesianGrid vertical={false} stroke={"rgba(255,255,255,0.06)"} />
                 <XAxis
                   dataKey="label"
-                  tick={{ fontSize: 9, fill: isDark ? "#8B949E" : "#6B7280" }}
+                  tick={{ fontSize: 9, fill: "#8B949E" }}
                   interval={4}
                   axisLine={false}
                   tickLine={false}
@@ -1307,19 +1305,19 @@ ${habitDataSummary}
                 <YAxis
                   domain={[0, 100]}
                   ticks={[0, 50, 100]}
-                  tick={{ fontSize: 9, fill: isDark ? "#8B949E" : "#6B7280" }}
+                  tick={{ fontSize: 9, fill: "#8B949E" }}
                   axisLine={false}
                   tickLine={false}
                   width={28}
                 />
                 <Tooltip
                   contentStyle={{
-                    background: isDark ? "#161B22" : "#ffffff",
-                    border: `1px solid ${isDark ? "rgba(255,255,255,0.1)" : "rgba(0,0,0,0.1)"}`,
+                    background: "#161B22",
+                    border: `1px solid rgba(255,255,255,0.1)`,
                     borderRadius: 10,
                     fontSize: 11,
                   }}
-                  labelStyle={{ color: isDark ? "#8B949E" : "#6B7280" }}
+                  labelStyle={{ color: "#8B949E" }}
                   formatter={(value: number, name: string) => [`${value}%`, name === "pct" ? t('analytics_trend_daily') : t('analytics_trend_avg7')]}
                 />
                 <Area type="monotone" dataKey="pct" stroke="#4ADE80" strokeWidth={2} fill="#4ADE80" fillOpacity={0.12} />
@@ -1331,7 +1329,7 @@ ${habitDataSummary}
       )}
 
       {/* Category Balance */}
-      <div style={{ ...card, background: isDark ? "rgba(22,27,34,0.85)" : "#fff" }}>
+      <div style={{ ...card, background: "rgba(22,27,34,0.85)" }}>
         <div className="flex items-center gap-2 mb-4">
           <div className="p-2 rounded-xl bg-purple-400/10">
             <Sparkles size={16} className="text-purple-600 dark:text-purple-400" />
@@ -1365,7 +1363,7 @@ ${habitDataSummary}
 
       {/* Per-habit breakdown */}
       {habitStats.length > 0 && (
-        <div style={{ ...card, background: isDark ? "rgba(22,27,34,0.85)" : "#fff" }}>
+        <div style={{ ...card, background: "rgba(22,27,34,0.85)" }}>
           <div className="mb-6 flex items-center justify-between">
             <div>
               <h3 className="font-semibold text-sm text-slate-900 dark:text-white">
@@ -1455,7 +1453,7 @@ ${habitDataSummary}
                   </div>
                   <div
                     className="w-full h-1.5 rounded-full overflow-hidden"
-                    style={{ background: isDark ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.07)" }}
+                    style={{ background: "rgba(255,255,255,0.06)" }}
                   >
                     <div
                       className="h-full rounded-full transition-all duration-700"
@@ -1468,7 +1466,7 @@ ${habitDataSummary}
           </div>
 
           {/* Legend */}
-          <div className="flex items-center gap-x-4 gap-y-2 mt-4 pt-3 border-t flex-wrap" style={{ borderColor: isDark ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.06)" }}>
+          <div className="flex items-center gap-x-4 gap-y-2 mt-4 pt-3 border-t flex-wrap" style={{ borderColor: "rgba(255,255,255,0.06)" }}>
             {[
               { color: "#16A34A", label: t('analytics_strong') },
               { color: "#D97706", label: t('analytics_mid') },
@@ -1489,12 +1487,12 @@ ${habitDataSummary}
         id="ai-tahlil-card-detail"
         className="rounded-2xl overflow-hidden transition-all duration-500"
         style={{
-          background: isDark ? "rgba(22,27,34,0.9)" : "#fff",
-          border: coachLoading ? "1px solid rgba(251,191,36,0.5)" : `1px solid ${isDark ? "rgba(255,255,255,0.07)" : "rgba(0,0,0,0.07)"}`,
+          background: "rgba(22,27,34,0.9)",
+          border: coachLoading ? "1px solid rgba(251,191,36,0.5)" : `1px solid rgba(255,255,255,0.07)`,
           boxShadow: coachLoading ? "0 0 30px rgba(251,191,36,0.15)" : "none"
         }}
       >
-        <div className="flex items-center gap-2.5 px-4 pt-4 pb-3" style={{ borderBottom: `1px solid ${isDark ? "rgba(255,255,255,0.05)" : "rgba(0,0,0,0.05)"}` }}>
+        <div className="flex items-center gap-2.5 px-4 pt-4 pb-3" style={{ borderBottom: `1px solid rgba(255,255,255,0.05)` }}>
           <div className="w-8 h-8 rounded-xl flex items-center justify-center" style={{ background: "rgba(167,139,250,0.15)" }}>
             <Brain size={15} style={{ color: "#A78BFA" }} />
           </div>
@@ -1508,7 +1506,7 @@ ${habitDataSummary}
           <div
             className={`p-4 rounded-2xl relative transition-all duration-500 ${coachLoading ? 'animate-pulse' : ''}`}
             style={{
-              background: isDark ? "rgba(167,139,250,0.08)" : "rgba(167,139,250,0.06)",
+              background: "rgba(167,139,250,0.08)",
               border: coachLoading ? "1px solid rgba(251,191,36,0.4)" : "1px solid rgba(167,139,250,0.25)"
             }}
           >
@@ -1525,7 +1523,7 @@ ${habitDataSummary}
                 <p className="text-[13px] leading-relaxed" style={{ color: "var(--foreground)" }}>{coachNote}</p>
                 <div
                   className="flex items-center justify-between mt-3 pt-3"
-                  style={{ borderTop: `1px solid ${isDark ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.05)"}` }}
+                  style={{ borderTop: `1px solid rgba(255,255,255,0.06)` }}
                 >
                   <span className="text-[10px]" style={{ color: "var(--muted-foreground)", fontFamily: "'Geist Mono', monospace" }}>
                     {coachGeneratedAt ? new Date(coachGeneratedAt).toLocaleDateString() : ""}
@@ -1555,7 +1553,7 @@ ${habitDataSummary}
                   disabled={!canGenerateCoachNote || coachLoading}
                   className="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-semibold"
                   style={{
-                    background: canGenerateCoachNote ? "#A78BFA" : isDark ? "rgba(255,255,255,0.06)" : "#F3F4F6",
+                    background: canGenerateCoachNote ? "#A78BFA" : "rgba(255,255,255,0.06)",
                     color: canGenerateCoachNote ? "#0a0a0a" : "var(--muted-foreground)",
                     opacity: coachLoading ? 0.7 : 1,
                   }}

@@ -32,7 +32,6 @@ function computeBadges(totalCompleted: number, score: number, t: T): Badge[] {
 }
 
 interface PublicProfileModalProps {
-  isDark: boolean;
   viewingId: string;
   myProfile: Profile;
   onClose: () => void;
@@ -40,7 +39,7 @@ interface PublicProfileModalProps {
 
 const LEVEL_LABELS = ["", "level_1", "level_2", "level_3", "level_4", "level_5", "level_6", "level_7", "level_8", "level_9", "level_10"] as const;
 
-export function PublicProfileModal({ isDark, viewingId, myProfile, onClose }: PublicProfileModalProps) {
+export function PublicProfileModal({ viewingId, myProfile, onClose }: PublicProfileModalProps) {
   const { t } = useLang();
   useScrollLock(true);
   const [data, setData] = useState<{
@@ -140,7 +139,7 @@ export function PublicProfileModal({ isDark, viewingId, myProfile, onClose }: Pu
         {loading ? (
           <Loader2 size={28} className="animate-spin" style={{ color: "#4ADE80" }} />
         ) : (
-          <div className="flex flex-col items-center gap-3 p-6 rounded-2xl" style={{ background: isDark ? "#161B22" : "#fff" }}>
+          <div className="flex flex-col items-center gap-3 p-6 rounded-2xl" style={{ background: "#161B22" }}>
             <p className="text-sm" style={{ color: "var(--coral-red)" }}>⚠ {loadError || t('err_loading')}</p>
             <button onClick={onClose} className="text-xs underline" style={{ color: "var(--muted-foreground)" }}>
               {t('close')}
@@ -186,13 +185,11 @@ export function PublicProfileModal({ isDark, viewingId, myProfile, onClose }: Pu
         {/* Hero */}
         <div className="relative p-6 pb-4"
           style={{
-            background: isDark
-              ? `linear-gradient(135deg, ${lv.color}14 0%, rgba(14,17,23,0.98) 60%)`
-              : `linear-gradient(135deg, ${lv.color}18 0%, rgba(255,255,255,0.98) 60%)`,
+            background: `linear-gradient(135deg, ${lv.color}14 0%, rgba(14,17,23,0.98) 60%)`,
           }}>
           <button type="button" onClick={onClose} data-modal-close-trigger aria-label={t('close')}
             className="absolute top-4 right-4 w-8 h-8 rounded-full flex items-center justify-center transition-all"
-            style={{ background: isDark ? "rgba(255,255,255,0.08)" : "rgba(0,0,0,0.07)", color: "var(--muted-foreground)" }}>
+            style={{ background: "rgba(255,255,255,0.08)", color: "var(--muted-foreground)" }}>
             <X size={15} />
           </button>
 
@@ -219,7 +216,7 @@ export function PublicProfileModal({ isDark, viewingId, myProfile, onClose }: Pu
             {/* Info */}
             <div className="flex-1 min-w-0 pt-1">
               <div className="flex items-center gap-2">
-                <h2 className="text-lg font-bold leading-tight" style={{ color: "var(--foreground)", ...(profile.username_glow ? getUsernameGlowStyle(isDark) : {}) }}>
+                <h2 className="text-lg font-bold leading-tight" style={{ color: "var(--foreground)", ...(profile.username_glow ? getUsernameGlowStyle() : {}) }}>
                   {profile.display_name}
                 </h2>
                 <UserBadge active={isStarActive(profile)} size={14} />
@@ -271,7 +268,7 @@ export function PublicProfileModal({ isDark, viewingId, myProfile, onClose }: Pu
                   target="_blank"
                   rel="noreferrer"
                   className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl text-xs font-semibold transition-all hover:opacity-80"
-                  style={{ background: isDark ? "rgba(96,165,250,0.12)" : "rgba(96,165,250,0.1)", color: "#60A5FA", border: "1px solid rgba(96,165,250,0.25)", textDecoration: "none" }}
+                  style={{ background: "rgba(96,165,250,0.12)", color: "#60A5FA", border: "1px solid rgba(96,165,250,0.25)", textDecoration: "none" }}
                 >
                   <Send size={12} />
                   {t('pp_telegram_connect')}
@@ -283,7 +280,7 @@ export function PublicProfileModal({ isDark, viewingId, myProfile, onClose }: Pu
                   target="_blank"
                   rel="noreferrer"
                   className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl text-xs font-semibold"
-                  style={{ background: isDark ? "rgba(225,48,108,0.12)" : "rgba(225,48,108,0.08)", color: "#E1306C", border: "1px solid rgba(225,48,108,0.25)", textDecoration: "none" }}
+                  style={{ background: "rgba(225,48,108,0.12)", color: "#E1306C", border: "1px solid rgba(225,48,108,0.25)", textDecoration: "none" }}
                 >
                   <Instagram size={12} />
                   @{profile.instagram_username}
@@ -295,7 +292,7 @@ export function PublicProfileModal({ isDark, viewingId, myProfile, onClose }: Pu
 
         {/* Stats */}
         <div className="grid grid-cols-2 gap-2 px-5 py-3 border-t"
-          style={{ borderColor: isDark ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.06)" }}>
+          style={{ borderColor: "rgba(255,255,255,0.06)" }}>
           {[
             { icon: Star, label: t('pp_points'), value: profile.score || 0, color: "#FBBF24" },
             { icon: Flame, label: t('nav_habits'), value: habitsCount, color: "#F97316" },
@@ -316,7 +313,7 @@ export function PublicProfileModal({ isDark, viewingId, myProfile, onClose }: Pu
           if (badges.length === 0) return null;
           return (
             <div className="px-5 py-3 border-b"
-              style={{ borderColor: isDark ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.06)" }}>
+              style={{ borderColor: "rgba(255,255,255,0.06)" }}>
               <p className="text-[11px] font-semibold mb-2 uppercase" style={{ color: "var(--muted-foreground)" }}>
                 {t('ach_title')}
               </p>
@@ -340,9 +337,9 @@ export function PublicProfileModal({ isDark, viewingId, myProfile, onClose }: Pu
             <button onClick={handleFollow}
               className="w-full flex items-center justify-center gap-2 py-3 rounded-2xl text-sm font-semibold transition-all"
               style={{
-                background: isFollowing ? (isDark ? "rgba(255,255,255,0.07)" : "#F3F4F6") : "var(--neon-green)",
+                background: isFollowing ? ("rgba(255,255,255,0.07)") : "var(--neon-green)",
                 color: isFollowing ? "var(--muted-foreground)" : "#0E1117",
-                border: isFollowing ? `1px solid ${isDark ? "rgba(255,255,255,0.1)" : "rgba(0,0,0,0.1)"}` : "none",
+                border: isFollowing ? `1px solid rgba(255,255,255,0.1)` : "none",
               }}>
               {isFollowing ? <UserCheck size={16} /> : <UserPlus size={16} />}
               {isFollowing ? t('following') : t('follow')}
@@ -356,26 +353,26 @@ export function PublicProfileModal({ isDark, viewingId, myProfile, onClose }: Pu
                   <a href={`https://t.me/${profile.telegram_username}`}
                     target="_blank" rel="noreferrer"
                     className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-2xl text-sm font-medium"
-                    style={{ background: isDark ? "rgba(96,165,250,0.12)" : "rgba(96,165,250,0.1)", color: "#60A5FA", border: "1px solid rgba(96,165,250,0.25)", textDecoration: "none" }}>
+                    style={{ background: "rgba(96,165,250,0.12)", color: "#60A5FA", border: "1px solid rgba(96,165,250,0.25)", textDecoration: "none" }}>
                     <Send size={15} />
                     {t('profile_open_tg')}
                   </a>
                 ) : tgStatus === 'pending' ? (
                   <div className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-2xl text-sm font-medium"
-                    style={{ background: isDark ? "rgba(74,222,128,0.08)" : "#F0FDF4", color: "#4ADE80", border: "1px solid rgba(74,222,128,0.25)" }}>
+                    style={{ background: "rgba(74,222,128,0.08)", color: "#4ADE80", border: "1px solid rgba(74,222,128,0.25)" }}>
                     <Check size={15} />
                     {t('pp_request_sent')}
                   </div>
                 ) : tgStatus === 'cooldown' ? (
                   <div className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-2xl text-sm font-medium text-center"
-                    style={{ background: isDark ? "rgba(248,113,113,0.08)" : "#FEF2F2", color: "#F87171", border: "1px solid rgba(248,113,113,0.25)" }}>
+                    style={{ background: "rgba(248,113,113,0.08)", color: "#F87171", border: "1px solid rgba(248,113,113,0.25)" }}>
                     <Lock size={15} />
                     {formatCooldown(tgRetryAt)}
                   </div>
                 ) : (
                   <button type="button" onClick={handleTelegramRequest} disabled={tgLoading}
                     className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-2xl text-sm font-medium"
-                    style={{ background: isDark ? "rgba(96,165,250,0.12)" : "rgba(96,165,250,0.1)", color: "#60A5FA", border: "1px solid rgba(96,165,250,0.25)", opacity: tgLoading ? 0.6 : 1 }}>
+                    style={{ background: "rgba(96,165,250,0.12)", color: "#60A5FA", border: "1px solid rgba(96,165,250,0.25)", opacity: tgLoading ? 0.6 : 1 }}>
                     {tgLoading ? <Loader2 size={15} className="animate-spin" /> : <Send size={15} />}
                     {t('pp_request_btn')}
                   </button>
@@ -387,7 +384,7 @@ export function PublicProfileModal({ isDark, viewingId, myProfile, onClose }: Pu
                 <a href={`https://instagram.com/${profile.instagram_username}`}
                   target="_blank" rel="noreferrer"
                   className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-2xl text-sm font-medium"
-                  style={{ background: isDark ? "rgba(225,48,108,0.12)" : "rgba(225,48,108,0.08)", color: "#E1306C", border: "1px solid rgba(225,48,108,0.25)", textDecoration: "none" }}>
+                  style={{ background: "rgba(225,48,108,0.12)", color: "#E1306C", border: "1px solid rgba(225,48,108,0.25)", textDecoration: "none" }}>
                   <Instagram size={15} />
                   {t('profile_open_ig')}
                 </a>

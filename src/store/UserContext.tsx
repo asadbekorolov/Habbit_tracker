@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
+import type { Session } from '@supabase/supabase-js';
 import { supabase } from '../services/supabase';
 import type { Profile } from '../services/supabase';
 import { getMyProfile } from '../services/db';
@@ -11,6 +12,12 @@ interface UserContextType {
   refreshUserProfile: () => Promise<void>;
   updateCoins: (newCoins: number) => void;
   loading: boolean;
+  /** Supabase sessiyasi — yagona auth manbasi (ProtectedRoute shu yerdan o'qiydi). */
+  session: Session | null;
+  sessionLoading: boolean;
+  /** Parolni tiklash havolasi orqali kirilgan (PASSWORD_RECOVERY yoki deep link). */
+  isPasswordRecovery: boolean;
+  setPasswordRecovery: (v: boolean) => void;
 }
 
 const UserContext = createContext<UserContextType | undefined>(undefined);
@@ -124,11 +131,27 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
     return () => window.removeEventListener('habit-sync-success', onSynced);
   }, []);
 
-  useEffect(() => {
-    refreshUserProfile();
+  // ─── Yagona auth tinglovchisi ────────────────────────────────────────
+  // Ilovadagi YAGONA onAuthStateChange: sessiya, profil va parolni tiklash
+  // holati shu yerda. App va ProtectedRoute faqat kontekstdan o'qiydi.
+  const [session, setSession] = useState<Session | null>(null);
+  const [sessionLoading, setSessionLoading] = useState(true);
+  const [isPasswordRecovery, setPasswordRecovery] = useState(false);
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      if (session?.user) {
+  useEffect(() => {
+    let active = true;
+    supabase.auth.getSession()
+      .then(({ data }) => { if (active) setSession(data.session); })
+      .catch(() => {})
+      .finally(() => { if (active) setSessionLoading(false); });
+    // Profil INITIAL_SESSION hodisasida yuklanadi (obuna bo'lishi bilan keladi) —
+    // alohida chaqiruv profilni ikki marta so'rardi.
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, nextSession) => {
+      setSession(nextSession);
+      setSessionLoading(false);
+      if (event === 'PASSWORD_RECOVERY') setPasswordRecovery(true);
+      if (nextSession?.user) {
         refreshUserProfile();
       } else {
         setProfile(null);
@@ -137,11 +160,11 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
       }
     });
 
-    return () => subscription.unsubscribe();
+    return () => { active = false; subscription.unsubscribe(); };
   }, [refreshUserProfile]);
 
   return (
-    <UserContext.Provider value={{ profile, setProfile, refreshUserProfile, updateCoins, loading }}>
+    <UserContext.Provider value={{ profile, setProfile, refreshUserProfile, updateCoins, loading, session, sessionLoading, isPasswordRecovery, setPasswordRecovery }}>
       {children}
     </UserContext.Provider>
   );

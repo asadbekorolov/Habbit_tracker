@@ -21,7 +21,6 @@ const NEGATIVE_QUEST: Quest = { id: "q_negative_win", titleKey: "quest_negwin_ti
 const CONSISTENCY_QUEST: Quest = { id: "q_consistency", titleKey: "quest_consistency_title", descKey: "quest_consistency_desc", reward: 5, met: (c) => c.consistencyWin };
 
 interface DailyQuestsCardProps {
-  isDark: boolean;
   profile: Profile;
   completedToday: number;
   totalHabits: number;
@@ -32,7 +31,6 @@ interface DailyQuestsCardProps {
 }
 
 export function DailyQuestsCard({
-  isDark,
   profile,
   completedToday,
   totalHabits,

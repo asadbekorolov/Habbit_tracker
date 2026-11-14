@@ -6,22 +6,20 @@ import { WeeklyReflection } from "../features/dashboard/WeeklyReflection";
 import type { Profile } from "../services/supabase";
 import { useLang } from "../store/LangContext";
 import { MiniPipAvatar } from "../components/MiniPipAvatar";
+import { useProfile } from "../store/UserContext";
 
 interface JournalPageProps {
-  isDark: boolean;
-  profile: Profile;
   onCompletedChange: (completed: number, total: number) => void;
   onScoreChange?: (delta: number) => void;
   onStreakMilestone?: (name: string, emoji: string, days: number) => void;
 }
 
 export function JournalPage({
-  isDark,
-  profile,
   onCompletedChange,
   onScoreChange,
   onStreakMilestone,
 }: JournalPageProps) {
+  const profile = useProfile();
   const { t } = useLang();
   const [logsView, setLogsView] = useState<"today" | "month" | "notes" | "weekly">("today");
 
@@ -42,8 +40,8 @@ export function JournalPage({
               onClick={() => setLogsView(v)}
               className="px-3 py-1.5 rounded-lg text-xs font-medium transition-all whitespace-nowrap shrink-0 cursor-pointer"
               style={{
-                background: logsView === v ? (isDark ? "rgba(255,255,255,0.1)" : "#fff") : "transparent",
-                color: logsView === v ? (isDark ? "var(--foreground)" : "#16A34A") : (isDark ? "var(--muted-foreground)" : "#64748B"),
+                background: logsView === v ? ("rgba(255,255,255,0.1)") : "transparent",
+                color: logsView === v ? ("var(--foreground)") : ("var(--muted-foreground)"),
                 boxShadow: logsView === v ? "0 1px 4px rgba(0,0,0,0.1)" : "none",
               }}
             >
@@ -56,18 +54,17 @@ export function JournalPage({
       {/* View Routing Logic */}
       {logsView === "today" ? (
         <HabitsLog
-          isDark={isDark}
           profile={profile}
           onCompletedChange={onCompletedChange}
           onScoreChange={onScoreChange}
           onStreakMilestone={onStreakMilestone}
         />
       ) : logsView === "month" ? (
-        <MonthGrid isDark={isDark} profile={profile} />
+        <MonthGrid profile={profile} />
       ) : logsView === "notes" ? (
-        <DailyNotes isDark={isDark} profile={profile} />
+        <DailyNotes profile={profile} />
       ) : (
-        <WeeklyReflection isDark={isDark} profile={profile} />
+        <WeeklyReflection profile={profile} />
       )}
     </div>
   );

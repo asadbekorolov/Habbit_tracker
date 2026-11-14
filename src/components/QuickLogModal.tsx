@@ -8,7 +8,6 @@ import { useLang } from "../store/LangContext";
 import { useScrollLock } from "../hooks/useScrollLock";
 
 interface QuickLogModalProps {
-  isDark?: boolean;
   isOpen?: boolean;
   habit: Habit;
   initialValue?: number;
@@ -18,7 +17,6 @@ interface QuickLogModalProps {
 }
 
 export function QuickLogModal({
-  isDark,
   habit,
   initialValue,
   currentValue: currentValueProp,

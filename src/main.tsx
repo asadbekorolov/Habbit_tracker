@@ -62,7 +62,6 @@
   }
 
   import { UserProvider } from "./store/UserContext.tsx";
-  import { ThemeProvider } from "./store/ThemeContext.tsx";
 
   // Yagona kesh: React Query + localStorage (7 kun). Persister bo'lmasa
   // (storage yopiq) — oddiy provayder.
@@ -89,11 +88,9 @@
     <ErrorBoundary>
       <QueryProvider>
         <UserProvider>
-          <ThemeProvider>
             <BrowserRouter>
               <App />
             </BrowserRouter>
-          </ThemeProvider>
         </UserProvider>
       </QueryProvider>
     </ErrorBoundary>

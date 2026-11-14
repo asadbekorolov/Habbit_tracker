@@ -21,7 +21,6 @@ interface RoutineModalProps {
   ) => Promise<void>;
   initialRoutine?: Routine | null;
   userHabits?: Habit[];
-  isDark?: boolean;
 }
 
 const ICON_OPTIONS = [
@@ -55,7 +54,6 @@ export function RoutineModal({
   onSave,
   initialRoutine,
   userHabits = [],
-  isDark = true,
 }: RoutineModalProps) {
   const haptics = useHaptics();
   useScrollLock(isOpen);

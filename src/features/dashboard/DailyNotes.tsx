@@ -11,11 +11,10 @@ import { MONTHS_FULL, DAYS_SHORT, DAYS_FULL } from "../../utils/i18n";
 import { HabitIcon } from "../../components/HabitIcon";
 
 interface DailyNotesProps {
-  isDark: boolean;
   profile: Profile;
 }
 
-export function DailyNotes({ isDark, profile }: DailyNotesProps) {
+export function DailyNotes({ profile }: DailyNotesProps) {
   const { t, lang } = useLang();
   const queryClient = useQueryClient();
   const MOODS = [
@@ -138,8 +137,8 @@ export function DailyNotes({ isDark, profile }: DailyNotesProps) {
   const isReadOnly = !isToday;
 
   const cardStyle: React.CSSProperties = {
-    background: isDark ? "rgba(22,27,34,0.85)" : "var(--card)",
-    border: `1px solid ${isDark ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.07)"}`,
+    background: "rgba(22,27,34,0.85)",
+    border: `1px solid rgba(255,255,255,0.06)`,
     borderRadius: 14,
   };
 
@@ -157,7 +156,7 @@ export function DailyNotes({ isDark, profile }: DailyNotesProps) {
           <button
             onClick={prevDay}
             className="p-1.5 rounded-lg"
-            style={{ background: isDark ? "rgba(255,255,255,0.06)" : "#F3F4F6" }}
+            style={{ background: "rgba(255,255,255,0.06)" }}
           >
             <ChevronLeft size={16} style={{ color: "var(--foreground)" }} />
           </button>
@@ -176,7 +175,7 @@ export function DailyNotes({ isDark, profile }: DailyNotesProps) {
             disabled={isToday}
             className="p-1.5 rounded-lg"
             style={{
-              background: isDark ? "rgba(255,255,255,0.06)" : "#F3F4F6",
+              background: "rgba(255,255,255,0.06)",
               opacity: isToday ? 0.3 : 1,
             }}
           >
@@ -200,7 +199,7 @@ export function DailyNotes({ isDark, profile }: DailyNotesProps) {
                 style={{
                   background: isSelected
                     ? "#4ADE80"
-                    : isDark ? "rgba(255,255,255,0.04)" : "#F3F4F6",
+                    : "rgba(255,255,255,0.04)",
                   minWidth: 40,
                 }}
               >
@@ -337,8 +336,8 @@ export function DailyNotes({ isDark, profile }: DailyNotesProps) {
           rows={8}
           className="w-full resize-none rounded-xl p-3.5 text-sm outline-none transition-all"
           style={{
-            background: isDark ? "rgba(255,255,255,0.04)" : "#F9FAFB",
-            border: `1px solid ${isDark ? "rgba(255,255,255,0.07)" : "rgba(0,0,0,0.08)"}`,
+            background: "rgba(255,255,255,0.04)",
+            border: `1px solid rgba(255,255,255,0.07)`,
             color: "var(--foreground)",
             fontFamily: "'Inter', sans-serif",
             lineHeight: 1.7,
@@ -360,8 +359,8 @@ export function DailyNotes({ isDark, profile }: DailyNotesProps) {
           className="w-full flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-semibold transition-all"
           style={{
             background: isReadOnly
-              ? isDark ? "rgba(255,255,255,0.06)" : "#F3F4F6"
-              : saved ? (isDark ? "rgba(74,222,128,0.15)" : "#DCFCE7") : "#4ADE80",
+              ? "rgba(255,255,255,0.06)"
+              : saved ? ("rgba(74,222,128,0.15)") : "#4ADE80",
             color: isReadOnly ? "var(--muted-foreground)" : saved ? "#4ADE80" : "#0a0a0a",
             border: !isReadOnly && saved ? "1px solid rgba(74,222,128,0.4)" : "none",
             opacity: saving ? 0.7 : 1,

@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from "react";
 import { useLang } from "../../store/LangContext";
-import { useUser } from "../../store/UserContext";
+import { useUser, useProfile } from "../../store/UserContext";
 import {
   Settings, Coins, Zap, Trophy, Loader2, Award,
   Crown, ChevronRight, Star, Flame, Target, Sparkles, X, CheckCircle2, ShoppingBag,
@@ -28,8 +28,6 @@ import { motion, AnimatePresence } from "framer-motion";
 type Lang = "uz" | "ru" | "en";
 
 interface ProfilePageProps {
-  isDark: boolean;
-  profile: Profile;
   onNavigate: (tab: string) => void;
   onUserClick?: (userId: string) => void;
   onLogout: () => void;
@@ -47,10 +45,9 @@ const BADGE_DEFS = [
   { id: "habit_100",     titleKey: "ach_badge_habit100_title", descKey: "ach_badge_habit100_desc", icon: Target, color: "#EC4899", check: (_s: number, _str: number, total: number) => total >= 100 },
 ] as const;
 
-export function ProfilePage({ isDark, profile: propsProfile, onNavigate, lang, onProfileUpdate }: ProfilePageProps) {
+export function ProfilePage({ onNavigate, lang, onProfileUpdate }: ProfilePageProps) {
   const { t } = useLang();
-  const { profile: contextProfile } = useUser();
-  const profile = contextProfile || propsProfile;
+    const profile = useProfile();
 
   // ─── Yagona kesh (React Query) ──────────────────────────────────────
   const todayStr = toDateStr();
@@ -192,7 +189,7 @@ export function ProfilePage({ isDark, profile: propsProfile, onNavigate, lang, o
             </div>
           </div>
 
-          <h2 className="text-2xl font-black mb-1 flex items-center gap-2 justify-center" style={profile?.username_glow ? getUsernameGlowStyle(isDark) : {}}>
+          <h2 className="text-2xl font-black mb-1 flex items-center gap-2 justify-center" style={profile?.username_glow ? getUsernameGlowStyle() : {}}>
             {profile?.display_name || profile?.full_name || 'Foydalanuvchi'}
             <UserBadge active={isStarActive({ has_star: true, star_expires_at: starExpiresAt })} size={20} />
           </h2>
@@ -502,7 +499,6 @@ export function ProfilePage({ isDark, profile: propsProfile, onNavigate, lang, o
       {/* Shop Modal */}
       {showShop && (
         <CoinShopModal
-          isDark={isDark}
           profile={profile}
           coins={freshCoins}
           onClose={() => setShowShop(false)}
@@ -516,7 +512,6 @@ export function ProfilePage({ isDark, profile: propsProfile, onNavigate, lang, o
       <School21BadgesModal
         isOpen={showAllBadgesModal}
         onClose={() => setShowAllBadgesModal(false)}
-        isDark={isDark}
         profile={profile}
         stats={statsForBadges}
       />
@@ -526,7 +521,6 @@ export function ProfilePage({ isDark, profile: propsProfile, onNavigate, lang, o
         <FeedbackModal
           isOpen={showFeedbackModal}
           onClose={() => setShowFeedbackModal(false)}
-          isDark={isDark}
           profile={profile}
         />
       )}

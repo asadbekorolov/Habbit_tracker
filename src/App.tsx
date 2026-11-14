@@ -42,7 +42,6 @@ import { useHaptics } from "./hooks/useHaptics";
 import { AddHabitModal } from "./components/AddHabitModal";
 import { BiometricsOnboardingModal } from "./components/BiometricsOnboardingModal";
 import { useQueryClient } from "@tanstack/react-query";
-import { useTheme } from "./store/ThemeContext";
 
 // Lazy-loaded routes for code splitting & instant rendering
 const HabitsManager = lazy(() => import("./features/habits/HabitsManager").then(m => ({ default: m.HabitsManager })));
@@ -75,7 +74,6 @@ function ScreenSkeleton() {
 const LEVEL_LABELS = ["", "level_1", "level_2", "level_3", "level_4", "level_5", "level_6", "level_7", "level_8", "level_9", "level_10"] as const;
 
 export default function App() {
-  const { isDark, setTheme } = useTheme();
   const queryClient = useQueryClient();
   const [lang, setLang] = useState<Lang>(() => {
     try { return (localStorage.getItem("lang") as Lang) || "uz"; } catch { return "uz"; }
@@ -83,12 +81,12 @@ export default function App() {
   const [viewingUserId, setViewingUserId] = useState<string | null>(null);
   const [completedToday, setCompletedToday] = useState(0);
   const [totalHabits, setTotalHabits] = useState(0);
-  const [isResettingPassword, setIsResettingPassword] = useState(false);
+
   const [showAddHabitModal, setShowAddHabitModal] = useState(false);
   const [isKeyboardVisible, setIsKeyboardVisible] = useState(false);
   const [showBiometricsOnboarding, setShowBiometricsOnboarding] = useState(false);
 
-  const { profile, setProfile, refreshUserProfile, loading: userLoading } = useUser();
+  const { profile, setProfile, refreshUserProfile, loading: userLoading, isPasswordRecovery: isResettingPassword, setPasswordRecovery: setIsResettingPassword } = useUser();
 
   const [allDoneToast, setAllDoneToast] = useState(false);
   const [streakToast, setStreakToast] = useState<{ name: string; emoji: string; days: number } | null>(null);
@@ -157,17 +155,8 @@ export default function App() {
   useEffect(() => {
     notificationService.createNotificationChannel();
 
-    // 1. Supabase Auth Event Listener for Password Recovery & Session Changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-      if (event === 'PASSWORD_RECOVERY') {
-        setIsResettingPassword(true);
-      }
-      if (session?.user) {
-        refreshUserProfile();
-      }
-    });
-
-    // 2. Capacitor Deep Link Listener for OAuth & Password Reset
+    // Auth hodisalari (sessiya, PASSWORD_RECOVERY) — UserContext'dagi yagona
+    // tinglovchida. Bu yerda faqat Capacitor deep link'lari.
     const urlListener = CapacitorApp.addListener('appUrlOpen', async (data) => {
       const rawUrl = data.url;
 
@@ -197,11 +186,8 @@ export default function App() {
                 access_token: accessToken,
                 refresh_token: refreshToken,
               });
-              if (error) {
-                console.error('Failed to set Supabase session from hash:', error.message);
-              } else {
-                refreshUserProfile();
-              }
+              // Muvaffaqiyatda SIGNED_IN hodisasi profilni o'zi yangilaydi.
+              if (error) console.error('Failed to set Supabase session from hash:', error.message);
               return;
             }
           }
@@ -209,11 +195,7 @@ export default function App() {
           const code = parsedUrl.searchParams.get('code');
           if (code) {
             const { error } = await supabase.auth.exchangeCodeForSession(code);
-            if (error) {
-              console.error('Failed to exchange code for session:', error.message);
-            } else {
-              refreshUserProfile();
-            }
+            if (error) console.error('Failed to exchange code for session:', error.message);
           }
         }
       }
@@ -224,13 +206,12 @@ export default function App() {
     });
 
     return () => {
-      subscription.unsubscribe();
       urlListener.then(l => l.remove());
     };
-  }, [refreshUserProfile]);
+  }, [setIsResettingPassword]);
 
   // Mobile lifecycle management (status bar, hardware back button, health sync)
-  useMobileLifecycle({ isDark, profileId: profile?.id });
+  useMobileLifecycle({ profileId: profile?.id });
 
   // Navbat serverdan haqiqiy balans/darajani qaytarganda header'dagi
   // optimistik qiymatlarni server qiymati bilan almashtiramiz.
@@ -267,16 +248,6 @@ export default function App() {
   const entryScreenRef = useRef<string | null>(null);
   const exitTrackedRef = useRef(false);
 
-  useEffect(() => {
-    const html = document.documentElement;
-    if (isDark) {
-      html.classList.add("dark");
-      localStorage.setItem("theme", "dark");
-    } else {
-      html.classList.remove("dark");
-      localStorage.setItem("theme", "light");
-    }
-  }, [isDark]);
 
   useEffect(() => {
     const handler = (e: Event) => {
@@ -452,7 +423,7 @@ export default function App() {
 
       return (
         <div className="flex min-h-screen w-full bg-background">
-          <Sidebar isDark={isDark} activeTab={activeTab} onTabChange={setActiveTab} profile={profile} onProfileClick={() => setActiveTab("profile")} />
+          <Sidebar activeTab={activeTab} onTabChange={setActiveTab} profile={profile} onProfileClick={() => setActiveTab("profile")} />
 
           <div className="flex-1 flex flex-col min-w-0">
             {/* Header */}
@@ -520,7 +491,7 @@ export default function App() {
                     );
                   })()}
 
-                  <NotificationBell isDark={isDark} profile={profile} onNavigate={setActiveTab} onUserClick={handleUserClick} />
+                  <NotificationBell profile={profile} onNavigate={setActiveTab} onUserClick={handleUserClick} />
                 </div>
               </div>
 
@@ -619,7 +590,7 @@ export default function App() {
               className="fixed top-20 left-1/2 z-50 px-5 py-3 rounded-2xl flex items-center gap-3 shadow-2xl"
               style={{
                 transform: "translateX(-50%)",
-                background: isDark ? "rgba(22,27,34,0.97)" : "#fff",
+                background: "rgba(22,27,34,0.97)",
                 border: "1px solid rgba(74,222,128,0.4)",
                 boxShadow: "0 0 30px rgba(74,222,128,0.25)",
                 animation: "slideDown 0.4s ease",
@@ -644,7 +615,7 @@ export default function App() {
               className="fixed top-20 left-1/2 z-50 px-5 py-3 rounded-2xl flex items-center gap-3 shadow-2xl"
               style={{
                 transform: "translateX(-50%)",
-                background: isDark ? "rgba(22,27,34,0.97)" : "#fff",
+                background: "rgba(22,27,34,0.97)",
                 border: "1px solid rgba(249,115,22,0.4)",
                 boxShadow: "0 0 30px rgba(249,115,22,0.2)",
                 animation: "slideDown 0.4s ease",
@@ -679,7 +650,7 @@ export default function App() {
               className="fixed bottom-20 md:bottom-6 left-1/2 z-50 flex items-center gap-3 px-4 py-3 rounded-2xl shadow-2xl"
               style={{
                 transform: "translateX(-50%)",
-                background: isDark ? "rgba(22,27,34,0.97)" : "#fff",
+                background: "rgba(22,27,34,0.97)",
                 border: "1px solid rgba(74,222,128,0.3)",
                 boxShadow: "0 0 30px rgba(74,222,128,0.15)",
                 animation: "slideUp 0.4s ease",
@@ -782,7 +753,7 @@ export default function App() {
   if (isResettingPassword) {
     return (
       <LangContext.Provider value={langVal}>
-        <Toaster position="top-right" richColors theme={isDark ? "dark" : "light"} />
+        <Toaster position="top-right" richColors theme={"dark"} />
         <ResetPasswordPage onComplete={() => setIsResettingPassword(false)} />
       </LangContext.Provider>
     );
@@ -790,62 +761,57 @@ export default function App() {
 
   return (
     <LangContext.Provider value={langVal}>
-      <Toaster position="top-right" richColors theme={isDark ? "dark" : "light"} />
+      <Toaster position="top-right" richColors theme={"dark"} />
       <Routes>
         <Route path="/login" element={
-          profile ? <Navigate to="/dashboard" replace /> : <LoginPage isDark={isDark} onLogin={handleLogin} />
+          profile ? <Navigate to="/dashboard" replace /> : <LoginPage onLogin={handleLogin} />
         } />
         <Route element={<ProtectedRoute />}>
           <Route path="/" element={<Navigate to="/dashboard" replace />} />
-          <Route path="/dashboard" element={renderLayout(<Dashboard isDark={isDark} profile={profile!} completedToday={completedToday} totalHabits={totalHabits} onNavigate={setActiveTab} onCompletedChange={handleCompletedChange} onUserClick={handleUserClick} onProfileUpdate={handleProfileUpdate} />)} />
-          <Route path="/habits" element={renderLayout(<HabitsManager isDark={isDark} profile={profile!} />)} />
+          <Route path="/dashboard" element={renderLayout(<Dashboard completedToday={completedToday} totalHabits={totalHabits} onNavigate={setActiveTab} onCompletedChange={handleCompletedChange} onUserClick={handleUserClick} onProfileUpdate={handleProfileUpdate} />)} />
+          <Route path="/habits" element={renderLayout(<HabitsManager />)} />
           <Route path="/journal" element={renderLayout(
             <JournalPage
-              isDark={isDark}
-              profile={profile!}
               onCompletedChange={handleCompletedChange}
               onScoreChange={handleScoreChange}
               onStreakMilestone={handleStreakMilestone}
             />
           )} />
           <Route path="/logs" element={<Navigate to="/journal" replace />} />
-          <Route path="/feed" element={renderLayout(<FeedPage isDark={isDark} profile={profile!} onUserClick={handleUserClick} />)} />
-          <Route path="/groups" element={renderLayout(<GroupsPage isDark={isDark} profile={profile!} onUserClick={handleUserClick} />)} />
-          <Route path="/achievements" element={renderLayout(<Achievements isDark={isDark} profile={profile!} />)} />
+          <Route path="/feed" element={renderLayout(<FeedPage onUserClick={handleUserClick} />)} />
+          <Route path="/groups" element={renderLayout(<GroupsPage onUserClick={handleUserClick} />)} />
+          <Route path="/achievements" element={renderLayout(<Achievements />)} />
           <Route path="/analytics" element={renderLayout(
             <div className="max-w-2xl">
               <Analytics
-                isDark={isDark}
                 completedToday={completedToday}
                 totalHabits={totalHabits}
-                profile={profile!}
                 onUserClick={handleUserClick}
                 onProfileUpdate={handleProfileUpdate}
               />
             </div>
           )} />
-          <Route path="/admin" element={renderLayout(profile?.is_admin ? <AdminPanel isDark={isDark} profile={profile} /> : <Navigate to="/dashboard" replace />)} />
+          <Route path="/admin" element={renderLayout(profile?.is_admin ? <AdminPanel profile={profile} /> : <Navigate to="/dashboard" replace />)} />
           <Route path="/profile" element={renderLayout(
             profile ? (
-              <ProfilePage isDark={isDark} profile={profile} onNavigate={setActiveTab} onUserClick={handleUserClick} onLogout={handleLogout} lang={lang} onLangChange={handleLangChange} onProfileUpdate={handleProfileUpdate} />
+              <ProfilePage onNavigate={setActiveTab} onUserClick={handleUserClick} onLogout={handleLogout} lang={lang} onLangChange={handleLangChange} onProfileUpdate={handleProfileUpdate} />
             ) : (
               <div className="flex items-center justify-center h-64">
                 <Loader2 size={24} className="animate-spin" style={{ color: "var(--neon-green)" }} />
               </div>
             )
           )} />
-          <Route path="/edit-profile" element={renderLayout(<EditProfilePage isDark={isDark} profile={profile!} onProfileUpdate={handleProfileUpdate} onBack={() => setActiveTab("profile")} />)} />
-          <Route path="/leaderboard" element={renderLayout(<GlobalLeaderboardPage isDark={isDark} profile={profile!} onUserClick={handleUserClick} />)} />
-          <Route path="/health" element={renderLayout(<HealthPage isDark={isDark} profile={profile!} />)} />
-          <Route path="/store" element={renderLayout(<Store isDark={isDark} profile={profile!} onProfileUpdate={handleProfileUpdate} />)} />
+          <Route path="/edit-profile" element={renderLayout(<EditProfilePage onProfileUpdate={handleProfileUpdate} onBack={() => setActiveTab("profile")} />)} />
+          <Route path="/leaderboard" element={renderLayout(<GlobalLeaderboardPage onUserClick={handleUserClick} />)} />
+          <Route path="/health" element={renderLayout(<HealthPage />)} />
+          <Route path="/store" element={renderLayout(<Store onProfileUpdate={handleProfileUpdate} />)} />
           <Route path="/shop" element={<Navigate to="/store" replace />} />
-          <Route path="/settings" element={renderLayout(<SettingsPage profile={profile!} onProfileUpdate={handleProfileUpdate} onLogout={handleLogout} onNavigate={setActiveTab} lang={lang} onLangChange={handleLangChange} isDark={isDark} />)} />
+          <Route path="/settings" element={renderLayout(<SettingsPage onProfileUpdate={handleProfileUpdate} onLogout={handleLogout} onNavigate={setActiveTab} lang={lang} onLangChange={handleLangChange} />)} />
         </Route>
       </Routes>
 
       {viewingUserId && profile && (
         <PublicProfileModal
-          isDark={isDark}
           viewingId={viewingUserId}
           myProfile={profile}
           onClose={() => setViewingUserId(null)}
@@ -863,7 +829,6 @@ export default function App() {
       {showAddHabitModal && profile && (
         <AddHabitModal
           isOpen={showAddHabitModal}
-          isDark={isDark}
           onClose={() => setShowAddHabitModal(false)}
           onAdd={async (habitData) => {
             try {

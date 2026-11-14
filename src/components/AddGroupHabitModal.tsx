@@ -36,12 +36,11 @@ interface AddGroupHabitModalProps {
   isOpen: boolean;
   onClose: () => void;
   onAdd: (habit: any) => Promise<void>;
-  isDark: boolean;
   initialData?: any;
 }
 
 export const AddGroupHabitModal: React.FC<AddGroupHabitModalProps> = ({
-  isOpen, onClose, onAdd, isDark, initialData
+  isOpen, onClose, onAdd, initialData
 }) => {
   const { t } = useLang();
   useScrollLock(isOpen);
@@ -93,8 +92,8 @@ export const AddGroupHabitModal: React.FC<AddGroupHabitModalProps> = ({
             transition={{ type: "spring", damping: 25, stiffness: 200 }}
             className="w-full sm:max-w-sm rounded-t-3xl sm:rounded-2xl overflow-hidden max-h-[85vh] overflow-y-auto overscroll-contain touch-pan-y"
             style={{
-              background: isDark ? "#161B22" : "#fff",
-              border: `1px solid ${isDark ? "rgba(255,255,255,0.1)" : "rgba(0,0,0,0.1)"}`,
+              background: "#161B22",
+              border: `1px solid rgba(255,255,255,0.1)`,
               paddingBottom: "env(safe-area-inset-bottom)"
             }}
             onClick={(e) => e.stopPropagation()}>
@@ -116,8 +115,8 @@ export const AddGroupHabitModal: React.FC<AddGroupHabitModalProps> = ({
                     <button key={val} type="button" onClick={() => setNewType(val)}
                       className="py-2 rounded-xl text-xs font-semibold"
                       style={{
-                        background: newType === val ? `${color}18` : (isDark ? "rgba(255,255,255,0.04)" : "#F9FAFB"),
-                        border: `1px solid ${newType === val ? `${color}50` : (isDark ? "rgba(255,255,255,0.08)" : "rgba(0,0,0,0.08)")}`,
+                        background: newType === val ? `${color}18` : ("rgba(255,255,255,0.04)"),
+                        border: `1px solid ${newType === val ? `${color}50` : ("rgba(255,255,255,0.08)")}`,
                         color: newType === val ? color : "var(--muted-foreground)",
                       }}>{label}</button>
                   ))}
@@ -164,8 +163,8 @@ export const AddGroupHabitModal: React.FC<AddGroupHabitModalProps> = ({
                     <button key={val} type="button" onClick={() => setNewMetricType(val)}
                       className="py-2 rounded-xl text-xs font-semibold"
                       style={{
-                        background: newMetricType === val ? (isDark ? "rgba(255,255,255,0.12)" : "#fff") : (isDark ? "rgba(255,255,255,0.04)" : "#F9FAFB"),
-                        border: `1px solid ${newMetricType === val ? (isDark ? "rgba(255,255,255,0.2)" : "rgba(0,0,0,0.15)") : (isDark ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.06)")}`,
+                        background: newMetricType === val ? ("rgba(255,255,255,0.12)") : ("rgba(255,255,255,0.04)"),
+                        border: `1px solid ${newMetricType === val ? ("rgba(255,255,255,0.2)") : ("rgba(255,255,255,0.06)")}`,
                         color: newMetricType === val ? "var(--foreground)" : "var(--muted-foreground)",
                       }}>{label}</button>
                   ))}
@@ -208,7 +207,7 @@ export const AddGroupHabitModal: React.FC<AddGroupHabitModalProps> = ({
 
               <div className="flex gap-2 pt-1">
                 <button type="button" onClick={onClose} className="flex-1 py-2.5 rounded-xl text-sm font-medium"
-                  style={{ background: isDark ? "rgba(255,255,255,0.06)" : "#F3F4F6", color: "var(--muted-foreground)" }}>
+                  style={{ background: "rgba(255,255,255,0.06)", color: "var(--muted-foreground)" }}>
                   {t('cancel_short')}
                 </button>
                 <button type="button" onClick={handleAdd} disabled={saving || !newName.trim()}

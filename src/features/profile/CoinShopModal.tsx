@@ -6,7 +6,6 @@ import { useScrollLock } from "../../hooks/useScrollLock";
 const Store = lazy(() => import("../../pages/Store").then(m => ({ default: m.Store })));
 
 interface CoinShopModalProps {
-  isDark: boolean;
   profile: Profile;
   coins: number;
   onClose: () => void;
@@ -15,7 +14,7 @@ interface CoinShopModalProps {
   onProfileUpdate?: (p: Profile) => void;
 }
 
-export function CoinShopModal({ isDark, profile, onClose, onProfileUpdate }: CoinShopModalProps) {
+export function CoinShopModal({ profile, onClose, onProfileUpdate }: CoinShopModalProps) {
   useScrollLock(true);
 
   // Keyboard Escape listener for Android hardware back button
@@ -58,8 +57,6 @@ export function CoinShopModal({ isDark, profile, onClose, onProfileUpdate }: Coi
         <div className="p-4 sm:p-6 overflow-y-auto overscroll-contain touch-pan-y max-h-[calc(85vh-60px)]">
           <Suspense fallback={<div className="h-64 flex items-center justify-center text-emerald-400 font-medium text-xs">Yuklanmoqda...</div>}>
             <Store
-              isDark={isDark}
-              profile={profile}
               onProfileUpdate={onProfileUpdate}
               onClose={onClose}
               isModal={true}

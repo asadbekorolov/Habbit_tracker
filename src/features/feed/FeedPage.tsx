@@ -6,10 +6,9 @@ import { useLang } from "../../store/LangContext";
 import { toDateStr } from "../../utils/date";
 import { DAYS_FULL, MONTHS_SHORT, type Lang } from "../../utils/i18n";
 import type { T } from "../../store/LangContext";
+import { useProfile } from "../../store/UserContext";
 
 interface FeedPageProps {
-  isDark: boolean;
-  profile: Profile;
   onUserClick?: (userId: string) => void;
 }
 
@@ -32,7 +31,8 @@ function timeAgo(logDate: string, lang: Lang, t: T): string {
 
 type RxEntry = { fire: number; clap: number; myFire: boolean; myClap: boolean };
 
-export function FeedPage({ isDark, profile, onUserClick }: FeedPageProps) {
+export function FeedPage({ onUserClick }: FeedPageProps) {
+  const profile = useProfile();
   const { t, lang } = useLang();
   const [feed, setFeed] = useState<any[]>([]);
   const [newHabits, setNewHabits] = useState<any[]>([]);
@@ -156,7 +156,7 @@ export function FeedPage({ isDark, profile, onUserClick }: FeedPageProps) {
             ...btnBase,
             background: rx.myFire
               ? "rgba(249,115,22,0.18)"
-              : isDark ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.05)",
+              : "rgba(255,255,255,0.06)",
             color: rx.myFire ? "#F97316" : "var(--muted-foreground)",
           }}
         >
@@ -169,7 +169,7 @@ export function FeedPage({ isDark, profile, onUserClick }: FeedPageProps) {
             ...btnBase,
             background: rx.myClap
               ? "rgba(96,165,250,0.18)"
-              : isDark ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.05)",
+              : "rgba(255,255,255,0.06)",
             color: rx.myClap ? "#60A5FA" : "var(--muted-foreground)",
           }}
         >
@@ -195,14 +195,14 @@ export function FeedPage({ isDark, profile, onUserClick }: FeedPageProps) {
   const sortedDates = Object.keys(grouped).sort((a, b) => b.localeCompare(a));
 
   const card: React.CSSProperties = {
-    background: isDark ? "rgba(22,27,34,0.9)" : "#fff",
-    border: `1px solid ${isDark ? "rgba(255,255,255,0.07)" : "rgba(0,0,0,0.07)"}`,
+    background: "rgba(22,27,34,0.9)",
+    border: `1px solid rgba(255,255,255,0.07)`,
     borderRadius: 14,
   };
 
   const inputStyle: React.CSSProperties = {
-    background: isDark ? "rgba(255,255,255,0.05)" : "#F9FAFB",
-    border: `1px solid ${isDark ? "rgba(255,255,255,0.1)" : "rgba(0,0,0,0.1)"}`,
+    background: "rgba(255,255,255,0.05)",
+    border: `1px solid rgba(255,255,255,0.1)`,
     color: "var(--foreground)",
     borderRadius: 10,
     padding: "9px 14px",
@@ -227,7 +227,7 @@ export function FeedPage({ isDark, profile, onUserClick }: FeedPageProps) {
           type="button"
           onClick={loadFeed}
           className="ml-auto p-2 rounded-xl"
-          style={{ background: isDark ? "rgba(255,255,255,0.06)" : "#F3F4F6" }}
+          style={{ background: "rgba(255,255,255,0.06)" }}
           title={t('refresh_label')}
         >
           <Rss size={15} style={{ color: "var(--muted-foreground)" }} />
@@ -288,7 +288,7 @@ export function FeedPage({ isDark, profile, onUserClick }: FeedPageProps) {
                     </button>
                   )}
                   {isFollowing && (
-                    <span className="shrink-0 text-xs px-2.5 py-1.5 rounded-lg" style={{ color: "var(--neon-green)", background: isDark ? "rgba(74,222,128,0.1)" : "#DCFCE7" }}>
+                    <span className="shrink-0 text-xs px-2.5 py-1.5 rounded-lg" style={{ color: "var(--neon-green)", background: "rgba(74,222,128,0.1)" }}>
                       {t('following')}
                     </span>
                   )}
@@ -324,7 +324,7 @@ export function FeedPage({ isDark, profile, onUserClick }: FeedPageProps) {
             <div style={card} className="overflow-hidden">
               {grouped[date].map((item, idx) => {
                 const isLast = idx === grouped[date].length - 1;
-                const dividerStyle = { borderBottom: isLast ? "none" : `1px solid ${isDark ? "rgba(255,255,255,0.04)" : "rgba(0,0,0,0.05)"}` };
+                const dividerStyle = { borderBottom: isLast ? "none" : `1px solid rgba(255,255,255,0.04)` };
 
                 if (item.type === "new_habit") {
                   const h = item.data;
@@ -369,7 +369,7 @@ export function FeedPage({ isDark, profile, onUserClick }: FeedPageProps) {
                         <ReactionBar itemId={itemId} />
                       </div>
                       <div className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0 mt-0.5"
-                        style={{ background: isDark ? "rgba(74,222,128,0.08)" : "#F0FDF4" }}>
+                        style={{ background: "rgba(74,222,128,0.08)" }}>
                         <Zap size={14} className="text-emerald-400" />
                       </div>
                     </div>
@@ -423,7 +423,7 @@ export function FeedPage({ isDark, profile, onUserClick }: FeedPageProps) {
                       <ReactionBar itemId={logItem.id} />
                     </div>
                     <div className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0 mt-0.5"
-                      style={{ background: isDark ? "rgba(74,222,128,0.12)" : "#DCFCE7" }}>
+                      style={{ background: "rgba(74,222,128,0.12)" }}>
                       <Check size={14} className="text-emerald-400" strokeWidth={3} />
                     </div>
                   </div>

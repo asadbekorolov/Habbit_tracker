@@ -7,16 +7,16 @@ import { useLang } from "../../store/LangContext";
 import { UserBadge } from "../../components/UserBadge";
 import { AvatarFrame } from "../../components/AvatarFrame";
 import { getUsernameGlowStyle } from "../../utils/cosmetics";
+import { useProfile } from "../../store/UserContext";
 
 interface GlobalLeaderboardPageProps {
-  isDark: boolean;
-  profile: Profile;
   onUserClick?: (userId: string) => void;
 }
 
 type LeaderboardPeriod = 'daily' | 'monthly' | '6months' | 'yearly' | 'all';
 
-export function GlobalLeaderboardPage({ isDark, profile, onUserClick }: GlobalLeaderboardPageProps) {
+export function GlobalLeaderboardPage({ onUserClick }: GlobalLeaderboardPageProps) {
+  const profile = useProfile();
   const { t } = useLang();
   const [period, setPeriod] = useState<LeaderboardPeriod>('monthly');
   const lbQ = useLeaderboardQuery(period);
@@ -26,8 +26,8 @@ export function GlobalLeaderboardPage({ isDark, profile, onUserClick }: GlobalLe
   const error = lbQ.isError && !lbQ.data ? ((lbQ.error as any)?.message || t('err_loading')) : "";
 
   const card: React.CSSProperties = {
-    background: isDark ? "rgba(22,27,34,0.85)" : "var(--card)",
-    border: `1px solid ${isDark ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.07)"}`,
+    background: "rgba(22,27,34,0.85)",
+    border: `1px solid rgba(255,255,255,0.06)`,
     borderRadius: 14,
   };
 
@@ -58,7 +58,7 @@ export function GlobalLeaderboardPage({ isDark, profile, onUserClick }: GlobalLe
         {myRank >= 0 && (
           <div
             className="flex items-center gap-2 px-3 py-1.5 rounded-xl"
-            style={{ background: isDark ? "rgba(74,222,128,0.1)" : "#DCFCE7", border: "1px solid rgba(74,222,128,0.25)" }}
+            style={{ background: "rgba(74,222,128,0.1)", border: "1px solid rgba(74,222,128,0.25)" }}
           >
             <Medal size={14} style={{ color: "#4ADE80" }} />
             <span className="text-sm font-bold" style={{ color: "#4ADE80", fontFamily: "'Geist Mono', monospace" }}>
@@ -182,7 +182,7 @@ export function GlobalLeaderboardPage({ isDark, profile, onUserClick }: GlobalLe
                     </div>
 
                     <div className="flex flex-col items-center gap-1 mb-3 px-1 w-full relative z-10">
-                      <p className="text-xs font-bold text-center truncate w-full flex items-center justify-center gap-1" style={{ color: isMe ? "#4ADE80" : "var(--foreground)", ...(user.username_glow ? getUsernameGlowStyle(isDark) : {}) }}>
+                      <p className="text-xs font-bold text-center truncate w-full flex items-center justify-center gap-1" style={{ color: isMe ? "#4ADE80" : "var(--foreground)", ...(user.username_glow ? getUsernameGlowStyle() : {}) }}>
                         {isMe ? t('you_short') : user.display_label}
                         <UserBadge active={user.has_star} size={10} />
                       </p>
@@ -218,7 +218,7 @@ export function GlobalLeaderboardPage({ isDark, profile, onUserClick }: GlobalLe
                 <p className="text-sm" style={{ color: "var(--muted-foreground)" }}>{t('lb_empty')}</p>
               </div>
             ) : (
-              <div className="divide-y" style={{ borderColor: isDark ? "rgba(255,255,255,0.04)" : "rgba(0,0,0,0.05)" }}>
+              <div className="divide-y" style={{ borderColor: "rgba(255,255,255,0.04)" }}>
                 {list.map((user, i) => {
                   const isMe = user.id === profile.id;
                   const canView = isMe || !user.is_private;
@@ -240,7 +240,7 @@ export function GlobalLeaderboardPage({ isDark, profile, onUserClick }: GlobalLe
                       onClick={canView ? () => onUserClick?.(user.id) : undefined}
                       style={{
                         background: isMe
-                          ? isDark ? "rgba(74,222,128,0.06)" : "rgba(74,222,128,0.05)"
+                          ? "rgba(74,222,128,0.06)"
                           : "transparent",
                         cursor: onUserClick && canView ? "pointer" : "default",
                       }}
@@ -272,7 +272,7 @@ export function GlobalLeaderboardPage({ isDark, profile, onUserClick }: GlobalLe
                       </AvatarFrame>
 
                       <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium truncate flex items-center gap-1.5" style={{ color: isMe ? "#4ADE80" : "var(--foreground)", ...(user.username_glow ? getUsernameGlowStyle(isDark) : {}) }}>
+                        <p className="text-sm font-medium truncate flex items-center gap-1.5" style={{ color: isMe ? "#4ADE80" : "var(--foreground)", ...(user.username_glow ? getUsernameGlowStyle() : {}) }}>
                           {user.display_label} {isMe && <span className="text-xs">{t('lb_you')}</span>}
                           <UserBadge active={user.has_star} size={12} />
                           {!canView && <Lock size={11} style={{ color: "var(--muted-foreground)" }} />}

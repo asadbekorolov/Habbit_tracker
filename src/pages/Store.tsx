@@ -20,8 +20,6 @@ import type { Profile } from "../services/supabase";
 import { useScrollLock } from "../hooks/useScrollLock";
 
 interface StoreProps {
-  isDark?: boolean;
-  profile?: Profile;
   onProfileUpdate?: (p: Profile) => void;
   onClose?: () => void;
   isModal?: boolean;
@@ -87,7 +85,7 @@ export const TITLES = [
   { id: "title_legend", name: "Besh Yulduzli Afsona", price: 350, color: "#F59E0B" },
 ];
 
-export function Store({ isDark = true, profile: propsProfile, onProfileUpdate, onClose, isModal = false }: StoreProps) {
+export function Store({ onProfileUpdate, onClose, isModal = false }: StoreProps) {
   const { t } = useLang();
   const { setProfile, updateCoins, refreshUserProfile } = useUser();
   const profile = useProfile();
@@ -648,7 +646,7 @@ export function Store({ isDark = true, profile: propsProfile, onProfileUpdate, o
                     <Sparkles className="w-5 h-5" />
                   </div>
                   <div className="min-w-0">
-                    <p className="text-xs font-bold text-white truncate" style={getUsernameGlowStyle(isDark)}>
+                    <p className="text-xs font-bold text-white truncate" style={getUsernameGlowStyle()}>
                       {profile.display_name || "Yaltiroq Ism Effekti"}
                     </p>
                     <p className="text-[11px] text-slate-400 truncate mt-0.5">Profil va reytingda yaltiroq ism dizayni</p>

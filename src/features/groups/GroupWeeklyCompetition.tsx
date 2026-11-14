@@ -4,13 +4,12 @@ import { getGroupWeeklyLeaderboard, settleGroupWeek, type GroupWeekWinner } from
 import { useLang } from "../../store/LangContext";
 
 interface GroupWeeklyCompetitionProps {
-  isDark: boolean;
   groupId: string;
   myUserId: string;
   card: React.CSSProperties;
 }
 
-export function GroupWeeklyCompetition({ isDark, groupId, myUserId, card }: GroupWeeklyCompetitionProps) {
+export function GroupWeeklyCompetition({ groupId, myUserId, card }: GroupWeeklyCompetitionProps) {
   const { t } = useLang();
   const [weekly, setWeekly] = useState<any[]>([]);
   const [winner, setWinner] = useState<GroupWeekWinner | null>(null);
@@ -48,7 +47,7 @@ export function GroupWeeklyCompetition({ isDark, groupId, myUserId, card }: Grou
                 <div
                   key={entry.userId}
                   className="flex items-center gap-2.5 p-2 rounded-xl"
-                  style={{ ...card, background: isMe ? (isDark ? "rgba(74,222,128,0.06)" : "rgba(74,222,128,0.04)") : card.background }}
+                  style={{ ...card, background: isMe ? ("rgba(74,222,128,0.06)") : card.background }}
                 >
                   <span className="text-xs w-5 text-center shrink-0" style={{ color: "var(--muted-foreground)" }}>{i + 1}</span>
                   <div

@@ -24,10 +24,9 @@ import { getHabitCategory, getCategoryTheme } from "../../utils/categoryTheme";
 import { notificationService } from "../../services/notificationService";
 import { Bell, BellOff } from "lucide-react";
 import { AddHabitModal } from "../../components/AddHabitModal";
+import { useProfile } from "../../store/UserContext";
 
 interface HabitsManagerProps {
-  isDark: boolean;
-  profile: Profile;
 }
 
 type Tpl = { emoji: string; name: string; metric: "check" | "count" | "time"; target: number; unit: string };
@@ -141,7 +140,8 @@ function calculateSingleHabitStats(habit: Habit, logs: { log_date: string; compl
   };
 }
 
-export function HabitsManager({ isDark, profile }: HabitsManagerProps) {
+export function HabitsManager({}: HabitsManagerProps) {
+  const profile = useProfile();
   const { t } = useLang();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
@@ -170,10 +170,10 @@ export function HabitsManager({ isDark, profile }: HabitsManagerProps) {
   const [dragOverId, setDragOverId] = useState<string | null>(null);
 
   const card = {
-    background: isDark ? "rgba(22,27,34,0.95)" : "#ffffff",
-    border: `1px solid ${isDark ? "rgba(255,255,255,0.08)" : "rgba(0,0,0,0.08)"}`,
+    background: "rgba(22,27,34,0.95)",
+    border: `1px solid rgba(255,255,255,0.08)`,
     borderRadius: 24,
-    boxShadow: isDark ? "0 4px 20px rgba(0,0,0,0.2)" : "0 4px 12px rgba(0,0,0,0.03)",
+    boxShadow: "0 4px 20px rgba(0,0,0,0.2)",
     padding: 24,
   };
 
@@ -356,7 +356,7 @@ export function HabitsManager({ isDark, profile }: HabitsManagerProps) {
       </div>
 
       {activeTab === 'routines' ? (
-        <RoutinesManager isDark={isDark} profile={profile} userHabits={habits} />
+        <RoutinesManager profile={profile} userHabits={habits} />
       ) : (
         <>
           <div className="flex items-center justify-between gap-2 mb-1">
@@ -431,7 +431,6 @@ export function HabitsManager({ isDark, profile }: HabitsManagerProps) {
           }
           queryClient.invalidateQueries({ queryKey: ['habits', profile.id] });
         }}
-        isDark={isDark}
         initialData={editingId ? habits.find(h => h.id === editingId) : undefined}
       />
 
@@ -451,8 +450,8 @@ export function HabitsManager({ isDark, profile }: HabitsManagerProps) {
             transition={{ type: "spring", damping: 25, stiffness: 200 }}
             className="w-full sm:max-w-md rounded-t-3xl sm:rounded-3xl overflow-hidden p-6"
             style={{
-              background: isDark ? "#0D1117" : "#FFFFFF",
-              border: `1px solid ${isDark ? "rgba(255,255,255,0.1)" : "rgba(0,0,0,0.1)"}`,
+              background: "#0D1117",
+              border: `1px solid rgba(255,255,255,0.1)`,
               maxHeight: "90vh",
               overflowY: "auto",
             }}
@@ -635,14 +634,14 @@ export function HabitsManager({ isDark, profile }: HabitsManagerProps) {
           style={{ background: "rgba(0,0,0,0.6)", backdropFilter: "blur(4px)" }}
           onClick={() => { setShowGoalPack(false); setSelectedGoal(null); }}>
           <div className="w-full sm:max-w-md rounded-t-3xl sm:rounded-2xl overflow-hidden"
-            style={{ background: isDark ? "#161B22" : "#fff", maxHeight: "85vh", overflowY: "auto", paddingBottom: "env(safe-area-inset-bottom)" }}
+            style={{ background: "#161B22", maxHeight: "85vh", overflowY: "auto", paddingBottom: "env(safe-area-inset-bottom)" }}
             onClick={(e) => e.stopPropagation()}>
             <div className="p-5">
               <div className="flex items-center gap-2 mb-4">
                 {selectedGoal && (
                   <button type="button" onClick={() => setSelectedGoal(null)}
                     className="p-1.5 rounded-lg mr-1"
-                    style={{ background: isDark ? "rgba(255,255,255,0.07)" : "#F3F4F6" }}>
+                    style={{ background: "rgba(255,255,255,0.07)" }}>
                     <X size={15} style={{ color: "var(--foreground)" }} />
                   </button>
                 )}
@@ -656,7 +655,7 @@ export function HabitsManager({ isDark, profile }: HabitsManagerProps) {
                 </div>
                 <button type="button" onClick={() => { setShowGoalPack(false); setSelectedGoal(null); }}
                   className="p-1.5 rounded-lg"
-                  style={{ background: isDark ? "rgba(255,255,255,0.07)" : "#F3F4F6" }}>
+                  style={{ background: "rgba(255,255,255,0.07)" }}>
                   <X size={15} style={{ color: "var(--muted-foreground)" }} />
                 </button>
               </div>
@@ -671,7 +670,7 @@ export function HabitsManager({ isDark, profile }: HabitsManagerProps) {
                       }}
                       className="flex flex-col items-start gap-2 p-4 rounded-2xl text-left transition-all"
                       style={{
-                        background: isDark ? `${g.color}12` : `${g.color}18`,
+                        background: `${g.color}12`,
                         border: `1px solid ${g.color}30`,
                       }}>
                       <HabitIcon emoji={g.emoji} size={28} noWrapper color={g.color} />
@@ -703,12 +702,12 @@ export function HabitsManager({ isDark, profile }: HabitsManagerProps) {
                               className="flex items-center gap-3 p-3 rounded-xl text-left transition-all"
                               style={{
                                 background: checked
-                                  ? isDark ? `${goal.color}12` : `${goal.color}10`
-                                  : isDark ? "rgba(255,255,255,0.03)" : "#F9FAFB",
-                                border: `1px solid ${checked ? `${goal.color}35` : isDark ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.06)"}`,
+                                  ? `${goal.color}12`
+                                  : "rgba(255,255,255,0.03)",
+                                border: `1px solid ${checked ? `${goal.color}35` : "rgba(255,255,255,0.06)"}`,
                               }}>
                               <div className="w-5 h-5 rounded-md flex items-center justify-center shrink-0"
-                                style={{ background: checked ? goal.color : isDark ? "rgba(255,255,255,0.1)" : "#E5E7EB" }}>
+                                style={{ background: checked ? goal.color : "rgba(255,255,255,0.1)" }}>
                                 {checked && <Check size={12} style={{ color: "#0E1117" }} />}
                               </div>
                               <HabitIcon emoji={h.emoji} size={20} />
@@ -752,7 +751,7 @@ export function HabitsManager({ isDark, profile }: HabitsManagerProps) {
         <div className="flex items-center gap-2 mb-4">
           <CheckCircle2 size={16} style={{ color: "var(--neon-green)" }} />
           <h3 className="text-sm font-semibold" style={{ color: "var(--foreground)" }}>{t('habits_positive_section')}</h3>
-          <span className="ml-auto text-xs px-2 py-0.5 rounded-full font-medium" style={{ background: isDark ? "rgba(74,222,128,0.1)" : "#DCFCE7", color: "var(--neon-green)" }}>
+          <span className="ml-auto text-xs px-2 py-0.5 rounded-full font-medium" style={{ background: "rgba(74,222,128,0.1)", color: "var(--neon-green)" }}>
             {positiveHabits.length} ta
           </span>
         </div>
@@ -761,10 +760,10 @@ export function HabitsManager({ isDark, profile }: HabitsManagerProps) {
           : (
             <div className="space-y-2">
               {positiveHabits.map((h) => (
-                <HabitRow key={h.id} habit={h} isDark={isDark}
+                <HabitRow key={h.id} habit={h}
                   onStartEdit={startEditing} onDelete={handleDelete}
                   onSelectAnalytics={setAnalyticsHabit}
-                  accentColor="rgba(74,222,128" rowBg={isDark ? "rgba(74,222,128,0.04)" : "#F0FDF4"} rowBorder="rgba(74,222,128,0.1)"
+                  accentColor="rgba(74,222,128" rowBg={"rgba(74,222,128,0.04)"} rowBorder="rgba(74,222,128,0.1)"
                   {...dragProps} />
               ))}
             </div>
@@ -773,11 +772,11 @@ export function HabitsManager({ isDark, profile }: HabitsManagerProps) {
       </div>
 
       {/* Negative habits */}
-      <div style={{ ...card, border: `1px solid ${isDark ? "rgba(248,113,113,0.12)" : "rgba(248,113,113,0.2)"}` }}>
+      <div style={{ ...card, border: `1px solid rgba(248,113,113,0.12)` }}>
         <div className="flex items-center gap-2 mb-4">
           <XCircle size={16} style={{ color: "var(--coral-red)" }} />
           <h3 className="text-sm font-semibold" style={{ color: "var(--foreground)" }}>{t('habits_negative_section')}</h3>
-          <span className="ml-auto text-xs px-2 py-0.5 rounded-full font-medium" style={{ background: isDark ? "rgba(248,113,113,0.1)" : "#FEF2F2", color: "var(--coral-red)" }}>
+          <span className="ml-auto text-xs px-2 py-0.5 rounded-full font-medium" style={{ background: "rgba(248,113,113,0.1)", color: "var(--coral-red)" }}>
             {negativeHabits.length} ta
           </span>
         </div>
@@ -786,10 +785,10 @@ export function HabitsManager({ isDark, profile }: HabitsManagerProps) {
           : (
             <div className="space-y-2">
               {negativeHabits.map((h) => (
-                <HabitRow key={h.id} habit={h} isDark={isDark}
+                <HabitRow key={h.id} habit={h}
                   onStartEdit={startEditing} onDelete={handleDelete}
                   onSelectAnalytics={setAnalyticsHabit}
-                  accentColor="rgba(248,113,113" rowBg={isDark ? "rgba(248,113,113,0.04)" : "#FFF5F5"} rowBorder="rgba(248,113,113,0.1)"
+                  accentColor="rgba(248,113,113" rowBg={"rgba(248,113,113,0.04)"} rowBorder="rgba(248,113,113,0.1)"
                   {...dragProps} />
               ))}
             </div>
@@ -824,7 +823,6 @@ export function HabitsManager({ isDark, profile }: HabitsManagerProps) {
 
 interface HabitRowProps {
   habit: Habit;
-  isDark: boolean;
   onStartEdit: (h: Habit) => void;
   onDelete: (id: string) => void;
   onSelectAnalytics: (h: Habit) => void;
@@ -841,7 +839,7 @@ interface HabitRowProps {
 }
 
 function HabitRow({
-  habit, isDark,
+  habit,
   onStartEdit, onDelete, onSelectAnalytics,
   accentColor, rowBg, rowBorder, onDragStart, onDragOver, onDrop, onDragEnd, dragId, dragOverId, onMove,
 }: HabitRowProps) {

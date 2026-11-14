@@ -7,14 +7,12 @@ import { updateUserPassword } from "../../services/db";
 import type { Profile } from "../../services/supabase";
 import { useLang } from "../../store/LangContext";
 import { notificationService } from "../../services/notificationService";
-import { useTheme } from "../../store/ThemeContext";
 import { Monitor } from "lucide-react";
+import { useProfile } from "../../store/UserContext";
 
 type Lang = "uz" | "ru" | "en";
 
 interface SettingsPageProps {
-  isDark: boolean;
-  profile: Profile;
   onProfileUpdate: (newProfile: Profile) => void;
   onLogout: () => void;
   onNavigate: (tab: string) => void;
@@ -22,9 +20,9 @@ interface SettingsPageProps {
   onLangChange: (l: Lang) => void;
 }
 
-export function SettingsPage({ profile, onLogout, onNavigate, lang, onLangChange }: SettingsPageProps) {
+export function SettingsPage({ onLogout, onNavigate, lang, onLangChange }: SettingsPageProps) {
+  const profile = useProfile();
   const { t } = useLang();
-  const { theme, setTheme, isDark } = useTheme();
   const [passOpen, setPassOpen] = useState(false);
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -86,14 +84,14 @@ export function SettingsPage({ profile, onLogout, onNavigate, lang, onLangChange
   }
 
   const card: React.CSSProperties = {
-    background: isDark ? "rgba(22,27,34,0.85)" : "var(--card)",
-    border: `1px solid ${isDark ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.07)"}`,
+    background: "rgba(22,27,34,0.85)",
+    border: `1px solid rgba(255,255,255,0.06)`,
     borderRadius: 14,
   };
 
   const inputStyle: React.CSSProperties = {
-    background: isDark ? "rgba(255,255,255,0.05)" : "#F9FAFB",
-    border: `1px solid ${isDark ? "rgba(255,255,255,0.1)" : "rgba(0,0,0,0.1)"}`,
+    background: "rgba(255,255,255,0.05)",
+    border: `1px solid rgba(255,255,255,0.1)`,
     color: "var(--foreground)",
     borderRadius: 8,
     padding: "9px 12px",
@@ -137,7 +135,7 @@ export function SettingsPage({ profile, onLogout, onNavigate, lang, onLangChange
       {/* Profile shortcut */}
       <button onClick={() => onNavigate("edit-profile")}
         className="w-full flex items-center gap-3 p-4 rounded-xl mb-3 transition-all text-left"
-        style={{ background: isDark ? "rgba(74,222,128,0.06)" : "rgba(74,222,128,0.08)", border: "1px solid rgba(74,222,128,0.2)" }}>
+        style={{ background: "rgba(74,222,128,0.06)", border: "1px solid rgba(74,222,128,0.2)" }}>
         <div className="w-9 h-9 rounded-xl flex items-center justify-center" style={{ background: "rgba(74,222,128,0.15)" }}>
           <UserPen size={16} style={{ color: "#4ADE80" }} />
         </div>
@@ -148,46 +146,11 @@ export function SettingsPage({ profile, onLogout, onNavigate, lang, onLangChange
         <span style={{ color: "var(--muted-foreground)", fontSize: 18 }}>›</span>
       </button>
 
-      {/* Theme Selection */}
-      <div className="premium-card p-4 mb-3">
-        <div className="flex items-center gap-3 mb-4">
-          <div className="w-9 h-9 rounded-xl flex items-center justify-center bg-xp/10 text-xp">
-            {isDark ? <Moon size={16} /> : <Sun size={16} />}
-          </div>
-          <div>
-            <p className="text-sm font-semibold">{t('settings_theme' as any) || 'Ilova ko\'rinishi'}</p>
-            <p className="text-xs text-muted-foreground">{t('settings_theme_sub' as any) || 'Mavzuni tanlang'}</p>
-          </div>
-        </div>
-
-        <div className="flex p-1 bg-secondary rounded-xl">
-          {[
-            { id: 'light', icon: Sun, label: 'Yorug\'' },
-            { id: 'dark', icon: Moon, label: 'Qorong\'i' },
-            { id: 'system', icon: Monitor, label: 'Tizim' },
-          ].map((item) => (
-            <button
-              key={item.id}
-              onClick={() => setTheme(item.id as any)}
-              className={`flex-1 flex items-center justify-center gap-2 py-2 rounded-lg text-xs font-bold transition-all ${
-                theme === item.id
-                  ? 'bg-card text-primary shadow-sm'
-                  : 'text-muted-foreground hover:text-foreground'
-              }`}
-            >
-              <item.icon size={14} />
-              <span>{item.label}</span>
-            </button>
-          ))}
-        </div>
-      </div>
-
-
       {/* Language */}
       <div style={card} className="p-4 mb-3">
         <div className="flex items-center gap-3 mb-3">
           <div className="w-9 h-9 rounded-xl flex items-center justify-center"
-            style={{ background: isDark ? "rgba(96,165,250,0.12)" : "rgba(96,165,250,0.1)" }}>
+            style={{ background: "rgba(96,165,250,0.12)" }}>
             <Globe size={16} style={{ color: "#60A5FA" }} />
           </div>
           <div>
@@ -200,8 +163,8 @@ export function SettingsPage({ profile, onLogout, onNavigate, lang, onLangChange
             <button key={l.id} onClick={() => onLangChange(l.id)}
               className="flex-1 flex flex-col items-center gap-1 py-2.5 rounded-xl text-xs font-medium transition-all"
               style={{
-                background: lang === l.id ? (isDark ? "rgba(96,165,250,0.15)" : "rgba(96,165,250,0.12)") : (isDark ? "rgba(255,255,255,0.04)" : "#F9FAFB"),
-                border: lang === l.id ? "1.5px solid rgba(96,165,250,0.4)" : `1px solid ${isDark ? "rgba(255,255,255,0.07)" : "rgba(0,0,0,0.07)"}`,
+                background: lang === l.id ? ("rgba(96,165,250,0.15)") : ("rgba(255,255,255,0.04)"),
+                border: lang === l.id ? "1.5px solid rgba(96,165,250,0.4)" : `1px solid rgba(255,255,255,0.07)`,
                 color: lang === l.id ? "#60A5FA" : "var(--muted-foreground)",
               }}>
               <span style={{ fontSize: 18 }}>{l.flag}</span>
@@ -215,9 +178,9 @@ export function SettingsPage({ profile, onLogout, onNavigate, lang, onLangChange
       <div style={card} className="mb-3 overflow-hidden">
         <button onClick={() => { setPassOpen(!passOpen); setPassError(""); setPassSuccess(""); }}
           className="w-full flex items-center gap-3 p-4 transition-all"
-          style={{ background: passOpen ? (isDark ? "rgba(255,255,255,0.03)" : "rgba(0,0,0,0.02)") : "transparent" }}>
+          style={{ background: passOpen ? ("rgba(255,255,255,0.03)") : "transparent" }}>
           <div className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0"
-            style={{ background: isDark ? "rgba(248,113,113,0.1)" : "rgba(248,113,113,0.08)" }}>
+            style={{ background: "rgba(248,113,113,0.1)" }}>
             <span style={{ fontSize: 16 }}>🔑</span>
           </div>
           <div className="flex-1 text-left">
@@ -228,7 +191,7 @@ export function SettingsPage({ profile, onLogout, onNavigate, lang, onLangChange
         </button>
 
         {passOpen && (
-          <div className="px-4 pb-4 space-y-3 border-t" style={{ borderColor: isDark ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.06)" }}>
+          <div className="px-4 pb-4 space-y-3 border-t" style={{ borderColor: "rgba(255,255,255,0.06)" }}>
             <div className="h-3" />
             <div className="relative">
               <input type={showPass ? "text" : "password"} style={{ ...inputStyle, paddingRight: 40 }}
@@ -253,7 +216,7 @@ export function SettingsPage({ profile, onLogout, onNavigate, lang, onLangChange
             <button onClick={handleSavePassword} disabled={passLoading || !newPassword}
               className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-semibold"
               style={{
-                background: !newPassword ? (isDark ? "rgba(255,255,255,0.05)" : "#F3F4F6") : passLoading ? "rgba(74,222,128,0.4)" : "var(--neon-green)",
+                background: !newPassword ? ("rgba(255,255,255,0.05)") : passLoading ? "rgba(74,222,128,0.4)" : "var(--neon-green)",
                 color: !newPassword ? "var(--muted-foreground)" : "#0E1117",
                 cursor: passLoading || !newPassword ? "not-allowed" : "pointer",
               }}>
@@ -269,7 +232,7 @@ export function SettingsPage({ profile, onLogout, onNavigate, lang, onLangChange
         <div className="flex items-center justify-between mb-2">
           <div className="flex items-center gap-3">
             <div className="w-9 h-9 rounded-xl flex items-center justify-center"
-              style={{ background: isDark ? "rgba(74,222,128,0.1)" : "rgba(74,222,128,0.08)" }}>
+              style={{ background: "rgba(74,222,128,0.1)" }}>
               <Bell size={16} style={{ color: "#4ADE80" }} />
             </div>
             <div>
@@ -289,14 +252,14 @@ export function SettingsPage({ profile, onLogout, onNavigate, lang, onLangChange
               saveNotif(next, notifTime);
             }}
             className="relative w-12 h-6 rounded-full transition-all shrink-0"
-            style={{ background: notifEnabled && notifPerm === "granted" ? "#4ADE80" : isDark ? "rgba(255,255,255,0.1)" : "#D1D5DB" }}>
+            style={{ background: notifEnabled && notifPerm === "granted" ? "#4ADE80" : "rgba(255,255,255,0.1)" }}>
             <div className="absolute top-0.5 w-5 h-5 rounded-full bg-white shadow transition-all duration-200"
               style={{ left: notifEnabled && notifPerm === "granted" ? "calc(100% - 22px)" : "2px" }} />
           </button>
         </div>
 
         {notifPerm === "denied" && (
-          <div className="mt-2 p-3 rounded-xl" style={{ background: isDark ? "rgba(248,113,113,0.08)" : "#FFF5F5", border: "1px solid rgba(248,113,113,0.2)" }}>
+          <div className="mt-2 p-3 rounded-xl" style={{ background: "rgba(248,113,113,0.08)", border: "1px solid rgba(248,113,113,0.2)" }}>
             <div className="flex items-center gap-2 mb-1">
               <BellOff size={13} style={{ color: "var(--coral-red)" }} />
               <p className="text-xs font-semibold" style={{ color: "var(--foreground)" }}>{t('settings_notif_blocked')}</p>
@@ -308,7 +271,7 @@ export function SettingsPage({ profile, onLogout, onNavigate, lang, onLangChange
         )}
         {notifPerm === "default" && (
           <div className="mt-2 p-3 rounded-xl flex items-center gap-3"
-            style={{ background: isDark ? "rgba(251,191,36,0.08)" : "#FFFBEB", border: "1px solid rgba(251,191,36,0.2)" }}>
+            style={{ background: "rgba(251,191,36,0.08)", border: "1px solid rgba(251,191,36,0.2)" }}>
             <BellOff size={13} style={{ color: "#FBBF24", flexShrink: 0 }} />
             <div className="flex-1">
               <p className="text-xs font-medium" style={{ color: "var(--foreground)" }}>{t('settings_notif_need_perm')}</p>
@@ -330,7 +293,7 @@ export function SettingsPage({ profile, onLogout, onNavigate, lang, onLangChange
             <button
               onClick={handleSendTest}
               className="w-full py-2 rounded-lg text-xs font-semibold transition-all"
-              style={{ background: isDark ? "rgba(255,255,255,0.05)" : "#F3F4F6", color: "var(--foreground)", border: `1px solid ${isDark ? "rgba(255,255,255,0.1)" : "rgba(0,0,0,0.1)"}` }}
+              style={{ background: "rgba(255,255,255,0.05)", color: "var(--foreground)", border: `1px solid rgba(255,255,255,0.1)` }}
             >
               🚀 Sinab ko'rish
             </button>

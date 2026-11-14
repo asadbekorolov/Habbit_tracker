@@ -10,7 +10,6 @@ interface CustomTimePickerModalProps {
   initialTime?: string;
   onConfirm?: (timeStr: string) => void;
   onSave?: (timeStr: string) => void;
-  isDark?: boolean;
 }
 
 const HOURS_LIST = Array.from({ length: 24 }, (_, i) => i);

@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from "react";
 import { useLang } from "../../store/LangContext";
-import { useUser } from "../../store/UserContext";
+import { useUser, useProfile } from "../../store/UserContext";
 import {
   Save, Loader2, Camera, ArrowLeft, User as UserIcon, Send,
   Instagram, Lock, Unlock, Check, Trash2, Image as ImageIcon
@@ -12,8 +12,6 @@ import { AvatarCropperModal } from "../../components/AvatarCropperModal";
 import { toast } from "sonner";
 
 interface EditProfilePageProps {
-  isDark: boolean;
-  profile: Profile;
   onProfileUpdate: (newProfile: Profile) => void;
   onBack: () => void;
 }
@@ -27,7 +25,8 @@ const Field = ({ label, children }: { label: string; children: React.ReactNode }
   </div>
 );
 
-export function EditProfilePage({ isDark, profile, onProfileUpdate, onBack }: EditProfilePageProps) {
+export function EditProfilePage({ onProfileUpdate, onBack }: EditProfilePageProps) {
+  const profile = useProfile();
   const { t } = useLang();
   const { refreshUserProfile, setProfile } = useUser();
 

@@ -8,11 +8,10 @@ import { App as CapacitorApp } from '@capacitor/app';
 import { habitSyncQueue } from '../services/habitSyncQueue';
 
 interface UseMobileLifecycleOptions {
-  isDark: boolean;
   profileId?: string;
 }
 
-export function useMobileLifecycle({ isDark, profileId }: UseMobileLifecycleOptions) {
+export function useMobileLifecycle({ profileId }: UseMobileLifecycleOptions) {
   // Mount global Android hardware back button listener (double-tap exit, modal close, subpage navigation)
   useHardwareBackButton();
 
@@ -23,26 +22,22 @@ export function useMobileLifecycle({ isDark, profileId }: UseMobileLifecycleOpti
     return () => { handle.then((h) => h.remove()).catch(() => {}); };
   }, []);
 
-  // Sync Status Bar theme with app theme
+  // Status bar — doim qorong'i
   useEffect(() => {
     if (!Capacitor.isNativePlatform()) return;
 
     const updateStatusBar = async () => {
       try {
-        if (isDark) {
-          await StatusBar.setStyle({ style: Style.Dark });
-          await StatusBar.setBackgroundColor({ color: '#0E1117' });
-        } else {
-          await StatusBar.setStyle({ style: Style.Light });
-          await StatusBar.setBackgroundColor({ color: '#F9FAFB' });
-        }
+        // Ilova faqat qorong'i rejimda.
+        await StatusBar.setStyle({ style: Style.Dark });
+        await StatusBar.setBackgroundColor({ color: '#0E1117' });
       } catch (err) {
         console.warn('StatusBar update failed:', err);
       }
     };
 
     updateStatusBar();
-  }, [isDark]);
+  }, []);
 
   // Request Notification Permissions on Startup
   useEffect(() => {

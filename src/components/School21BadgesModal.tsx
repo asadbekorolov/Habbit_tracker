@@ -152,7 +152,6 @@ export const computeTieredBadges = computeNativeBadges;
 export interface School21BadgesModalProps {
   isOpen: boolean;
   onClose: () => void;
-  isDark?: boolean;
   profile?: Profile;
   stats: UserStatsForBadges;
 }

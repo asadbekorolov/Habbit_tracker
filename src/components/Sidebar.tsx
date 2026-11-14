@@ -20,14 +20,13 @@ import { useLang } from "../store/LangContext";
 import { FeedbackModal } from "./FeedbackModal";
 
 interface SidebarProps {
-  isDark: boolean;
   activeTab: string;
   onTabChange: (tab: string) => void;
   profile: Profile;
   onProfileClick?: () => void;
 }
 
-export function Sidebar({ isDark, activeTab, onTabChange, profile, onProfileClick }: SidebarProps) {
+export function Sidebar({ activeTab, onTabChange, profile, onProfileClick }: SidebarProps) {
   const { t } = useLang();
   const [showFeedback, setShowFeedback] = useState(false);
 
@@ -56,14 +55,14 @@ export function Sidebar({ isDark, activeTab, onTabChange, profile, onProfileClic
     <aside
       className="hidden md:flex flex-col w-[220px] shrink-0 h-screen sticky top-0"
       style={{
-        background: isDark ? "#0B0E14" : "#FFFFFF",
-        borderRight: isDark ? "1px solid var(--sidebar-border)" : "1px solid rgba(0,0,0,0.08)",
+        background: "#0B0E14",
+        borderRight: "1px solid var(--sidebar-border)",
       }}
     >
       {/* Logo */}
       <div
         className="flex items-center gap-2.5 px-6 py-5 border-b"
-        style={{ borderColor: isDark ? "var(--sidebar-border)" : "rgba(0,0,0,0.05)" }}
+        style={{ borderColor: "var(--sidebar-border)" }}
       >
         <div
           className="w-8 h-8 rounded-lg flex items-center justify-center"
@@ -131,13 +130,13 @@ export function Sidebar({ isDark, activeTab, onTabChange, profile, onProfileClic
       </div>
 
       {showFeedback && (
-        <FeedbackModal isDark={isDark} profile={profile} onClose={() => setShowFeedback(false)} />
+        <FeedbackModal profile={profile} onClose={() => setShowFeedback(false)} />
       )}
 
       {/* User info strip */}
       <div
         className="px-4 py-4 border-t"
-        style={{ borderColor: isDark ? "var(--sidebar-border)" : "rgba(0,0,0,0.05)" }}
+        style={{ borderColor: "var(--sidebar-border)" }}
       >
         <div className="flex items-center gap-3 rounded-xl px-2 py-1.5 -mx-2">
           {profile.avatar_url ? (

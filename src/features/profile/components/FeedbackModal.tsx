@@ -10,13 +10,12 @@ import { useScrollLock } from "../../../hooks/useScrollLock";
 interface FeedbackModalProps {
   isOpen: boolean;
   onClose: () => void;
-  isDark?: boolean;
   profile: Profile;
 }
 
 export type FeedbackType = "bug" | "suggestion" | "feedback";
 
-export function FeedbackModal({ isOpen, onClose, isDark = true, profile }: FeedbackModalProps) {
+export function FeedbackModal({ isOpen, onClose, profile }: FeedbackModalProps) {
   const { t } = useLang();
   const { notificationSuccess, impactLight } = useHaptics();
   useScrollLock(isOpen);
