@@ -74,7 +74,7 @@ export function Sidebar({ activeTab, onTabChange, profile, onProfileClick }: Sid
           <p
             className="text-sm font-semibold leading-none text-slate-900 dark:text-white"
           >
-            Tracker
+            IDROK
           </p>
           <p
             className="text-[10px] mt-0.5 text-slate-500 dark:text-muted-foreground"

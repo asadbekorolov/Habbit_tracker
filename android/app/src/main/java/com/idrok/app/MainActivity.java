@@ -1,4 +1,4 @@
-package com.tracker.app;
+package com.idrok.app;
 
 import android.content.pm.ApplicationInfo;
 import android.os.Bundle;

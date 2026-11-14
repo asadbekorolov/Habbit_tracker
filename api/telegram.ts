@@ -101,11 +101,11 @@ export default async function handler(req: any, res: any) {
         if (!data?.ok) {
           await sendMsg(chatId, '❌ Ulash havolasi eskirgan yoki noto\'g\'ri. Ilovadan yangi havola oling (15 daqiqa amal qiladi).')
         } else {
-          await sendMsg(chatId, `✅ <b>${escapeHtml(data.display_name)}</b>, Traccer bilan muvaffaqiyatli ulandi!\n\nBugungi odatlaringiz:`)
+          await sendMsg(chatId, `✅ <b>${escapeHtml(data.display_name)}</b>, IDROK bilan muvaffaqiyatli ulandi!\n\nBugungi odatlaringiz:`)
           await showHabits(chatId)
         }
       } else {
-        await sendMsg(chatId, '👋 <b>Traccer Bot</b>ga xush kelibsiz!\n\nBog\'lanish uchun Traccer ilovasida Profil → "Telegram Bot" → <b>Ulash</b> tugmasini bosing.')
+        await sendMsg(chatId, '👋 <b>IDROK Bot</b>ga xush kelibsiz!\n\nBog\'lanish uchun IDROK ilovasida Profil → "Telegram Bot" → <b>Ulash</b> tugmasini bosing.')
       }
     } else if (text === '/odatlar' || text.startsWith('/odatlar@')) {
       await showHabits(chatId)

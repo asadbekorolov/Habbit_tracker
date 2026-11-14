@@ -27,14 +27,14 @@ export function GuideModal({ isOpen, onClose }: GuideModalProps) {
       color: "#FBBF24",
       question: "Tangalar nimaga kerak va qanday to'planadi?",
       answer:
-        "Tangalar — Tracker ichki valyutasi bo'lib, uning yordamida Do'kondan profil ramkalari, unvonlar, streak qalqonlari va AI murabbiy tahlilini xarid qilishingiz mumkin. Kunlik odat bajarganda tangalar mukofot sifatida beriladi.",
+        "Tangalar — IDROK ichki valyutasi bo'lib, uning yordamida Do'kondan profil ramkalari, unvonlar, streak qalqonlari va AI murabbiy tahlilini xarid qilishingiz mumkin. Kunlik odat bajarganda tangalar mukofot sifatida beriladi.",
     },
     {
       icon: Heart,
       color: "#F43F5E",
       question: "Health Connect va Salomatlik integratsiyasi",
       answer:
-        "Tracker ilovasi qurilmangizning Health Connect servisi bilan sinxronlashib, kunlik qadamlar, uyqu vaqti va jismoniy faollik ko'rsatkichlarini avtomatik ravishda jurnalga kiritib boradi.",
+        "IDROK ilovasi qurilmangizning Health Connect servisi bilan sinxronlashib, kunlik qadamlar, uyqu vaqti va jismoniy faollik ko'rsatkichlarini avtomatik ravishda jurnalga kiritib boradi.",
     },
     {
       icon: HelpCircle,

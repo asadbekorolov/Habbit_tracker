@@ -18,9 +18,9 @@ self.addEventListener("activate", (e) => {
 });
 
 self.addEventListener("push", (e) => {
-  const data = e.data ? e.data.json() : { title: "Tracker", body: "Yangi xabar" };
+  const data = e.data ? e.data.json() : { title: "IDROK", body: "Yangi xabar" };
   e.waitUntil(
-    self.registration.showNotification(data.title || "Tracker", {
+    self.registration.showNotification(data.title || "IDROK", {
       body: data.body || "",
       icon: "/icons/icon-192.png",
       badge: "/icons/icon-192.png",

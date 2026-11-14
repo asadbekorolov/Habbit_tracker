@@ -626,7 +626,7 @@ export const ru: Dict = {
 
   // ── App Shell ────────────────────────────────────────────────
   app_habits_word: "привычек",
-  notif_daily_title: "Tracker — Ежедневное напоминание",
+  notif_daily_title: "IDROK — Ежедневное напоминание",
   notif_daily_no_habits: "Начните ваши привычки сегодня!",
   notif_daily_all_done: "Отлично! Все {n} привычек выполнены!",
   notif_daily_none_done: "Вы ещё не начали сегодняшние привычки!",
@@ -641,7 +641,7 @@ export const ru: Dict = {
   toast_all_done_sub: "+{n} очков добавлено",
   toast_streak_title: "{n} дней подряд!",
   toast_streak_sub: "{name} — так держать!",
-  pwa_install_title: "Установите Tracker",
+  pwa_install_title: "Установите IDROK",
   pwa_install_sub: "Добавьте на телефон — работает быстрее",
   pwa_install_btn: "Установить",
   logs_today_hint: "Отметьте привычки сегодня",

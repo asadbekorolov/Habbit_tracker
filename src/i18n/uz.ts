@@ -624,7 +624,7 @@ export const uz = {
 
   // ── App Shell ────────────────────────────────────────────────
   app_habits_word: "odat",
-  notif_daily_title: "Tracker — Kunlik Eslatma",
+  notif_daily_title: "IDROK — Kunlik Eslatma",
   notif_daily_no_habits: "Bugun odatlaringizni boshlang!",
   notif_daily_all_done: "Ajoyib! Barcha {n} ta odat bajarildi!",
   notif_daily_none_done: "Bugungi odatlaringizni hali boshlamadingiz!",
@@ -639,7 +639,7 @@ export const uz = {
   toast_all_done_sub: "+{n} ochko qo'shildi",
   toast_streak_title: "{n} kunlik streak!",
   toast_streak_sub: "{name} — zo'r davom eting!",
-  pwa_install_title: "Tracker'ni o'rnating",
+  pwa_install_title: "IDROK'ni o'rnating",
   pwa_install_sub: "Telefoningizga qo'shing — tezroq ishlaydi",
   pwa_install_btn: "O'rnatish",
   logs_today_hint: "Bugungi odatlaringizni belgilang",

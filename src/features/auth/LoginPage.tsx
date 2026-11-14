@@ -373,7 +373,7 @@ export function LoginPage({ onLogin }: LoginPageProps) {
         >
           {tab === "forgot" ? "Parolni tiklash" :
            tab === "verify-email" ? "Emailni tasdiqlash" :
-           tab === "complete-google" ? "Profilni sozlash" : "Tracker"}
+           tab === "complete-google" ? "Profilni sozlash" : "IDROK"}
         </motion.h1>
         <motion.p
           key={tab + "-sub"}

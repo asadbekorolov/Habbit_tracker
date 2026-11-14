@@ -166,7 +166,7 @@ export default function App() {
       const rawUrl = data.url;
 
       if (
-        rawUrl.startsWith('com.tracker.app://') ||
+        rawUrl.startsWith('com.idrok.app://') ||
         rawUrl.includes('auth-callback') ||
         rawUrl.includes('login-callback')
       ) {
@@ -174,7 +174,7 @@ export default function App() {
           await Browser.close();
         } catch (_) {}
 
-        const normalizedUrl = rawUrl.replace('com.tracker.app://', 'https://tracker.app/');
+        const normalizedUrl = rawUrl.replace('com.idrok.app://', 'https://idrok.app/');
         let parsedUrl: URL | null = null;
         try {
           parsedUrl = new URL(normalizedUrl);

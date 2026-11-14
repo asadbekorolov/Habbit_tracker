@@ -35,13 +35,13 @@
                 <action android:name="android.intent.action.VIEW" />
                 <category android:name="android.intent.category.DEFAULT" />
                 <category android:name="android.intent.category.BROWSABLE" />
-                <data android:scheme="com.tracker.app" android:host="*" />
+                <data android:scheme="com.idrok.app" android:host="*" />
             </intent-filter>
             <intent-filter>
                 <action android:name="android.intent.action.VIEW" />
                 <category android:name="android.intent.category.DEFAULT" />
                 <category android:name="android.intent.category.BROWSABLE" />
-                <data android:scheme="com.tracker.app" />
+                <data android:scheme="com.idrok.app" />
             </intent-filter>
         </activity>
 

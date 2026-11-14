@@ -1,8 +1,8 @@
 import type { CapacitorConfig } from '@capacitor/cli';
 
 const config: CapacitorConfig = {
-  appId: 'com.tracker.app',
-  appName: 'Tracker',
+  appId: 'com.idrok.app',
+  appName: 'IDROK',
   webDir: 'dist',
   server: {
     androidScheme: 'https',

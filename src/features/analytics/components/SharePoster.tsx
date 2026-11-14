@@ -29,7 +29,7 @@ export function SharePoster({ s }: { s: AnalyticsData }) {
           <div className="flex items-center justify-between mb-8">
             <div className="flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-emerald-500/10 border border-emerald-500/25 text-emerald-400 text-[11px] font-black uppercase tracking-widest shadow-sm">
               <Zap size={14} className="fill-emerald-400" />
-              <span>TRACKER · INTIZOM VA STATISTIKA</span>
+              <span>IDROK · INTIZOM VA STATISTIKA</span>
             </div>
             <span className="text-xs text-slate-400 font-bold uppercase tracking-wider">
               {monthName} {now.getFullYear()}
@@ -132,9 +132,9 @@ export function SharePoster({ s }: { s: AnalyticsData }) {
         <div className="pt-4 border-t border-white/10 flex items-center justify-between relative z-10">
           <div className="flex items-center gap-2">
             <div className="w-7 h-7 rounded-xl bg-emerald-500 flex items-center justify-center text-black font-black text-xs">
-              T
+              I
             </div>
-            <span className="text-xs font-bold text-slate-300">tracker.app</span>
+            <span className="text-xs font-bold text-slate-300 tracking-widest">IDROK</span>
           </div>
           <span className="text-[11px] font-medium text-slate-400 italic">
             Kichik odatlar, buyuk natijalar ✨

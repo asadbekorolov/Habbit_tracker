@@ -1,11 +1,11 @@
 {
-  "name": "Tracker — Odat Kuzatuvchi",
-  "short_name": "Tracker",
+  "name": "IDROK — Odatlar va intizom",
+  "short_name": "IDROK",
   "description": "Kunlik odatlarni kuzating va tahlil qiling",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#0D1117",
-  "theme_color": "#4ADE80",
+  "background_color": "#090d16",
+  "theme_color": "#10b981",
   "orientation": "portrait-primary",
   "lang": "uz",
   "icons": [
