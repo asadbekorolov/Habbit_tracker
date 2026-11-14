@@ -14,6 +14,9 @@ import {
   equipCosmetic, getMyProfile, getFramePurchases, cleanupExpiredFrame
 } from "../services/db";
 import { supabase } from "../services/supabase";
+import { postApi } from "../services/apiClient";
+import { Capacitor } from "@capacitor/core";
+import { Browser } from "@capacitor/browser";
 import { FRAMES, FRAME_DURATION_DAYS, PREMIUM_AVATAR_COLORS, USERNAME_GLOW_ID, USERNAME_GLOW_PRICE, getUsernameGlowStyle } from "../utils/cosmetics";
 import { AvatarFrame } from "../components/AvatarFrame";
 import type { Profile } from "../services/supabase";
@@ -159,18 +162,30 @@ export function Store({ onProfileUpdate, onClose, isModal = false }: StoreProps)
     toast.info(t('store_redirecting_payment'), { duration: 3000 });
 
     try {
-      const priceNumeric = pack.priceSom.replace(/\D/g, '');
-      let paymentUrl = "";
+      // Buyurtma va narx serverda yaratiladi (api/payments/create-invoice);
+      // mijoz faqat paket va to'lov tizimini yuboradi.
+      const resp = await postApi('/api/payments/create-invoice', { pack_id: pack.id, provider });
+      const data = await resp.json().catch(() => ({} as any));
 
-      if (provider === 'click') {
-        paymentUrl = `https://my.click.uz/services/pay?amount=${priceNumeric}&merchant_param=${profile.id}&pack_id=${pack.id}`;
-      } else {
-        const amountInTiyin = Number(priceNumeric) * 100;
-        paymentUrl = `https://checkout.paycom.uz/?amount=${amountInTiyin}&account[user_id]=${profile.id}&account[pack_id]=${pack.id}`;
+      if (resp.status === 503 || data?.error === 'payments_not_configured') {
+        toast.info(t('store_payments_soon'), { description: t('store_payments_soon_sub') });
+        return;
+      }
+      if (!resp.ok || !data?.url) {
+        toast.error(t('store_payment_redirect_error'));
+        return;
       }
 
-      // Open payment gateway URL safely in external window/browser
-      window.open(paymentUrl, '_blank', 'noopener,noreferrer');
+      if (Capacitor.isNativePlatform()) await Browser.open({ url: data.url });
+      else window.open(data.url, '_blank', 'noopener,noreferrer');
+
+      // To'lovdan qaytilganda balansni serverdan yangilaymiz (tanga callback orqali tushadi).
+      const onBack = () => {
+        if (document.visibilityState !== 'visible') return;
+        document.removeEventListener('visibilitychange', onBack);
+        refreshUserProfile().catch(() => {});
+      };
+      document.addEventListener('visibilitychange', onBack);
 
       setSelectedPack(null);
       setShowTopUpModal(false);

@@ -1051,4 +1051,6 @@ export const en: Dict = {
   health_decrease_aria: "Decrease",
   health_screen_not_entered: "Not set — tap to enter",
   health_screen_manual_hint: "Check Digital Wellbeing in your phone settings and enter it manually",
+  store_payments_soon: "Payments are coming soon",
+  store_payments_soon_sub: "Click and Payme are being connected. For now, earn coins by completing habits.",
 }

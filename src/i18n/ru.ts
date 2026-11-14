@@ -1051,4 +1051,6 @@ export const ru: Dict = {
   health_decrease_aria: "Уменьшить",
   health_screen_not_entered: "Не указано — нажмите, чтобы ввести",
   health_screen_manual_hint: "Посмотрите в «Цифровом благополучии» в настройках телефона и введите вручную",
+  store_payments_soon: "Оплата скоро заработает",
+  store_payments_soon_sub: "Подключаем Click и Payme. Пока зарабатывайте монеты, выполняя привычки.",
 }

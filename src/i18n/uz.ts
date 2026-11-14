@@ -1049,6 +1049,8 @@ export const uz = {
   health_decrease_aria: "Kamaytirish",
   health_screen_not_entered: "Kiritilmagan — bosib kiriting",
   health_screen_manual_hint: "Telefon sozlamalaridagi 'Raqamli farovonlik' bo'limidan qarab, qo'lda kiriting",
+  store_payments_soon: "To'lovlar tez kunda ishga tushadi",
+  store_payments_soon_sub: "Click va Payme ulanmoqda. Hozircha tangalarni odat bajarib to'plang.",
 }
 
 export type Dict = typeof uz
