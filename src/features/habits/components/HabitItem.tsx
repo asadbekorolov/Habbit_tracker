@@ -5,6 +5,7 @@ import {
   Droplets, Zap, Coffee, Moon, Sun, Target, PenTool, Music, Activity
 } from "lucide-react";
 import { useHaptics } from "../../../hooks/useHaptics";
+import { useLang } from "../../../store/LangContext";
 import type { Habit } from "../../../services/supabase";
 
 const ICON_MAP: Record<string, React.ElementType> = {
@@ -43,6 +44,7 @@ export interface HabitItemProps {
 }
 
 export function HabitItem({ habit, isDone, onToggle }: HabitItemProps) {
+  const { t } = useLang();
   const { impactLight } = useHaptics();
   const HabitIconComponent = resolveHabitIcon(habit.emoji, habit.name);
 
@@ -52,7 +54,8 @@ export function HabitItem({ habit, isDone, onToggle }: HabitItemProps) {
     onToggle(habit.id);
   };
 
-  const streak = habit.streak_count || 14;
+  // Hisoblangan zanjir (Dashboard beradi); bo'lmasa — 0.
+  const streak = habit.streak_count ?? 0;
 
   return (
     <motion.div
@@ -85,7 +88,7 @@ export function HabitItem({ habit, isDone, onToggle }: HabitItemProps) {
         </h3>
         <div className="flex items-center gap-1.5 mt-0.5 text-xs font-['Geist_Mono',monospace] font-mono text-emerald-400/90">
           <Flame className="w-3.5 h-3.5 text-emerald-400 shrink-0 stroke-[2.2]" />
-          <span>{streak} kunlik zanjir</span>
+          <span>{t('dash_streak_days').replace('{n}', String(streak))}</span>
         </div>
       </div>
 

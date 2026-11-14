@@ -1,9 +1,10 @@
 import React, { useState, useEffect, useMemo, lazy, Suspense } from "react";
 import { Plus } from "lucide-react";
 import { soundService } from "../../services/soundService";
-import { toDateStr } from "../../utils/date";
+import { toDateStr, addDays } from "../../utils/date";
+import { computeStreaks } from "../../utils/streaks";
 import { habitSyncQueue } from "../../services/habitSyncQueue";
-import { useHabitsQuery, useDayLogsQuery } from "../../hooks/queries";
+import { useHabitsQuery, useDayLogsQuery, useLogsRangeQuery, useFreezeInfoQuery } from "../../hooks/queries";
 import { useAddHabit } from "../../hooks/useAddHabit";
 import type { Habit, Profile } from "../../services/supabase";
 import { useProfile } from "../../store/UserContext";
@@ -48,6 +49,15 @@ export function Dashboard({
     for (const log of todayLogs || []) if (log.completed) set.add(log.habit_id);
     return set;
   }, [todayLogs]);
+
+  // Haqiqiy zanjir: so'nggi 30 kunlik loglar + bugungi belgilar + muzlatilgan
+  // kunlar (HabitsLog bilan bir xil hisob va bir xil kesh kaliti).
+  const { data: history } = useLogsRangeQuery(profile.id, addDays(today, -30), today);
+  const { data: freezeInfo } = useFreezeInfoQuery(profile.id);
+  const streaks = useMemo(
+    () => computeStreaks({ history: history || [], completedToday: doneIds, today, freezeDates: freezeInfo?.dates }),
+    [history, doneIds, today, freezeInfo?.dates]
+  );
 
   useEffect(() => {
     if (!habitsData || !todayLogs) return;
@@ -148,7 +158,7 @@ export function Dashboard({
             {habits.map((habit) => (
               <HabitItem
                 key={habit.id}
-                habit={habit}
+                habit={{ ...habit, streak_count: streaks[habit.id] ?? 0 }}
                 isDone={doneIds.has(habit.id)}
                 onToggle={handleToggleHabit}
               />

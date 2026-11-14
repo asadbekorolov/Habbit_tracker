@@ -1026,4 +1026,5 @@ export const en: Dict = {
   store_pack_chest: "Treasure chest",
   store_title_master: "Discipline Master",
   store_title_legend: "Five-Star Legend",
+  dash_streak_days: "{n}-day chain",
 }

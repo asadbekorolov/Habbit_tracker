@@ -1024,6 +1024,7 @@ export const uz = {
   store_pack_chest: "Xazina sandig'i",
   store_title_master: "Intizom Ustasi",
   store_title_legend: "Besh Yulduzli Afsona",
+  dash_streak_days: "{n} kunlik zanjir",
 }
 
 export type Dict = typeof uz

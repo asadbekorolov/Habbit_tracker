@@ -13,6 +13,9 @@ import {
   getLeaderboard,
   getUserRank,
   getMonthNotes,
+  getStreakFreezes,
+  getMonthlyFreezeCount,
+  getExtraFreezeCount,
   type CompactLog,
   type HabitMeta,
   type LeaderboardEntry,
@@ -102,7 +105,25 @@ export const monthNotesQuery = (uid: string, year: number, month: number) =>
     queryFn: async () => (await getMonthNotes(uid, year, month)) || [],
   });
 
+/** Muzlatilgan kunlar (zanjirni uzmaydi) va oylik/qo'shimcha muzlatish soni. */
+export const freezeInfoQuery = (uid: string) =>
+  queryOptions<{ dates: string[]; monthly: number; extra: number }>({
+    queryKey: queryKeys.freezes(uid),
+    queryFn: async () => {
+      const [dates, monthly, extra] = await Promise.all([
+        getStreakFreezes(uid),
+        getMonthlyFreezeCount(uid),
+        getExtraFreezeCount(uid),
+      ]);
+      return { dates: dates as string[], monthly, extra };
+    },
+  });
+
 // ─── Hook'lar ────────────────────────────────────────────────────────────
+
+export function useFreezeInfoQuery(uid?: string | null) {
+  return useQuery({ ...freezeInfoQuery(uid || ''), enabled: enabledFor(uid) });
+}
 
 /** Faol odatlar, foydalanuvchi tanlagan tartibda. */
 export function useHabitsQuery(uid?: string | null) {

@@ -1026,4 +1026,5 @@ export const ru: Dict = {
   store_pack_chest: "Сундук сокровищ",
   store_title_master: "Мастер дисциплины",
   store_title_legend: "Пятизвёздная легенда",
+  dash_streak_days: "Цепочка: {n} дн.",
 }

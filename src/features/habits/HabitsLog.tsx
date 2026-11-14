@@ -1,15 +1,15 @@
 import { useState, useEffect, useRef } from "react";
-import { useQuery } from "@tanstack/react-query";
 import { motion, AnimatePresence } from "framer-motion";
 import { toast } from "sonner";
 import { Check, Flame, Loader2, Lock, Save, ChevronLeft, ChevronRight, Snowflake, WifiOff, X, SlidersHorizontal, Shield, ClipboardList, TrendingUp, AlertCircle, ShieldCheck, HeartCrack, Zap, Coins, CheckCircle2 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { HabitIcon, cleanHabitName } from "../../components/HabitIcon";
 import { getHabitCategory, getCategoryTheme } from "../../utils/categoryTheme";
-import { HABIT_FAILURE_COLOR, HABIT_SUCCESS_COLOR, getStreakFreezes, getMonthlyFreezeCount, getExtraFreezeCount, FREE_FREEZES_PER_MONTH, isLogDateLocked, computeHabitProgress, checkAndUnlockAchievements, getHealthLog, upsertHabitMetric, type HabitMetricKey } from "../../services/db";
+import { HABIT_FAILURE_COLOR, HABIT_SUCCESS_COLOR, FREE_FREEZES_PER_MONTH, isLogDateLocked, computeHabitProgress, checkAndUnlockAchievements, getHealthLog, upsertHabitMetric, type HabitMetricKey } from "../../services/db";
 import { tashkentTodayAnchor, toDateStr, addDays } from "../../utils/date";
 import { habitSyncQueue } from "../../services/habitSyncQueue";
-import { useHabitsQuery, useDayLogsQuery, useLogsRangeQuery, queryKeys } from "../../hooks/queries";
+import { useHabitsQuery, useDayLogsQuery, useLogsRangeQuery, useFreezeInfoQuery } from "../../hooks/queries";
+import { computeStreaks } from "../../utils/streaks";
 import type { Habit, Profile } from "../../services/supabase";
 import { useLang } from "../../store/LangContext";
 import { QuickLogModal } from "../../components/QuickLogModal";
@@ -84,18 +84,7 @@ export function HabitsLog({ profile, onCompletedChange, onScoreChange, onStreakM
   const habitsQ = useHabitsQuery(profile.id);
   const dayLogsQ = useDayLogsQuery(profile.id, selectedDate);
   const historyQ = useLogsRangeQuery(profile.id, addDays(today, -30), today);
-  const freezeQ = useQuery({
-    queryKey: queryKeys.freezes(profile.id),
-    queryFn: async () => {
-      const [dates, monthly, extra] = await Promise.all([
-        getStreakFreezes(profile.id),
-        getMonthlyFreezeCount(profile.id),
-        getExtraFreezeCount(profile.id),
-      ]);
-      return { dates: dates as string[], monthly, extra };
-    },
-    enabled: !!profile.id,
-  });
+  const freezeQ = useFreezeInfoQuery(profile.id);
   const freezeDates = new Set<string>(freezeQ.data?.dates || []);
   const monthlyFreezeCount = freezeQ.data?.monthly ?? 0;
   const extraFreezeCount = freezeQ.data?.extra ?? 0;
@@ -151,22 +140,10 @@ export function HabitsLog({ profile, onCompletedChange, onScoreChange, onStreakM
       if (!byHabit[id]) byHabit[id] = new Set();
       byHabit[id].add(todayStr);
     }
-    const newStreaks: Record<string, number> = {};
     const now = tashkentTodayAnchor();
     const freezeSet = new Set(freezeDatesData);
-    for (const [habitId, days] of Object.entries(byHabit)) {
-      let streak = 0;
-      const startOffset = days.has(todayStr) ? 0 : 1;
-      for (let i = startOffset; i < 31; i++) {
-        const dd = new Date(now);
-        dd.setDate(dd.getDate() - i);
-        const ds = toDateStr(dd);
-        if (days.has(ds) || freezeSet.has(ds)) streak++;
-        else break;
-      }
-      if (streak > 0) newStreaks[habitId] = streak;
-    }
-    setStreaks(newStreaks);
+    // Yagona zanjir hisobi (Dashboard bilan bir xil) — utils/streaks.ts
+    setStreaks(computeStreaks({ history: historyData, completedToday: completed, today: todayStr, freezeDates: freezeDatesData }));
 
     const negHabitIds = new Set(negHabits.map((h: Habit) => h.id));
     const negByHabit: Record<string, Set<string>> = {};
