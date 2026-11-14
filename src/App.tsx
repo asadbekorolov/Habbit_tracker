@@ -57,6 +57,7 @@ const JournalPage = lazy(() => import("./pages/JournalPage").then(m => ({ defaul
 const Store = lazy(() => import("./pages/Store").then(m => ({ default: m.Store })));
 // Ilova ochilishida kerak bo'lmaydigan ekranlar va modallar ham alohida bo'lak.
 const LoginPage = lazy(() => import("./features/auth/LoginPage").then(m => ({ default: m.LoginPage })));
+const AuthCallback = lazy(() => import("./features/auth/AuthCallback").then(m => ({ default: m.AuthCallback })));
 const ResetPasswordPage = lazy(() => import("./features/auth/ResetPasswordPage").then(m => ({ default: m.ResetPasswordPage })));
 const LevelUpToast = lazy(() => import("./components/LevelUpToast").then(m => ({ default: m.LevelUpToast })));
 const PublicProfileModal = lazy(() => import("./components/PublicProfileModal").then(m => ({ default: m.PublicProfileModal })));
@@ -787,6 +788,11 @@ export default function App() {
               <LoginPage onLogin={handleLogin} />
             </Suspense>
           )
+        } />
+        <Route path="/auth/callback" element={
+          <Suspense fallback={<ScreenSkeleton />}>
+            <AuthCallback />
+          </Suspense>
         } />
         <Route element={<ProtectedRoute />}>
           <Route path="/" element={<Navigate to="/dashboard" replace />} />
