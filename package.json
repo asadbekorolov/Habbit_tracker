@@ -14,7 +14,8 @@
     "cap:open:android": "cap open android",
     "cap:open:ios": "cap open ios",
     "cap:run:android": "cap run android",
-    "cap:run:ios": "cap run ios"
+    "cap:run:ios": "cap run ios",
+    "db:baseline": "node scripts/dump-baseline.mjs"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^1.8.0",
@@ -56,6 +57,7 @@
     "@types/react": "^18.3.31",
     "@types/react-dom": "^18.3.7",
     "@vitejs/plugin-react": "4.7.0",
+    "pg": "^8.23.1",
     "tailwindcss": "4.1.12",
     "typescript": "^5.9.3",
     "vite": "6.3.5"
