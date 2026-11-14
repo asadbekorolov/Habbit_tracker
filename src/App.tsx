@@ -48,7 +48,7 @@ const SettingsPage = lazy(() => import("./features/profile/SettingsPage").then(m
 const GlobalLeaderboardPage = lazy(() => import("./features/leaderboard/GlobalLeaderboardPage").then(m => ({ default: m.GlobalLeaderboardPage })));
 const ProfilePage = lazy(() => import("./features/profile/ProfilePage").then(m => ({ default: m.ProfilePage })));
 const Achievements = lazy(() => import("./features/profile/Achievements").then(m => ({ default: m.Achievements })));
-const AdminPanel = lazy(() => import("./features/groups/AdminPanel").then(m => ({ default: m.AdminPanel })));
+const AdminPanel = lazy(() => import("./features/admin/AdminPanel").then(m => ({ default: m.AdminPanel })));
 const GroupsPage = lazy(() => import("./features/groups/GroupsPage").then(m => ({ default: m.GroupsPage })));
 const FeedPage = lazy(() => import("./features/feed/FeedPage").then(m => ({ default: m.FeedPage })));
 const EditProfilePage = lazy(() => import("./features/profile/EditProfilePage").then(m => ({ default: m.EditProfilePage })));
