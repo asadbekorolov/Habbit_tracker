@@ -42,7 +42,7 @@ const TYPE_CONFIG: Record<string, { icon: any; color: string; bg: string }> = {
   streak_warning:        { icon: Flame, color: '#F59E0B', bg: 'rgba(245,158,11,0.13)' },
 };
 
-function timeAgo(dateStr: string, t: (k: string) => string): string {
+function timeAgo(dateStr: string, t: (k: any) => string): string {
   const diff = Date.now() - new Date(dateStr).getTime();
   const mins = Math.floor(diff / 60000);
   if (mins < 1) return t('notif_now');

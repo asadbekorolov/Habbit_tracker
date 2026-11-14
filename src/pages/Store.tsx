@@ -7,7 +7,7 @@ import {
   ShoppingBag, X, ArrowRight, ExternalLink, Download, CreditCard,
   Crown, Award, AlertCircle, Flame
 } from "lucide-react";
-import { useUser } from "../store/UserContext";
+import { useUser, useProfile } from "../store/UserContext";
 import { useLang } from "../store/LangContext";
 import {
   purchaseShopItem, buyStar, isStarActive, getOwnedItemIds,
@@ -89,8 +89,8 @@ export const TITLES = [
 
 export function Store({ isDark = true, profile: propsProfile, onProfileUpdate, onClose, isModal = false }: StoreProps) {
   const { t } = useLang();
-  const { profile: contextProfile, setProfile, updateCoins, refreshUserProfile } = useUser();
-  const profile = contextProfile || propsProfile;
+  const { setProfile, updateCoins, refreshUserProfile } = useUser();
+  const profile = useProfile();
 
   const [activeTab, setActiveTab] = useState<CategoryTab>("all");
   const [currentCoins, setCurrentCoins] = useState<number>(profile?.coins ?? 0);

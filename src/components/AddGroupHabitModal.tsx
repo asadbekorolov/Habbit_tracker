@@ -54,7 +54,7 @@ export const AddGroupHabitModal: React.FC<AddGroupHabitModalProps> = ({
   const [newMetricType, setNewMetricType] = useState<"check" | "count" | "time">(
     initialData?.unit === "daqiqa" ? "time" : (initialData?.target_value > 1 || initialData?.unit ? "count" : "check")
   );
-  const [newTarget, setNewTarget] = useState(initialData?.target_value || 1);
+  const [newTarget, setNewTarget] = useState<number>(initialData?.target_value || 1);
   const [newUnit, setNewUnit] = useState(initialData?.unit || "");
 
   const handleAdd = async () => {

@@ -55,7 +55,7 @@ export const AddHabitModal: React.FC<AddHabitModalProps> = ({
   const [metricType, setMetricType] = useState<"check" | "count" | "time">(
     initialData?.unit === "daqiqa" ? "time" : (initialData?.target_value > 1 || initialData?.unit ? "count" : "check")
   );
-  const [newTarget, setNewTarget] = useState(initialData?.target_value || 1);
+  const [newTarget, setNewTarget] = useState<number>(initialData?.target_value || 1);
   const [newUnit, setNewUnit] = useState(initialData?.unit || "");
   const [newStartTime, setNewStartTime] = useState(initialData?.scheduled_start?.slice(0, 5) || "");
   const [newEndTime, setNewEndTime] = useState(initialData?.scheduled_end?.slice(0, 5) || "");

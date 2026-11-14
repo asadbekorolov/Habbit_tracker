@@ -89,7 +89,7 @@ export const BiometricsOnboardingModal: React.FC<BiometricsOnboardingModalProps>
     setError('');
 
     // Inspect & fallback auth user ID
-    let targetUserId = profile?.id;
+    let targetUserId: string | undefined = profile?.id;
     if (!targetUserId) {
       try {
         const { data: authData } = await supabase.auth.getUser();

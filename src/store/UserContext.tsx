@@ -154,3 +154,16 @@ export function useUser() {
   }
   return context;
 }
+
+/**
+ * Himoyalangan sahifalar uchun: joriy profil (doim mavjud).
+ * App.renderLayout profil bo'lmasa sahifani chizmaydi (login'ga yo'naltiradi),
+ * shuning uchun bu hook faqat profil yuklangandan keyin chaqiriladi.
+ */
+export function useProfile(): Profile {
+  const { profile } = useUser();
+  if (!profile) {
+    throw new Error("useProfile: profil hali yuklanmagan (himoyalangan sahifadan tashqarida chaqirildi)");
+  }
+  return profile;
+}

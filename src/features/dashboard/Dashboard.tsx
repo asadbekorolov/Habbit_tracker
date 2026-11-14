@@ -21,7 +21,8 @@ const DEFAULT_HABITS: Habit[] = [
     emoji: "Code",
     streak_count: 14,
     created_at: new Date().toISOString(),
-    type: "positive"
+    type: "positive",
+    is_active: true
   },
   {
     id: "demo-2",
@@ -30,7 +31,8 @@ const DEFAULT_HABITS: Habit[] = [
     emoji: "BookOpen",
     streak_count: 21,
     created_at: new Date().toISOString(),
-    type: "positive"
+    type: "positive",
+    is_active: true
   },
   {
     id: "demo-3",
@@ -39,7 +41,8 @@ const DEFAULT_HABITS: Habit[] = [
     emoji: "Dumbbell",
     streak_count: 8,
     created_at: new Date().toISOString(),
-    type: "positive"
+    type: "positive",
+    is_active: true
   },
   {
     id: "demo-4",
@@ -48,7 +51,8 @@ const DEFAULT_HABITS: Habit[] = [
     emoji: "Droplets",
     streak_count: 5,
     created_at: new Date().toISOString(),
-    type: "positive"
+    type: "positive",
+    is_active: true
   },
   {
     id: "demo-5",
@@ -57,7 +61,8 @@ const DEFAULT_HABITS: Habit[] = [
     emoji: "Sparkles",
     streak_count: 30,
     created_at: new Date().toISOString(),
-    type: "positive"
+    type: "positive",
+    is_active: true
   },
   {
     id: "demo-6",
@@ -66,7 +71,8 @@ const DEFAULT_HABITS: Habit[] = [
     emoji: "Brain",
     streak_count: 12,
     created_at: new Date().toISOString(),
-    type: "positive"
+    type: "positive",
+    is_active: true
   }
 ];
 
@@ -93,6 +99,7 @@ export function Dashboard({
     username: "asadbek",
     display_name: "Asadbek",
     avatar_url: "",
+    avatar_color: "#10b981",
     score: 350,
     coins: 120,
     height_cm: 175,

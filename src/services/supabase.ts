@@ -55,6 +55,8 @@ export type Habit = {
   scheduled_end?: string | null
   is_active: boolean
   created_at: string
+  /** Faqat UI (demo/hisoblangan zanjir) — bazada ustun yo'q. */
+  streak_count?: number
 }
 
 export type HabitLog = {

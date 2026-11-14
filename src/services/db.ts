@@ -2190,12 +2190,12 @@ export async function fetchRoutines(userId: string): Promise<Routine[]> {
     });
 
     if (itemsToResetInDb.length > 0) {
-      supabase
-        .from('routine_items')
-        .update({ is_completed_today: false })
-        .in('id', itemsToResetInDb)
-        .then(() => {})
-        .catch(() => {});
+      Promise.resolve(
+        supabase
+          .from('routine_items')
+          .update({ is_completed_today: false })
+          .in('id', itemsToResetInDb)
+      ).catch(() => {});
     }
 
     return routines;

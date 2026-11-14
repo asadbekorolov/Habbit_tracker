@@ -957,7 +957,7 @@ export function HabitsLog({ isDark, profile, onCompletedChange, onScoreChange, o
             isDark={isDark}
             habit={activeLogHabit}
             initialValue={logValues[activeLogHabit.id] || 0}
-            onSave={(val) => handleValueChange(activeLogHabit, val)}
+            onSave={async (val) => handleValueChange(activeLogHabit, val)}
             onClose={() => setActiveLogHabit(null)}
           />
         )}

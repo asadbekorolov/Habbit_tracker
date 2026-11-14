@@ -203,11 +203,13 @@ export function HabitsManager({ isDark, profile }: HabitsManagerProps) {
     fromDate.setDate(fromDate.getDate() - 30);
     const startDate = toDateStr(fromDate);
 
-    supabase
-      .from('habit_logs')
-      .select('log_date, completed, value')
-      .eq('habit_id', analyticsHabit.id)
-      .gte('log_date', startDate)
+    Promise.resolve(
+      supabase
+        .from('habit_logs')
+        .select('log_date, completed, value')
+        .eq('habit_id', analyticsHabit.id)
+        .gte('log_date', startDate)
+    )
       .then(({ data }) => {
         setHabitLogs(data || []);
       })
