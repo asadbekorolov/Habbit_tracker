@@ -3,6 +3,7 @@ import Cropper, { type Area } from "react-easy-crop";
 import { motion, AnimatePresence } from "framer-motion";
 import { X, Check, RotateCcw, Loader2 } from "lucide-react";
 import { getCroppedImg } from "../utils/cropImage";
+import { useScrollLock } from "../hooks/useScrollLock";
 
 interface AvatarCropperModalProps {
   imageSrc: string | null;
@@ -12,6 +13,7 @@ interface AvatarCropperModalProps {
 }
 
 export function AvatarCropperModal({ imageSrc, isOpen, onClose, onCropComplete }: AvatarCropperModalProps) {
+  useScrollLock(isOpen);
   const [crop, setCrop] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
   const [zoom, setZoom] = useState<number>(1);
   const [croppedAreaPixels, setCroppedAreaPixels] = useState<Area | null>(null);
@@ -48,12 +50,16 @@ export function AvatarCropperModal({ imageSrc, isOpen, onClose, onCropComplete }
 
   return (
     <AnimatePresence>
-      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/90 backdrop-blur-md p-4">
+      <div
+        role="dialog"
+        aria-modal="true"
+        className="fixed inset-0 z-50 flex items-center justify-center bg-black/90 backdrop-blur-md p-4 overscroll-contain touch-none"
+      >
         <motion.div
           initial={{ scale: 0.95, opacity: 0 }}
           animate={{ scale: 1, opacity: 1 }}
           exit={{ scale: 0.95, opacity: 0 }}
-          className="w-full max-w-lg bg-slate-950 border border-slate-800 rounded-3xl overflow-hidden shadow-2xl flex flex-col h-[85vh] max-h-[650px] relative"
+          className="w-full max-w-lg bg-slate-950 border border-slate-800 rounded-3xl overflow-hidden shadow-2xl flex flex-col h-[85vh] max-h-[650px] relative overscroll-contain touch-pan-y"
         >
           {/* Header */}
           <div className="p-4 border-b border-slate-800 bg-slate-900/80 flex items-center justify-between shrink-0 z-10">
@@ -61,7 +67,9 @@ export function AvatarCropperModal({ imageSrc, isOpen, onClose, onCropComplete }
             <button
               type="button"
               onClick={onClose}
-              className="p-2 rounded-full bg-slate-800 text-slate-400 hover:text-white transition-all"
+              data-modal-close-trigger
+              aria-label="yopish"
+              className="p-2 rounded-full bg-slate-800 text-slate-400 hover:text-white transition-all cursor-pointer"
             >
               <X size={16} />
             </button>

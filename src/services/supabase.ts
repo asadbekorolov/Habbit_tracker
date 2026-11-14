@@ -26,6 +26,8 @@ export type Profile = {
   is_pro?: boolean
   bio?: string | null
   telegram_username?: string | null
+  // get_telegram_contact(): username yashirin bo'lsa ham, borligini bildiradi
+  has_telegram?: boolean
   instagram_username?: string | null
   telegram_private?: boolean
   profile_private?: boolean
@@ -33,6 +35,10 @@ export type Profile = {
   has_star?: boolean
   star_expires_at?: string | null
   last_seen_at?: string | null
+  height_cm?: number | null
+  weight_kg?: number | null
+  birth_date?: string | null
+  character_state?: string | null
   created_at: string
 }
 
@@ -93,5 +99,28 @@ export type MemberGoal = {
   current_target: number
   review_interval_days: number
   last_reviewed: string
+}
+
+export type Routine = {
+  id: string
+  user_id: string
+  title: string
+  time_start: string
+  time_end: string
+  icon_name: string
+  days_of_week: number[]
+  is_active: boolean
+  created_at: string
+  items?: RoutineItem[]
+}
+
+export type RoutineItem = {
+  id: string
+  routine_id: string
+  habit_id?: string | null
+  title: string
+  order_index: number
+  is_completed_today: boolean
+  updated_at: string
 }
 

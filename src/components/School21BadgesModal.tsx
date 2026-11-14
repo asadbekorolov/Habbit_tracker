@@ -6,8 +6,9 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import type { Profile } from "../services/supabase";
-import { supabase } from "../services/supabase";
+import { getBadgeClaims, claimBadgeReward } from "../services/db";
 import { useUser } from "../store/UserContext";
+import { useScrollLock } from "../hooks/useScrollLock";
 
 export type BadgeTier = "bronze" | "silver" | "gold" | "diamond" | "special" | "emerald" | "sapphire";
 
@@ -185,6 +186,7 @@ export function getBadgeCardStyle(tier: BadgeTier, isUnlocked: boolean) {
 }
 
 export function School21BadgesModal({ isOpen, onClose, profile: propsProfile, stats }: School21BadgesModalProps) {
+  useScrollLock(isOpen);
   const { profile: contextProfile, setProfile, updateCoins } = useUser();
   const profile = contextProfile || propsProfile;
 
@@ -194,12 +196,8 @@ export function School21BadgesModal({ isOpen, onClose, profile: propsProfile, st
 
   useEffect(() => {
     if (!profile) return;
-    try {
-      const raw = localStorage.getItem(`claimed_badges_${profile.id}`);
-      if (raw) {
-        setClaimedIds(new Set(JSON.parse(raw)));
-      }
-    } catch {}
+    // Olingan nishonlar serverdagi badge_claims jadvalidan o'qiladi.
+    getBadgeClaims(profile.id).then(setClaimedIds).catch(() => {});
   }, [profile?.id]);
 
   if (!isOpen) return null;
@@ -212,26 +210,16 @@ export function School21BadgesModal({ isOpen, onClose, profile: propsProfile, st
     setClaiming(true);
 
     try {
-      const nextCoins = (profile.coins || 0) + badge.reward.coins;
-      const nextScore = (profile.score || 0) + badge.reward.xp;
+      // Shartlar va mukofot miqdori serverda tekshiriladi (claim_badge_reward).
+      const res = await claimBadgeReward(badge.id);
 
-      // Update Supabase
-      const { error } = await supabase
-        .from('profiles')
-        .update({ coins: nextCoins, score: nextScore })
-        .eq('id', profile.id);
-
-      if (error) throw error;
-
-      // Local State & Persistence
       const nextClaimed = new Set(claimedIds).add(badge.id);
       setClaimedIds(nextClaimed);
-      localStorage.setItem(`claimed_badges_${profile.id}`, JSON.stringify(Array.from(nextClaimed)));
 
-      updateCoins(nextCoins);
-      setProfile({ ...profile, coins: nextCoins, score: nextScore });
+      updateCoins(res.coins);
+      setProfile({ ...profile, coins: res.coins, score: res.score });
 
-      toast.success(`${badge.title} mukofoti olindi! +${badge.reward.xp} XP, +${badge.reward.coins} Tanga 🪙`, {
+      toast.success(`${badge.title} mukofoti olindi! +${res.rewardXp} XP, +${res.rewardCoins} Tanga 🪙`, {
         duration: 4000,
       });
 
@@ -245,12 +233,18 @@ export function School21BadgesModal({ isOpen, onClose, profile: propsProfile, st
 
   return (
     <AnimatePresence>
-      <div role="dialog" aria-modal="true" className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-md">
+      <div
+        role="dialog"
+        aria-modal="true"
+        onClick={onClose}
+        className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-md overscroll-contain touch-none"
+      >
         <motion.div
           initial={{ scale: 0.92, opacity: 0, y: 20 }}
           animate={{ scale: 1, opacity: 1, y: 0 }}
           exit={{ scale: 0.92, opacity: 0, y: 20 }}
-          className="w-full max-w-xl rounded-3xl bg-slate-950 border border-slate-800 shadow-2xl overflow-hidden flex flex-col max-h-[88vh]"
+          onClick={(e) => e.stopPropagation()}
+          className="w-full max-w-xl rounded-3xl bg-slate-950 border border-slate-800 shadow-2xl overflow-hidden flex flex-col max-h-[85vh] overscroll-contain touch-pan-y"
         >
           {/* Modal Header */}
           <div className="p-6 border-b border-slate-800 bg-slate-900/80 flex items-center justify-between shrink-0">

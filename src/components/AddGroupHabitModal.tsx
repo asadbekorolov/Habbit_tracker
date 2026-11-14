@@ -7,6 +7,7 @@ import {
   ChevronDown, ChevronUp
 } from 'lucide-react';
 import { useLang } from '../store/LangContext';
+import { useScrollLock } from '../hooks/useScrollLock';
 
 const ICON_PALETTE = [
   { key: 'BookOpen', Icon: BookOpen, bg: 'bg-amber-100 dark:bg-amber-950/60', text: 'text-amber-600 dark:text-amber-400', ring: 'ring-amber-400' },
@@ -43,6 +44,7 @@ export const AddGroupHabitModal: React.FC<AddGroupHabitModalProps> = ({
   isOpen, onClose, onAdd, isDark, initialData
 }) => {
   const { t } = useLang();
+  useScrollLock(isOpen);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
 
@@ -81,20 +83,18 @@ export const AddGroupHabitModal: React.FC<AddGroupHabitModalProps> = ({
   return (
     <AnimatePresence>
       {isOpen && (
-        <div role="dialog" aria-modal="true" className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4"
-          style={{ background: "rgba(0,0,0,0.6)", backdropFilter: "blur(4px)" }}
+        <div role="dialog" aria-modal="true" className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 overscroll-contain touch-none"
+          style={{ background: "rgba(0,0,0,0.75)", backdropFilter: "blur(4px)" }}
           onClick={onClose}>
           <motion.div
             initial={{ y: "100%" }}
             animate={{ y: 0 }}
             exit={{ y: "100%" }}
             transition={{ type: "spring", damping: 25, stiffness: 200 }}
-            className="w-full sm:max-w-sm rounded-t-3xl sm:rounded-2xl overflow-hidden"
+            className="w-full sm:max-w-sm rounded-t-3xl sm:rounded-2xl overflow-hidden max-h-[85vh] overflow-y-auto overscroll-contain touch-pan-y"
             style={{
               background: isDark ? "#161B22" : "#fff",
               border: `1px solid ${isDark ? "rgba(255,255,255,0.1)" : "rgba(0,0,0,0.1)"}`,
-              maxHeight: "85vh",
-              overflowY: "auto",
               paddingBottom: "env(safe-area-inset-bottom)"
             }}
             onClick={(e) => e.stopPropagation()}>

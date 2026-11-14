@@ -9,6 +9,8 @@ import { supabase } from "../services/supabase";
 import { nativeNotificationService } from "../services/nativeNotificationService";
 import type { Profile } from "../services/supabase";
 import { respondTelegramRequest } from "../services/db";
+import { useScrollLock } from "../hooks/useScrollLock";
+import { useHaptics } from "../hooks/useHaptics";
 
 interface NotificationBellProps {
   isDark: boolean;
@@ -66,21 +68,25 @@ function triggerNativeNotif(title: string, body: string, type: string) {
 
 export function NotificationBell({ isDark, profile, onNavigate, onUserClick }: NotificationBellProps) {
   const { t } = useLang();
+  const haptics = useHaptics();
   const [notifications, setNotifications] = useState<AppNotification[]>([]);
   const [isOpen, setIsOpen] = useState(false);
   const [actioningId, setActioningId] = useState<string | null>(null);
   const [actionError, setActionError] = useState("");
 
-  // Lock body scroll while notification modal/popover is active
+  useScrollLock(isOpen);
+
+  // Close modal on Escape key press (hardware back button integration)
   useEffect(() => {
-    if (isOpen) {
-      document.body.style.overflow = "hidden";
-    } else {
-      document.body.style.overflow = "";
-    }
-    return () => {
-      document.body.style.overflow = "";
+    if (!isOpen) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        setIsOpen(false);
+        haptics.impactLight();
+      }
     };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
   }, [isOpen]);
 
   useEffect(() => {
@@ -157,27 +163,22 @@ export function NotificationBell({ isDark, profile, onNavigate, onUserClick }: N
   }
 
   const unreadCount = notifications.filter((n) => !n.is_read).length;
-  const bg = isDark ? "#161B22" : "#ffffff";
-  const border = isDark ? "rgba(255,255,255,0.09)" : "rgba(0,0,0,0.09)";
 
   return (
     <div className="relative">
       <button
         type="button"
-        onClick={() => setIsOpen(!isOpen)}
-        className="relative flex items-center justify-center w-9 h-9 rounded-xl transition-all duration-200 active:scale-95 cursor-pointer"
-        style={{
-          background: isDark ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.06)",
-          color: "var(--foreground)",
-          border: `1px solid ${border}`,
+        onClick={() => {
+          haptics.impactLight();
+          setIsOpen(!isOpen);
         }}
+        className="relative flex items-center justify-center w-9 h-9 rounded-xl bg-slate-800/80 border border-slate-700/60 text-white transition-all duration-200 active:scale-95 cursor-pointer hover:bg-slate-700"
         aria-label="Bildirishnomalar"
       >
         <BellIcon size={18} />
         {unreadCount > 0 && (
           <span
-            className="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 rounded-full flex items-center justify-center text-[10px] font-bold"
-            style={{ background: "#EF4444", color: "#fff" }}
+            className="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 rounded-full flex items-center justify-center text-[10px] font-bold bg-rose-500 text-white shadow-sm"
           >
             {unreadCount > 9 ? '9+' : unreadCount}
           </span>
@@ -189,29 +190,28 @@ export function NotificationBell({ isDark, profile, onNavigate, onUserClick }: N
           <div
             role="dialog"
             aria-modal="true"
-            className="fixed inset-0 z-40 bg-black/50 backdrop-blur-sm flex items-start justify-center sm:justify-end p-4 pt-16 sm:pt-14 sm:pr-6"
-            onClick={() => setIsOpen(false)}
+            className="fixed inset-0 z-50 flex items-start justify-center p-4 pt-16 sm:items-center bg-black/80 backdrop-blur-md overscroll-contain touch-none"
+            onClick={() => {
+              setIsOpen(false);
+              haptics.impactLight();
+            }}
           >
             <motion.div
-              initial={{ opacity: 0, y: -10, scale: 0.95 }}
-              animate={{ opacity: 1, y: 0, scale: 1 }}
-              exit={{ opacity: 0, y: -10, scale: 0.95 }}
+              initial={{ opacity: 0, scale: 0.95, y: -10 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: -10 }}
               transition={{ duration: 0.2, ease: "easeOut" }}
               onClick={(e) => e.stopPropagation()}
-              className="w-full max-w-sm rounded-3xl shadow-2xl z-50 overflow-hidden flex flex-col"
-              style={{ background: bg, border: `1px solid ${border}`, maxHeight: "calc(85vh - 3rem)" }}
+              className="w-full max-w-md bg-slate-900 border border-slate-800/90 rounded-3xl p-5 shadow-2xl space-y-4 flex flex-col max-h-[85vh] overscroll-contain touch-pan-y relative"
             >
               {/* Header */}
-              <div
-                className="flex items-center justify-between px-5 py-4 border-b shrink-0"
-                style={{ borderColor: isDark ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.06)" }}
-              >
+              <div className="flex items-center justify-between pb-3 border-b border-slate-800 shrink-0">
                 <div className="flex items-center gap-2.5">
-                  <h3 className="font-bold text-base tracking-tight" style={{ color: "var(--foreground)" }}>
+                  <h3 className="font-bold text-base text-white tracking-tight">
                     Bildirishnomalar
                   </h3>
                   {unreadCount > 0 && (
-                    <span className="text-[11px] px-2 py-0.5 rounded-full font-bold bg-primary/10 text-primary">
+                    <span className="text-[11px] px-2 py-0.5 rounded-full font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
                       {unreadCount} {t('notif_new')}
                     </span>
                   )}
@@ -221,31 +221,38 @@ export function NotificationBell({ isDark, profile, onNavigate, onUserClick }: N
                   {unreadCount > 0 && (
                     <button
                       type="button"
-                      onClick={markAllRead}
-                      className="flex items-center gap-1 text-xs px-2.5 py-1.5 rounded-xl bg-secondary/80 hover:bg-secondary transition-colors font-medium cursor-pointer"
-                      style={{ color: "var(--muted-foreground)" }}
+                      onClick={() => {
+                        haptics.impactLight();
+                        markAllRead();
+                      }}
+                      className="flex items-center justify-center w-8 h-8 rounded-xl bg-slate-800/80 hover:bg-slate-700 text-slate-400 hover:text-emerald-400 transition-colors cursor-pointer"
                       title={t('notif_mark_read')}
                     >
-                      <CheckCheck size={13} />
+                      <CheckCheck size={14} />
                     </button>
                   )}
                   {notifications.length > 0 && (
                     <button
                       type="button"
-                      onClick={clearAll}
+                      onClick={() => {
+                        haptics.impactLight();
+                        clearAll();
+                      }}
                       title={t('notif_clear')}
-                      className="flex items-center gap-1 text-xs px-2.5 py-1.5 rounded-xl bg-secondary/80 hover:bg-secondary hover:text-red-400 transition-colors font-medium cursor-pointer"
-                      style={{ color: "var(--muted-foreground)" }}
+                      className="flex items-center justify-center w-8 h-8 rounded-xl bg-slate-800/80 hover:bg-slate-700 text-slate-400 hover:text-rose-400 transition-colors cursor-pointer"
                     >
-                      <Trash2 size={13} />
+                      <Trash2 size={14} />
                     </button>
                   )}
                   <button
                     type="button"
-                    onClick={() => setIsOpen(false)}
+                    onClick={() => {
+                      haptics.impactLight();
+                      setIsOpen(false);
+                    }}
                     data-modal-close-trigger
                     aria-label="Close"
-                    className="w-8 h-8 rounded-full flex items-center justify-center transition-all bg-secondary/80 hover:bg-secondary text-muted-foreground hover:text-foreground active:scale-90 cursor-pointer"
+                    className="w-8 h-8 rounded-xl flex items-center justify-center bg-slate-800/80 hover:bg-slate-700 text-slate-400 hover:text-white active:scale-90 transition-all cursor-pointer"
                   >
                     <X size={16} />
                   </button>
@@ -253,28 +260,30 @@ export function NotificationBell({ isDark, profile, onNavigate, onUserClick }: N
               </div>
 
               {actionError && (
-                <p className="text-xs px-5 py-2 shrink-0" style={{ color: "var(--coral-red)" }}>
-                  ⚠ {actionError}
+                <p className="text-xs px-1 py-1 shrink-0 text-rose-400 flex items-center gap-1">
+                  <X size={12} /> {actionError}
                 </p>
               )}
 
               {/* Notification Content List / Empty State */}
-              <div className="overflow-y-auto flex-1 p-3 space-y-2">
+              <div className="overflow-y-auto flex-1 space-y-2 pr-0.5">
                 {notifications.length === 0 ? (
-                  <div className="px-6 py-12 text-center flex flex-col items-center justify-center">
-                    <div className="w-16 h-16 rounded-2xl bg-primary/10 text-primary flex items-center justify-center mb-4 shadow-sm">
-                      <BellIcon size={28} />
+                  <div className="px-4 py-10 text-center flex flex-col items-center justify-center space-y-3">
+                    <div className="w-14 h-14 rounded-2xl bg-emerald-500/10 text-emerald-400 flex items-center justify-center border border-emerald-500/20 shadow-sm">
+                      <BellIcon size={26} className="stroke-[2]" />
                     </div>
-                    <p className="text-sm font-medium text-white mb-1">
-                      Hozircha yangi xabarlar yo'q
-                    </p>
-                    <p className="text-xs text-muted-foreground max-w-[240px]">
-                      Barcha muhim yangiliklar va eslatmalar shu yerda ko'rinadi
-                    </p>
+                    <div>
+                      <p className="text-sm font-bold text-white mb-1">
+                        Hozircha yangi xabarlar yo'q
+                      </p>
+                      <p className="text-xs text-slate-400 max-w-[240px] mx-auto">
+                        Barcha muhim yangiliklar va eslatmalar shu yerda ko'rinadi
+                      </p>
+                    </div>
                   </div>
                 ) : (
                   notifications.map((n) => {
-                    const cfg = TYPE_CONFIG[n.type] || { icon: BellIcon, color: 'var(--muted-foreground)', bg: 'transparent' };
+                    const cfg = TYPE_CONFIG[n.type] || { icon: BellIcon, color: '#94A3B8', bg: 'rgba(148,163,184,0.1)' };
                     const isTgReq = n.type === "telegram_request" && n.link?.startsWith("telegram_request:");
                     const isTgDone = n.type === "telegram_request_done" || n.type === "telegram_approved";
                     const isActioning = actioningId === n.id;
@@ -283,13 +292,11 @@ export function NotificationBell({ isDark, profile, onNavigate, onUserClick }: N
                     return (
                       <div
                         key={n.id}
-                        className="p-3.5 rounded-2xl transition-all border"
-                        style={{
-                          borderColor: isDark ? "rgba(255,255,255,0.05)" : "rgba(0,0,0,0.05)",
-                          background: n.is_read
-                            ? "transparent"
-                            : isDark ? "rgba(255,255,255,0.03)" : "#F8FAFC",
-                        }}
+                        className={`p-3 rounded-2xl transition-all border ${
+                          n.is_read
+                            ? "bg-slate-900/40 border-slate-800/60"
+                            : "bg-slate-800/50 border-slate-700/60"
+                        }`}
                       >
                         <div
                           className={!isTgReq ? "cursor-pointer" : ""}
@@ -297,55 +304,59 @@ export function NotificationBell({ isDark, profile, onNavigate, onUserClick }: N
                         >
                           <div className="flex items-start gap-3">
                             <div
-                              className="w-10 h-10 rounded-2xl flex items-center justify-center shrink-0 shadow-sm"
+                              className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0 shadow-sm mt-0.5"
                               style={{ background: cfg.bg }}
                             >
-                              <Icon size={18} color={cfg.color} strokeWidth={2.5} />
+                              <Icon size={17} color={cfg.color} strokeWidth={2.2} />
                             </div>
 
                             <div className="flex-1 min-w-0">
                               <div className="flex items-start justify-between gap-2">
-                                <p className="text-sm font-semibold leading-snug" style={{ color: "var(--foreground)" }}>
+                                <p className="text-xs font-bold text-white leading-snug truncate">
                                   {n.title}
                                 </p>
-                                <span className="text-[10px] shrink-0 mt-0.5 font-medium" style={{ color: "var(--muted-foreground)" }}>
+                                <span className="text-[10px] font-mono text-slate-400 shrink-0">
                                   {timeAgo(n.created_at, t)}
                                 </span>
                               </div>
-                              <p className="text-xs mt-1 leading-relaxed" style={{ color: "var(--muted-foreground)" }}>
+                              <p className="text-xs text-slate-300 mt-1 leading-relaxed">
                                 {n.body}
                               </p>
                             </div>
 
                             {!n.is_read && (
-                              <div className="w-2.5 h-2.5 rounded-full shrink-0 mt-1.5 bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.5)]" />
+                              <div className="w-2 h-2 rounded-full shrink-0 mt-1.5 bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.6)]" />
                             )}
                           </div>
 
                           {isTgDone && (
-                            <p className="text-[11px] mt-2 ml-13 font-semibold text-emerald-400">
-                              {t('notif_accepted')}
+                            <p className="text-[11px] mt-2 ml-12 font-semibold text-emerald-400 flex items-center gap-1">
+                              <Check size={12} /> {t('notif_accepted')}
                             </p>
                           )}
                         </div>
 
                         {isTgReq && !isTgDone && (
-                          <div className="flex gap-2 mt-3 ml-13">
+                          <div className="flex gap-2 mt-3 ml-12">
                             <button
                               type="button"
-                              onClick={() => handleTgApprove(n)}
+                              onClick={() => {
+                                haptics.impactLight();
+                                handleTgApprove(n);
+                              }}
                               disabled={isActioning}
-                              className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-xl text-xs font-semibold transition-all active:scale-95 cursor-pointer"
-                              style={{ background: "rgba(74,222,128,0.15)", color: "#4ADE80", border: "1px solid rgba(74,222,128,0.3)" }}
+                              className="flex-1 flex items-center justify-center gap-1.5 py-1.5 rounded-xl text-xs font-bold transition-all active:scale-95 bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 hover:bg-emerald-500/25 cursor-pointer disabled:opacity-50"
                             >
                               <Check size={13} /> {t('notif_accept')}
                             </button>
                             <button
                               type="button"
-                              onClick={() => handleTgReject(n)}
+                              onClick={() => {
+                                haptics.impactLight();
+                                handleTgReject(n);
+                              }}
                               disabled={isActioning}
-                              className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-xl text-xs font-semibold transition-all active:scale-95 cursor-pointer"
-                              style={{ background: "rgba(248,113,113,0.12)", color: "#F87171", border: "1px solid rgba(248,113,113,0.25)" }}
+                              className="flex-1 flex items-center justify-center gap-1.5 py-1.5 rounded-xl text-xs font-bold transition-all active:scale-95 bg-rose-500/15 text-rose-400 border border-rose-500/30 hover:bg-rose-500/25 cursor-pointer disabled:opacity-50"
                             >
                               <X size={13} /> {t('notif_reject')}
                             </button>

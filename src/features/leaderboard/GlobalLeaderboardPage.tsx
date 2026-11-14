@@ -1,6 +1,7 @@
-import { useState, useEffect } from "react";
-import { Trophy, Star, Medal, Crown, Loader2, Lock, AlertCircle } from "lucide-react";
-import { getLeaderboard, type LeaderboardEntry, getCached } from "../../services/db";
+import { useState } from "react";
+import { Trophy, Star, Medal, Crown, Loader2, Lock, AlertCircle, User } from "lucide-react";
+import type { LeaderboardEntry } from "../../services/db";
+import { useLeaderboardQuery, useMyRankQuery } from "../../hooks/queries";
 import type { Profile } from "../../services/supabase";
 import { useLang } from "../../store/LangContext";
 import { UserBadge } from "../../components/UserBadge";
@@ -17,29 +18,12 @@ type LeaderboardPeriod = 'daily' | 'monthly' | '6months' | 'yearly' | 'all';
 
 export function GlobalLeaderboardPage({ isDark, profile, onUserClick }: GlobalLeaderboardPageProps) {
   const { t } = useLang();
-  const initialCached = getCached<LeaderboardEntry[]>(`leaderboard_monthly`);
-  const [list, setList] = useState<LeaderboardEntry[]>(initialCached || []);
-  const [loading, setLoading] = useState(!initialCached);
-  const [error, setError] = useState("");
   const [period, setPeriod] = useState<LeaderboardPeriod>('monthly');
-
-  useEffect(() => {
-    load(period);
-  }, [period]);
-
-  async function load(p: LeaderboardPeriod) {
-    const cached = getCached<LeaderboardEntry[]>(`leaderboard_${p}`);
-    if (!cached) setLoading(true);
-    setError("");
-    try {
-      const data = await getLeaderboard(p);
-      setList(data);
-    } catch (e: any) {
-      setError(e.message || t('err_loading'));
-    } finally {
-      setLoading(false);
-    }
-  }
+  const lbQ = useLeaderboardQuery(period);
+  const rankQ = useMyRankQuery(profile.id, period);
+  const list: LeaderboardEntry[] = lbQ.data || [];
+  const loading = lbQ.isPending;
+  const error = lbQ.isError && !lbQ.data ? ((lbQ.error as any)?.message || t('err_loading')) : "";
 
   const card: React.CSSProperties = {
     background: isDark ? "rgba(22,27,34,0.85)" : "var(--card)",
@@ -47,7 +31,10 @@ export function GlobalLeaderboardPage({ isDark, profile, onUserClick }: GlobalLe
     borderRadius: 14,
   };
 
-  const myRank = list.findIndex((u) => u.id === profile.id);
+  // O'rin serverdan (top-100 dan tashqarida bo'lsa ham); 0 = reytingda yo'q.
+  // RPC hali javob bermagan bo'lsa — ro'yxatdagi o'rindan foydalanamiz.
+  const listIdx = list.findIndex((u) => u.id === profile.id);
+  const myRank = rankQ.data && rankQ.data > 0 ? rankQ.data - 1 : listIdx;
 
   const periods: { id: LeaderboardPeriod; label: string }[] = [
     { id: 'daily', label: 'Kunlik' },
@@ -108,7 +95,7 @@ export function GlobalLeaderboardPage({ isDark, profile, onUserClick }: GlobalLe
           <AlertCircle className="w-8 h-8 text-amber-400/80 mb-2"/>
           <p className="text-sm text-slate-300 font-medium">Reyting ma'lumotlarini yuklab bo'lmadi</p>
           <button
-            onClick={() => load(period)}
+            onClick={() => { lbQ.refetch(); rankQ.refetch(); }}
             className="mt-3 px-4 py-1.5 rounded-xl bg-slate-800 border border-slate-700 text-xs font-semibold text-emerald-400 hover:bg-slate-700 transition-colors"
           >
             Qayta urinish
@@ -121,7 +108,8 @@ export function GlobalLeaderboardPage({ isDark, profile, onUserClick }: GlobalLe
             <div className="flex items-end justify-center gap-3 mb-10 mt-4">
               {[list[1], list[0], list[2]].map((user, podiumIdx) => {
                 const rank = podiumIdx === 0 ? 2 : podiumIdx === 1 ? 1 : 3;
-                const heights = [90, 120, 80];
+                // Rank #1 (160px / h-40), Rank #2 (136px / h-34), Rank #3 (120px / h-30)
+                const heights = [136, 160, 120];
 
                 const themes = {
                   1: {
@@ -154,13 +142,15 @@ export function GlobalLeaderboardPage({ isDark, profile, onUserClick }: GlobalLe
                 }[rank as 1|2|3];
 
                 const isMe = user.id === profile.id;
+                const canView = isMe || !user.is_private;
                 const initials = user.display_label.split(" ").map((n: string) => n[0]).join("").toUpperCase().slice(0, 2);
                 const Icon = themes.icon;
 
                 return (
                   <div
                     key={user.id}
-                    className="flex flex-col items-center"
+                    onClick={canView ? () => onUserClick?.(user.id) : undefined}
+                    className={`flex flex-col items-center transition-transform hover:scale-105 ${canView ? "cursor-pointer" : "cursor-default"}`}
                     style={{ width: 100 }}
                   >
                     <div className="mb-2 relative z-10">
@@ -178,10 +168,14 @@ export function GlobalLeaderboardPage({ isDark, profile, onUserClick }: GlobalLe
                           <img src={user.avatar_url} alt="" className="w-14 h-14 rounded-full object-cover" style={{ border: user.active_frame ? "none" : `2px solid ${themes.badgeBorder}` }} />
                         ) : (
                           <div
-                            className="w-14 h-14 rounded-full flex items-center justify-center text-base font-bold shadow-inner"
-                            style={{ background: user.avatar_color || "#4ADE80", color: "#0E1117", border: user.active_frame ? "none" : `2px solid ${themes.badgeBorder}` }}
+                            className="w-14 h-14 rounded-full flex items-center justify-center text-base font-bold shadow-inner font-['Geist_Mono',monospace] font-mono shrink-0"
+                            style={{
+                              background: user.avatar_color || (rank === 2 ? "#94A3B8" : rank === 1 ? "#F59E0B" : "#B45309"),
+                              color: "#0E1117",
+                              border: user.active_frame ? "none" : `2px solid ${themes.badgeBorder}`
+                            }}
                           >
-                            {initials}
+                            {initials || <User className="w-6 h-6" />}
                           </div>
                         )}
                       </AvatarFrame>
@@ -192,8 +186,8 @@ export function GlobalLeaderboardPage({ isDark, profile, onUserClick }: GlobalLe
                         {isMe ? t('you_short') : user.display_label}
                         <UserBadge active={user.has_star} size={10} />
                       </p>
-                      <span className="text-[10px] font-black px-2 py-0.5 rounded-full bg-white/5 text-slate-400 border border-white/5 uppercase tracking-tighter">
-                        {user.efficiency_pct ?? 0}%
+                      <span className="text-[10px] font-black font-mono px-2 py-0.5 rounded-full bg-white/5 text-slate-400 border border-white/5 uppercase tracking-tighter">
+                        {(user.score ?? 0).toLocaleString()} XP
                       </span>
                     </div>
 
@@ -266,10 +260,13 @@ export function GlobalLeaderboardPage({ isDark, profile, onUserClick }: GlobalLe
                           <img src={user.avatar_url} alt="" className="w-9 h-9 rounded-full object-cover shrink-0" />
                         ) : (
                           <div
-                            className="w-9 h-9 rounded-full flex items-center justify-center text-xs font-bold shrink-0"
-                            style={{ background: user.avatar_color || "#4ADE80", color: "#0E1117" }}
+                            className="w-9 h-9 rounded-full flex items-center justify-center font-['Geist_Mono',monospace] font-mono text-xs font-bold shrink-0 shadow-inner"
+                            style={{
+                              background: user.avatar_color || (rank === 2 ? "#94A3B8" : rank === 1 ? "#F59E0B" : rank === 3 ? "#B45309" : "#4ADE80"),
+                              color: "#0E1117"
+                            }}
                           >
-                            {initials}
+                            {initials || <User className="w-4 h-4" />}
                           </div>
                         )}
                       </AvatarFrame>
@@ -294,7 +291,7 @@ export function GlobalLeaderboardPage({ isDark, profile, onUserClick }: GlobalLe
                         </span>
                         <span className="text-[10px] flex items-center gap-1 font-black" style={{ color: "var(--muted-foreground)", fontFamily: "'Geist Mono', monospace" }}>
                           <Star size={11} className="fill-amber-400 text-amber-400 mr-0.5" strokeWidth={2.5} />
-                          {user.score ?? 0}
+                          {(user.score ?? 0).toLocaleString()} XP
                         </span>
                       </div>
                     </div>

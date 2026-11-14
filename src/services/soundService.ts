@@ -59,8 +59,6 @@ class SoundService {
       let audio = this.audioCache[type];
       if (!audio) {
         try {
-          // Use document.createElement('audio') instead of new Audio()
-          // to avoid "Illegal constructor" in restricted WebViews.
           audio = document.createElement('audio');
           audio.src = `/sounds/${type}.mp3`;
           this.audioCache[type] = audio;
@@ -103,49 +101,42 @@ class SoundService {
           osc.type = 'sine';
           osc.frequency.setValueAtTime(400, now);
           osc.frequency.exponentialRampToValueAtTime(800, now + 0.1);
-          gain.gain.setValueAtTime(0.3, now);
-          gain.gain.exponentialRampToValueAtTime(0.01, now + 0.15);
+          gain.gain.setValueAtTime(0.2, now);
+          gain.gain.exponentialRampToValueAtTime(0.01, now + 0.12);
           osc.start(now);
-          osc.stop(now + 0.15);
+          osc.stop(now + 0.12);
           break;
         case 'streak_levelup':
           osc.type = 'triangle';
           osc.frequency.setValueAtTime(523.25, now);
           osc.frequency.setValueAtTime(659.25, now + 0.1);
           osc.frequency.setValueAtTime(783.99, now + 0.2);
-          osc.frequency.exponentialRampToValueAtTime(1046.50, now + 0.4);
-          gain.gain.setValueAtTime(0.2, now);
-          gain.gain.exponentialRampToValueAtTime(0.01, now + 0.5);
+          osc.frequency.exponentialRampToValueAtTime(1046.50, now + 0.35);
+          gain.gain.setValueAtTime(0.18, now);
+          gain.gain.exponentialRampToValueAtTime(0.01, now + 0.4);
           osc.start(now);
-          osc.stop(now + 0.5);
+          osc.stop(now + 0.4);
           break;
         case 'tab_click':
-          osc.type = 'sine';
-          osc.frequency.setValueAtTime(200, now);
-          osc.frequency.linearRampToValueAtTime(100, now + 0.05);
-          gain.gain.setValueAtTime(0.1, now);
-          gain.gain.exponentialRampToValueAtTime(0.01, now + 0.05);
-          osc.start(now);
-          osc.stop(now + 0.05);
-          break;
         case 'button_tap':
-          osc.type = 'sine';
-          osc.frequency.setValueAtTime(600, now);
-          osc.frequency.linearRampToValueAtTime(300, now + 0.03);
-          gain.gain.setValueAtTime(0.15, now);
-          gain.gain.exponentialRampToValueAtTime(0.01, now + 0.03);
-          osc.start(now);
-          osc.stop(now + 0.03);
+          // Keep minor UI clicks silent to reduce noise and save battery
           break;
       }
     } catch (e) {
       console.warn('Synthetic playback failed:', e);
-      this.playViaAudioTag(type);
+      if (type === 'task_complete' || type === 'streak_levelup') {
+        this.playViaAudioTag(type);
+      }
     }
   }
 
   public async play(type: SoundType) {
     if (!this.soundEnabled) return;
+
+    // Do not play audio or haptics for generic tab/button clicks
+    if (type === 'tab_click' || type === 'button_tap') {
+      return;
+    }
 
     try {
       await this.initAudioContext();
@@ -153,14 +144,14 @@ class SoundService {
 
       switch (type) {
         case 'task_complete':
-          await Haptics.impact({ style: ImpactStyle.Medium });
+          try {
+            await Haptics.impact({ style: ImpactStyle.Light });
+          } catch {}
           break;
         case 'streak_levelup':
-          await Haptics.notification({ type: 'success' as any });
-          break;
-        case 'tab_click':
-        case 'button_tap':
-          await Haptics.impact({ style: ImpactStyle.Light });
+          try {
+            await Haptics.notification({ type: 'success' as any });
+          } catch {}
           break;
       }
     } catch (e) {

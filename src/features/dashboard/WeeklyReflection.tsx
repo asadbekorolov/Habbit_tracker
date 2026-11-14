@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from "react";
 import { ChevronLeft, ChevronRight, Save, Sparkles, TrendingUp, Lock } from "lucide-react";
 import { getWeeklyReflection, upsertWeeklyReflection } from "../../services/db";
 import type { Profile } from "../../services/supabase";
-import { toDateStr } from "../../utils/date";
+import { tashkentTodayAnchor, getTashkentHour, toDateStr } from "../../utils/date";
 import { useLang } from "../../store/LangContext";
 import { MONTHS_SHORT, DAYS_FULL, type Lang } from "../../utils/i18n";
 
@@ -11,7 +11,7 @@ interface WeeklyReflectionProps {
   profile: Profile;
 }
 
-function getWeekStart(date: Date = new Date()): string {
+function getWeekStart(date: Date = tashkentTodayAnchor()): string {
   const d = new Date(date);
   const day = d.getDay();
   const diff = day === 0 ? -6 : 1 - day;
@@ -49,8 +49,10 @@ export function WeeklyReflection({ isDark, profile }: WeeklyReflectionProps) {
   // shuning uchun joriy hafta faqat Shanba 18:00dan keyin yoki Yakshanba
   // kuni tahrirlanadi. O'tgan (va nazariy jihatdan kelajak) haftalar esa
   // har doim faqat ko'rish uchun.
-  const now = new Date();
-  const isWeekendWindow = now.getDay() === 0 || (now.getDay() === 6 && now.getHours() >= 18);
+  // Hafta kuni va soat Toshkent vaqti bo'yicha (qurilma vaqt zonasidan qat'i nazar).
+  const tkWeekday = tashkentTodayAnchor().getDay();
+  const tkHour = getTashkentHour();
+  const isWeekendWindow = tkWeekday === 0 || (tkWeekday === 6 && tkHour >= 18);
   const isPastWeek = !isCurrentWeek;
   const isTimeLocked = isCurrentWeek && !isWeekendWindow;
   const isReadOnly = isPastWeek || isTimeLocked;

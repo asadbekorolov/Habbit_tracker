@@ -4,17 +4,18 @@ import { toast } from "sonner";
 import {
   Plus, Trash2, Loader2, CheckCircle2, XCircle, Pencil, Check, X,
   GripVertical, Sparkles, ChevronUp, ChevronDown, TrendingUp, Activity,
-  ShieldAlert, Trees, Clock, Shield, ClipboardList,
+  ShieldAlert, Trees, Clock, Shield, ClipboardList, CheckSquare, CalendarCheck,
   Footprints, Dumbbell, Utensils, Droplets, Moon, Target, BookOpen, PenTool, Music, Smartphone, Zap, Sun, Timer, Sunrise, Heart, ArrowRight, Flame, Trophy
 } from "lucide-react";
+import { RoutinesManager } from "./RoutinesManager";
 import { useNavigate } from "react-router-dom";
-import { getHabits, addHabit, deleteHabit, updateHabit } from "../../services/db";
+import { addHabit, deleteHabit, updateHabit } from "../../services/db";
 import { supabase } from "../../services/supabase";
-import { toDateStr } from "../../utils/date";
+import { tashkentTodayAnchor, toDateStr } from "../../utils/date";
 import { sortByOrder, setHabitOrder } from "../../utils/habitOrder";
 import type { Habit, Profile } from "../../services/supabase";
 import { useLang } from "../../store/LangContext";
-import { useHabits } from "../../hooks/useHabits";
+import { useHabitsQuery, habitCache } from "../../hooks/queries";
 import { useAddHabit } from "../../hooks/useAddHabit";
 import { useQueryClient } from "@tanstack/react-query";
 import { trackEvent } from "../../utils/analytics";
@@ -82,7 +83,7 @@ function calculateSingleHabitStats(habit: Habit, logs: { log_date: string; compl
   }
 
   const today = toDateStr();
-  const now = new Date();
+  const now = tashkentTodayAnchor();
 
   // Current streak
   let streak = 0;
@@ -144,9 +145,10 @@ export function HabitsManager({ isDark, profile }: HabitsManagerProps) {
   const { t } = useLang();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
-  const { data: habitsData, isLoading: queryLoading } = useHabits(profile.id);
+  const { data: habitsData, isLoading: queryLoading } = useHabitsQuery(profile.id);
   const addHabitMutation = useAddHabit();
 
+  const [activeTab, setActiveTab] = useState<'habits' | 'routines'>('habits');
   const [habits, setHabits] = useState<Habit[]>([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
@@ -179,10 +181,17 @@ export function HabitsManager({ isDark, profile }: HabitsManagerProps) {
     if (habitsData) {
       setHabits(sortByOrder(habitsData, profile.id));
       setLoading(false);
-    } else if (queryLoading) {
+    } else if (queryLoading && habits.length === 0) {
       setLoading(true);
     }
-  }, [habitsData, queryLoading, profile.id]);
+  }, [habitsData, queryLoading, profile.id, habits.length]);
+
+  useEffect(() => {
+    if (loading) {
+      const timer = setTimeout(() => setLoading(false), 3000);
+      return () => clearTimeout(timer);
+    }
+  }, [loading]);
 
   useEffect(() => {
     if (!analyticsHabit) {
@@ -190,7 +199,7 @@ export function HabitsManager({ isDark, profile }: HabitsManagerProps) {
       return;
     }
     setLogsLoading(true);
-    const fromDate = new Date();
+    const fromDate = tashkentTodayAnchor();
     fromDate.setDate(fromDate.getDate() - 30);
     const startDate = toDateStr(fromDate);
 
@@ -223,13 +232,11 @@ export function HabitsManager({ isDark, profile }: HabitsManagerProps) {
         const targetVal = h.metric === "check" ? 1 : h.target;
         const unitVal = h.metric === "time" ? "daqiqa" : h.metric === "count" ? h.unit : "";
         const habit = await addHabit(profile.id, h.name, h.emoji, h.type, targetVal, unitVal);
-        setHabits((prev) => {
-          const next = [...prev, habit];
-          setHabitOrder(profile.id, next.map((x) => x.id));
-          return next;
-        });
+        // Yangi odat tartib oxiriga; ro'yxat keshdan (useHabitsQuery) yangilanadi.
+        const order = (queryClient.getQueryData<Habit[]>(['habits', profile.id]) || habits).map((x) => x.id);
+        setHabitOrder(profile.id, [...order.filter((id) => id !== habit.id), habit.id]);
+        habitCache.added(queryClient, profile.id, habit);
       }
-      queryClient.invalidateQueries({ queryKey: ['habits', profile.id] });
       setShowGoalPack(false);
       setSelectedGoal(null);
       setCheckedPack(new Set());
@@ -244,12 +251,10 @@ export function HabitsManager({ isDark, profile }: HabitsManagerProps) {
       await deleteHabit(habitId);
       await notificationService.cancelHabitReminder(habitId);
       localStorage.removeItem(`reminder_${habitId}`);
-      setHabits((prev) => {
-        const next = prev.filter((h) => h.id !== habitId);
-        setHabitOrder(profile.id, next.map((h) => h.id));
-        return next;
-      });
-      queryClient.invalidateQueries({ queryKey: ['habits', profile.id] });
+      const next = habits.filter((h) => h.id !== habitId);
+      setHabits(next);
+      setHabitOrder(profile.id, next.map((h) => h.id));
+      habitCache.removed(queryClient, profile.id, habitId);
     } catch (e) { console.error(e); }
   }
 
@@ -269,46 +274,46 @@ export function HabitsManager({ isDark, profile }: HabitsManagerProps) {
   function handleDrop(e: React.DragEvent, targetId: string) {
     e.preventDefault();
     if (!dragId || dragId === targetId) { setDragId(null); setDragOverId(null); return; }
-    setHabits((prev) => {
-      const arr = [...prev];
-      const fromIdx = arr.findIndex((h) => h.id === dragId);
-      const toIdx   = arr.findIndex((h) => h.id === targetId);
-      if (fromIdx === -1 || toIdx === -1) return prev;
+    const arr = [...habits];
+    const fromIdx = arr.findIndex((h) => h.id === dragId);
+    const toIdx   = arr.findIndex((h) => h.id === targetId);
+    if (fromIdx !== -1 && toIdx !== -1) {
       const [moved] = arr.splice(fromIdx, 1);
       arr.splice(toIdx, 0, moved);
-      setHabitOrder(profile.id, arr.map((h) => h.id));
-      return arr;
-    });
+      setHabits(arr);
+      habitCache.reordered(queryClient, profile.id, arr.map((h) => h.id));
+    }
     setDragId(null); setDragOverId(null);
   }
 
   function handleDragEnd() { setDragId(null); setDragOverId(null); }
 
   function moveHabit(habitId: string, direction: -1 | 1) {
-    setHabits((prev) => {
-      const habit = prev.find((h) => h.id === habitId);
-      if (!habit) return prev;
-      const sameType = prev.filter((h) => h.type === habit.type);
-      const idx = sameType.findIndex((h) => h.id === habitId);
-      const swapIdx = idx + direction;
-      if (swapIdx < 0 || swapIdx >= sameType.length) return prev;
-      const swapHabit = sameType[swapIdx];
-      const arr = [...prev];
-      const i1 = arr.findIndex((h) => h.id === habit.id);
-      const i2 = arr.findIndex((h) => h.id === swapHabit.id);
-      [arr[i1], arr[i2]] = [arr[i2], arr[i1]];
-      setHabitOrder(profile.id, arr.map((h) => h.id));
-      return arr;
-    });
+    const habit = habits.find((h) => h.id === habitId);
+    if (!habit) return;
+    const sameType = habits.filter((h) => h.type === habit.type);
+    const idx = sameType.findIndex((h) => h.id === habitId);
+    const swapIdx = idx + direction;
+    if (swapIdx < 0 || swapIdx >= sameType.length) return;
+    const swapHabit = sameType[swapIdx];
+    const arr = [...habits];
+    const i1 = arr.findIndex((h) => h.id === habit.id);
+    const i2 = arr.findIndex((h) => h.id === swapHabit.id);
+    [arr[i1], arr[i2]] = [arr[i2], arr[i1]];
+    setHabits(arr);
+    // Tartib boshqa sahifalarga ham (Kundalik, Asosiy) darhol yetib boradi.
+    habitCache.reordered(queryClient, profile.id, arr.map((h) => h.id));
   }
 
   const positiveHabits = habits.filter((h) => h.type === "positive");
   const negativeHabits = habits.filter((h) => h.type === "negative");
 
-  if (loading) {
+  if (loading && habits.length === 0) {
     return (
-      <div className="flex items-center justify-center h-64">
-        <Loader2 size={24} className="animate-spin" style={{ color: "var(--neon-green)" }} />
+      <div className="flex flex-col gap-5 max-w-2xl animate-pulse">
+        <div className="h-12 bg-slate-800/40 rounded-2xl w-full" />
+        <div className="h-44 bg-slate-800/40 rounded-3xl w-full" />
+        <div className="h-44 bg-slate-800/40 rounded-3xl w-full" />
       </div>
     );
   }
@@ -317,34 +322,71 @@ export function HabitsManager({ isDark, profile }: HabitsManagerProps) {
 
   return (
     <div className="flex flex-col gap-5 max-w-2xl">
-      <div className="flex items-center justify-between gap-2 mb-1">
-        {/* Left: Title & Subtitle */}
-        <div className="flex-1 min-w-0">
-          <h2 className="text-xl font-bold text-slate-900 dark:text-white tracking-tight">Odatlarni Boshqarish</h2>
-          <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">Qo'shish, tahrirlash va tartibga solish</p>
-        </div>
+      {/* Squircle Segmented Control Tab */}
+      <div className="w-full p-1 bg-slate-900/80 border border-slate-800/80 rounded-2xl flex items-center gap-1 mb-1 shadow-inner">
+        {/* Tab 1: Odatlar */}
+        <button
+          type="button"
+          onClick={() => setActiveTab('habits')}
+          className={`flex-1 flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl text-xs sm:text-sm font-medium transition-all duration-200 cursor-pointer ${
+            activeTab === 'habits'
+              ? 'bg-emerald-950/60 text-emerald-400 border border-emerald-500/30 shadow-sm'
+              : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/40 border border-transparent'
+          }`}
+        >
+          <CheckSquare className="w-4 h-4"/>
+          <span>Odatlar</span>
+        </button>
 
-        {/* Right: Actions Group */}
-        <div className="flex items-center gap-2 shrink-0">
-          {/* Paket Button */}
-          <button
-            onClick={() => { setShowGoalPack(true); setSelectedGoal(null); setCheckedPack(new Set()); setAddError(""); }}
-            className="px-3 py-2 rounded-xl bg-blue-500/10 hover:bg-blue-500/20 border border-blue-500/30 text-blue-600 dark:text-blue-400 text-xs font-semibold flex items-center gap-1.5 transition-all"
-          >
-            <Sparkles className="w-3.5 h-3.5" />
-            <span>Paket</span>
-          </button>
-
-          {/* Primary Habit Creation CTA */}
-          <button
-            onClick={() => { setEditingId(null); setShowForm(true); }}
-            className="px-3.5 py-2 rounded-xl bg-emerald-500 hover:bg-emerald-600 active:scale-95 text-slate-950 dark:text-white text-xs font-bold shadow-lg shadow-emerald-500/25 flex items-center gap-1.5 transition-all"
-          >
-            <Plus className="w-4 h-4 stroke-[2.5]" />
-            <span>Yangi odat</span>
-          </button>
-        </div>
+        {/* Tab 2: Kun Tartibi */}
+        <button
+          type="button"
+          onClick={() => setActiveTab('routines')}
+          className={`flex-1 flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl text-xs sm:text-sm font-medium transition-all duration-200 cursor-pointer ${
+            activeTab === 'routines'
+              ? 'bg-emerald-950/60 text-emerald-400 border border-emerald-500/30 shadow-sm'
+              : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/40 border border-transparent'
+          }`}
+        >
+          <Clock className="w-4 h-4"/>
+          <span>Kun Tartibi</span>
+        </button>
       </div>
+
+      {activeTab === 'routines' ? (
+        <RoutinesManager isDark={isDark} profile={profile} userHabits={habits} />
+      ) : (
+        <>
+          <div className="flex items-center justify-between gap-2 mb-1">
+            {/* Left: Title & Subtitle */}
+            <div className="flex-1 min-w-0">
+              <h2 className="text-xl font-bold text-slate-900 dark:text-white tracking-tight">Odatlarni Boshqarish</h2>
+              <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">Qo'shish, tahrirlash va tartibga solish</p>
+            </div>
+
+            {/* Right: Actions Group */}
+            <div className="flex items-center gap-2 shrink-0">
+              {/* Paket Button */}
+              <button
+                type="button"
+                onClick={() => { setShowGoalPack(true); setSelectedGoal(null); setCheckedPack(new Set()); setAddError(""); }}
+                className="h-10 rounded-xl px-4 bg-slate-900 border border-slate-800 text-slate-300 hover:text-white text-xs font-medium flex items-center justify-center gap-1.5 transition-all cursor-pointer"
+              >
+                <Sparkles className="w-3.5 h-3.5 text-amber-400" />
+                <span>+ Paket</span>
+              </button>
+
+              {/* Primary Habit Creation CTA */}
+              <button
+                type="button"
+                onClick={() => { setEditingId(null); setShowForm(true); }}
+                className="h-10 rounded-xl px-4 bg-emerald-500 hover:bg-emerald-400 text-slate-950 text-xs font-semibold shadow-sm flex items-center justify-center gap-1.5 transition-all active:scale-95 cursor-pointer"
+              >
+                <Plus className="w-4 h-4 stroke-[2.5]" />
+                <span>+ Yangi odat</span>
+              </button>
+            </div>
+          </div>
 
       <AddHabitModal
         isOpen={showForm}
@@ -363,6 +405,7 @@ export function HabitsManager({ isDark, profile }: HabitsManagerProps) {
             };
             const updated = await updateHabit(editingId, updates);
             setHabits((prev) => prev.map((h) => (h.id === editingId ? { ...h, ...updated } : h)));
+            habitCache.updated(queryClient, profile.id, { ...updated, id: editingId });
 
             if (habitData.reminder) {
               localStorage.setItem(`reminder_${editingId}`, habitData.reminder);
@@ -771,6 +814,8 @@ export function HabitsManager({ isDark, profile }: HabitsManagerProps) {
           <ArrowRight className="w-4 h-4 text-white stroke-[2.5] shrink-0" />
         </div>
       </button>
+        </>
+      )}
     </div>
   );
 }

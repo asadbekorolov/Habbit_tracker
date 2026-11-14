@@ -10,14 +10,16 @@ import { useNavigate } from "react-router-dom";
 import { HabitIcon, cleanHabitName } from "../../components/HabitIcon";
 import { getHabitCategory, getCategoryTheme } from "../../utils/categoryTheme";
 import { ResponsiveContainer, ComposedChart, Area, Line, XAxis, YAxis, CartesianGrid, Tooltip } from "recharts";
-import { getLogsByRange, getHealthLogsByRange, getMonthNotes, getCoachNote, upsertCoachNote, isHabitLogSuccess, getCached } from "../../services/db";
+import { getCoachNote, upsertCoachNote, isHabitLogSuccess } from "../../services/db";
+import { useHabitsMetaQuery, useLogsRangeQuery, useHealthRangeQuery, useMonthNotesQuery } from "../../hooks/queries";
 import { supabase } from "../../services/supabase";
 import { requestClaudeHabitAnalysis } from "../../services/aiService";
 import { getLevel } from "../../utils/levels";
 import { useUser } from "../../store/UserContext";
-import { toDateStr } from "../../utils/date";
+import { tashkentTodayAnchor, toDateStr, addDays, getTashkentToday } from "../../utils/date";
 import type { Profile } from "../../services/supabase";
 import { useLang } from "../../store/LangContext";
+import { MiniPipAvatar } from "../../components/MiniPipAvatar";
 
 import { GlobalLeaderboardPage } from "../leaderboard/GlobalLeaderboardPage";
 
@@ -38,18 +40,12 @@ export function Analytics({ isDark, completedToday, totalHabits, profile: propsP
   const { profile: contextProfile, updateCoins, refreshUserProfile } = useUser();
   const profile = contextProfile || propsProfile;
 
-  const [logs, setLogs] = useState<any[]>([]);
-  const [notes, setNotes] = useState<any[]>([]);
-  const [healthLogs, setHealthLogs] = useState<any[]>([]);
   const [downloadingPoster, setDownloadingPoster] = useState(false);
   const posterRef = useRef<HTMLDivElement | null>(null);
   const aiCardRef = useRef<HTMLDivElement | null>(null);
   const [timeFilter, setTimeFilter] = useState<'weekly' | 'monthly' | 'yearly' | 'all'>('monthly');
   const [viewMode, setViewMode] = useState<'personal' | 'leaderboard'>('personal');
 
-  const rangeDays = timeFilter === 'weekly' ? 7 : timeFilter === 'monthly' ? 30 : timeFilter === 'yearly' ? 365 : 1000;
-  const initialCached = getCached<any[]>(`logs_range_${profile.id}_${rangeDays}`);
-  const [loading, setLoading] = useState(!initialCached);
 
   const [coachNote, setCoachNote] = useState<string | null>(null);
   const [coachGeneratedAt, setCoachGeneratedAt] = useState<string | null>(null);
@@ -61,27 +57,41 @@ export function Analytics({ isDark, completedToday, totalHabits, profile: propsP
 
   const PREMIUM_AI_COST = 200;
 
+  // ─── Ma'lumot oralig'i ─────────────────────────────────────────────
+  // "Hammasi" — hisob ochilgan kundan (Toshkent sanasi) bugungacha.
+  const createdDay = profile.created_at ? getTashkentToday(new Date(profile.created_at)) : addDays(today, -365);
+  const accountStart = createdDay > today ? today : createdDay;
+  const rangeFrom = timeFilter === 'weekly' ? addDays(today, -7)
+    : timeFilter === 'monthly' ? addDays(today, -30)
+    : timeFilter === 'yearly' ? addDays(today, -365)
+    : accountStart;
+
+  // Ixcham loglar (habit_id, log_date, completed, value) 1000 qatorlik
+  // bo'laklarda; odat nomi/turi alohida yuklangan ro'yxatdan (o'chirilganlari ham).
+  const metaQ = useHabitsMetaQuery(profile.id);
+  const logsQ = useLogsRangeQuery(profile.id, rangeFrom, today, { keepPrevious: true });
+  const healthQ = useHealthRangeQuery(profile.id, rangeFrom, today, { keepPrevious: true });
+  const nowAnchor = tashkentTodayAnchor();
+  const notesQ = useMonthNotesQuery(profile.id, nowAnchor.getFullYear(), nowAnchor.getMonth() + 1);
+  // Heatmap har doim so'nggi 90 kun (tanlangan filtrga bog'liq emas).
+  const heatmapLogsQ = useLogsRangeQuery(profile.id, addDays(today, -89), today);
+
+  const habitMeta = useMemo(() => new Map((metaQ.data || []).map((h) => [h.id, h])), [metaQ.data]);
+  const attachMeta = (rows: any[] | undefined) =>
+    (rows || []).flatMap((l) => {
+      const h = habitMeta.get(l.habit_id);
+      return h ? [{ ...l, habits: { name: h.name, emoji: h.emoji, type: h.type } }] : [];
+    });
+  const logs: any[] = useMemo(() => attachMeta(logsQ.data), [logsQ.data, habitMeta]);
+  const healthLogs: any[] = healthQ.data || [];
+  const notes: any[] = notesQ.data || [];
+  const loading = logsQ.isPending || metaQ.isPending;
+
   useEffect(() => {
-    const rangeDays = timeFilter === 'weekly' ? 7 : timeFilter === 'monthly' ? 30 : timeFilter === 'yearly' ? 365 : 1000;
-    const now = new Date();
-
-    const cached = getCached<any[]>(`logs_range_${profile.id}_${rangeDays}`);
-    if (!cached) setLoading(true);
-
-    Promise.all([
-      getLogsByRange(profile.id, rangeDays),
-      getHealthLogsByRange(profile.id, rangeDays),
-      getMonthNotes(profile.id, now.getFullYear(), now.getMonth() + 1),
-    ]).then(([logData, healthData, noteData]) => {
-      setLogs(logData || []);
-      setHealthLogs(healthData || []);
-      setNotes(noteData || []);
-    }).catch(() => {}).finally(() => setLoading(false));
-
     getCoachNote(profile.id).then((cached) => {
       if (cached) { setCoachNote(cached.note); setCoachGeneratedAt(cached.generated_at); }
     }).catch(() => {});
-  }, [profile.id, timeFilter]);
+  }, [profile.id]);
 
   // completed=true is the single success source for every habit type:
   // positive done and negative kept/resisted are both green/success.
@@ -98,7 +108,7 @@ export function Analytics({ isDark, completedToday, totalHabits, profile: propsP
 
   // Current streak
   const streak = useMemo(() => {
-    const now = new Date();
+    const now = tashkentTodayAnchor();
     let count = 0;
     const startOffset = (byDate[today] || 0) > 0 ? 0 : 1;
     for (let i = startOffset; i < 31; i++) {
@@ -144,7 +154,7 @@ export function Analytics({ isDark, completedToday, totalHabits, profile: propsP
   // Per-habit success stats
   const habitStats = useMemo(() => {
     const map: Record<string, { name: string; emoji: string; days: Set<string>; streak: number }> = {};
-    const now = new Date();
+    const now = tashkentTodayAnchor();
 
     for (const log of logs) {
       if (isHabitLogSuccess(log)) {
@@ -287,7 +297,7 @@ export function Analytics({ isDark, completedToday, totalHabits, profile: propsP
     }));
 
     const weekdayBuckets = Array.from({ length: 7 }, () => ({ occurrences: 0, successCount: 0, negativeLogged: 0, negativeBroken: 0 }));
-    const now = new Date();
+    const now = tashkentTodayAnchor();
     for (let i = 0; i < 30; i++) {
       const d = new Date(now);
       d.setDate(d.getDate() - i);
@@ -368,20 +378,10 @@ export function Analytics({ isDark, completedToday, totalHabits, profile: propsP
     scrollToAICard();
 
     try {
-      const nextCoins = liveCoins - PREMIUM_AI_COST;
+      // Tanga serverda (api/ai-analysis.ts -> spend_coins_for_ai) yechiladi;
+      // AI xato bersa o'sha yerda qaytariladi. Bu yerda faqat UI yangilanadi.
 
-      // 1. Deduct coins and update cloud sync (Supabase)
-      const { error: updateErr } = await supabase
-        .from('profiles')
-        .update({ coins: nextCoins })
-        .eq('id', profile.id);
-
-      if (updateErr) throw updateErr;
-
-      // 2. Update global state immediately
-      updateCoins(nextCoins);
-
-      // 3. AI Generation with Claude API - Deep Telemetry
+      // AI Generation with Claude API - Deep Telemetry
       const habitDataSummary = habitStats.map(h => {
         return `Odat: "${h.name}" | 30 kunlik bajarilish: ${h.completedDays}/30 (${h.pct}%) | Streak: ${h.streak} kun | Holat: ${h.pct >= 70 ? 'Kuchli' : h.pct < 30 ? 'Zaif' : "O'rtacha"}`;
       }).join('\n');
@@ -405,6 +405,8 @@ ${habitDataSummary}
 `;
 
       const analysisText = await requestClaudeHabitAnalysis(telemetryPayload);
+      updateCoins(Math.max(0, liveCoins - PREMIUM_AI_COST));
+      refreshUserProfile().catch(() => {});
 
       // 4. Save and Update local state + LocalStorage cache
       await upsertCoachNote(profile.id, analysisText);
@@ -433,15 +435,26 @@ ${habitDataSummary}
     await handleAIAnalysisFlow(false);
   }
 
-  // Heatmap: 90 days
+  // Heatmap: 90 days (o'z so'rovi — haftalik filtrda ham 90 kun to'liq)
+  const heatmapByDate = useMemo(() => {
+    const map: Record<string, number> = {};
+    for (const log of heatmapLogsQ.data || []) {
+      if (isHabitLogSuccess(log) && habitMeta.has(log.habit_id)) {
+        map[log.log_date] = (map[log.log_date] || 0) + 1;
+      }
+    }
+    map[today] = completedToday;
+    return map;
+  }, [heatmapLogsQ.data, habitMeta, completedToday, today]);
+
   const heatmapData = useMemo(() => {
-    const now = new Date();
+    const now = tashkentTodayAnchor();
     const daysToShow = 90;
     return Array.from({ length: daysToShow }, (_, i) => {
       const d = new Date(now);
       d.setDate(d.getDate() - (daysToShow - 1 - i));
       const ds = toDateStr(d);
-      const done = byDate[ds] || 0;
+      const done = heatmapByDate[ds] || 0;
       const rate = totalHabits > 0 ? (done / totalHabits) : 0;
 
       let score = 0;
@@ -454,7 +467,7 @@ ${habitDataSummary}
       const mon = uzMonths[d.getMonth()];
       return { date: `${mon} ${day}`, score, ds, done, rate: Math.round(rate * 100) };
     });
-  }, [byDate, totalHabits]);
+  }, [heatmapByDate, totalHabits]);
 
   // Category Balance
   const categoryBalance = useMemo(() => {
@@ -480,17 +493,21 @@ ${habitDataSummary}
     let sleepHours = 0;
     let waterGlasses = 0;
     healthLogs.forEach(h => {
-      steps += h.steps || 0;
-      sleepHours += h.sleep_hours || 0;
-      waterGlasses += h.water_glasses || 0;
+      steps += Number(h.steps) || 0;
+      sleepHours += Number(h.sleep_hours) || 0;
+      waterGlasses += Number(h.water_glasses) || 0;
     });
-    return { steps, sleepHours, waterGlasses };
+    return {
+      steps: Math.round(steps),
+      sleepHours: Math.round(sleepHours * 10) / 10,
+      waterGlasses: Math.round(waterGlasses),
+    };
   }, [healthLogs]);
 
   // Weekly trend: last 7 days completion %
   const uzDays = ["Ya", "Du", "Se", "Ch", "Pa", "Ju", "Sh"];
   const weeklyData = useMemo(() => {
-    const now = new Date();
+    const now = tashkentTodayAnchor();
     return Array.from({ length: 7 }, (_, i) => {
       const d = new Date(now);
       d.setDate(d.getDate() - (6 - i));
@@ -503,7 +520,7 @@ ${habitDataSummary}
 
   // Weekly comparison: bu 7 kun vs oldingi 7 kun
   const weeklyComparison = useMemo(() => {
-    const now = new Date();
+    const now = tashkentTodayAnchor();
     let thisTotal = 0, prevTotal = 0, thisDays = 0, prevDays = 0;
     const thisBars: number[] = [], prevBars: number[] = [];
 
@@ -531,7 +548,7 @@ ${habitDataSummary}
   // (izchillikni chiziq sifatida ko'rsatish uchun — heatmap panjarasi
   // trend yo'nalishini yaxshi ko'rsatmaydi).
   const trendData = useMemo(() => {
-    const now = new Date();
+    const now = tashkentTodayAnchor();
     const days = Array.from({ length: 30 }, (_, i) => {
       const d = new Date(now);
       d.setDate(d.getDate() - (29 - i));
@@ -562,10 +579,15 @@ ${habitDataSummary}
     return "#34d399"; // emerald-400
   };
 
-  if (loading) {
+  if (loading && logs.length === 0) {
     return (
-      <div className="flex items-center justify-center h-48">
-        <Loader2 size={22} className="animate-spin" style={{ color: "var(--neon-green)" }} />
+      <div className="flex flex-col gap-4 max-w-2xl animate-pulse">
+        <div className="grid grid-cols-2 gap-3">
+          <div className="h-24 bg-slate-800/40 rounded-2xl w-full" />
+          <div className="h-24 bg-slate-800/40 rounded-2xl w-full" />
+        </div>
+        <div className="h-52 bg-slate-800/40 rounded-3xl w-full" />
+        <div className="h-40 bg-slate-800/40 rounded-3xl w-full" />
       </div>
     );
   }
@@ -584,16 +606,16 @@ ${habitDataSummary}
       color: "#F97316",
     },
     {
-      icon: Moon, label: "Jami Uyqu vaqti",
-      value: `${totalMetrics.sleepHours} soat`,
-      sub: "Tahlil qilingan davr",
-      color: "#818cf8",
+      icon: CheckCircle2, label: "Jami Bajarilgan Odatlar",
+      value: `${totalMonth} ta`,
+      sub: "Oylik jami bajarilish",
+      color: "#3B82F6",
     },
     {
-      icon: Footprints, label: "Jami Qadamlar",
-      value: totalMetrics.steps.toLocaleString(),
-      sub: "Harakat ko'rsatkichi",
-      color: "#22d3ee",
+      icon: BarChart2, label: "Odatlar Taqsimoti",
+      value: `${totalHabits} ta odat`,
+      sub: "Faol kuzatuvdagi odatlar",
+      color: "#A855F7",
     },
   ];
 
@@ -664,35 +686,39 @@ ${habitDataSummary}
 
   const lv = getLevel(profile.score || 0);
   const initials = profile.display_name.split(" ").map((n: string) => n[0]).join("").toUpperCase().slice(0, 2);
-  const now = new Date();
+  const now = tashkentTodayAnchor();
   const monthName = uzMonths[now.getMonth()];
 
   return (
     <div className="flex flex-col gap-5">
-      {/* View Mode Toggle */}
-      <div className="flex justify-center mb-4">
-        <div className="flex bg-slate-100 dark:bg-white/5 p-1 rounded-2xl border border-slate-200 dark:border-white/10 w-full">
+      {/* Top Header Bar with Mini-PIP Avatar & View Mode Toggle */}
+      <div className="flex items-center justify-between gap-3 mb-1">
+        <div className="flex items-center gap-3">
+          <MiniPipAvatar profile={profile} onProfileUpdate={onProfileUpdate} />
+          <h2 className="text-xl font-bold text-slate-900 dark:text-white">Tahlil</h2>
+        </div>
+        <div className="flex bg-slate-100 dark:bg-white/5 p-1 rounded-2xl border border-slate-200 dark:border-white/10 shrink-0">
           <button
             onClick={() => setViewMode('personal')}
-            className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl text-xs font-bold transition-all ${
+            className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
               viewMode === 'personal'
                 ? "bg-white dark:bg-white/10 text-emerald-600 dark:text-emerald-500 shadow-sm"
                 : "text-slate-500 hover:text-slate-700 dark:hover:text-slate-300"
             }`}
           >
             <BarChart3 size={14} className="text-emerald-500 dark:text-emerald-400" />
-            Shaxsiy Tahlil
+            Shaxsiy
           </button>
           <button
             onClick={() => setViewMode('leaderboard')}
-            className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl text-xs font-bold transition-all ${
+            className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
               viewMode === 'leaderboard'
                 ? "bg-white dark:bg-white/10 text-emerald-600 dark:text-emerald-500 shadow-sm"
                 : "text-slate-500 hover:text-slate-700 dark:hover:text-slate-300"
             }`}
           >
             <Trophy size={14} className="text-amber-500 dark:text-amber-400" />
-            Global Reyting
+            Reyting
           </button>
         </div>
       </div>
@@ -882,16 +908,16 @@ ${habitDataSummary}
               </div>
             </div>
 
-            {/* Stat Card 4: Faollik & Salomatlik */}
-            <div className="p-6 rounded-3xl bg-gradient-to-br from-cyan-500/15 to-cyan-950/20 border border-cyan-500/30 flex flex-col justify-between">
-              <div className="w-10 h-10 rounded-2xl bg-cyan-500/20 border border-cyan-500/30 flex items-center justify-center text-cyan-400 mb-4">
-                <Footprints size={22} />
+            {/* Stat Card 4: Faol Odatlar */}
+            <div className="p-6 rounded-3xl bg-gradient-to-br from-purple-500/15 to-purple-950/20 border border-purple-500/30 flex flex-col justify-between">
+              <div className="w-10 h-10 rounded-2xl bg-purple-500/20 border border-purple-500/30 flex items-center justify-center text-purple-400 mb-4">
+                <BarChart2 size={22} />
               </div>
               <div>
-                <span className="text-2xl font-black text-cyan-400 tracking-tight leading-none block mb-1">
-                  {totalMetrics.steps.toLocaleString()}
+                <span className="text-4xl font-black text-purple-400 tracking-tight leading-none block mb-1">
+                  {totalHabits} Ta
                 </span>
-                <p className="text-xs font-bold text-slate-300 uppercase tracking-wider">Qadam / {totalMetrics.sleepHours}s Uyqu</p>
+                <p className="text-xs font-bold text-slate-300 uppercase tracking-wider">Kuzatilayotgan Odatlar</p>
               </div>
             </div>
           </div>
@@ -949,28 +975,31 @@ ${habitDataSummary}
           {kpis.map((kpi) => (
             <div
               key={kpi.label}
-              className="rounded-xl p-3.5"
+              className="rounded-2xl p-3.5 flex flex-col justify-between overflow-hidden min-w-0"
               style={{
                 background: isDark ? "rgba(255,255,255,0.03)" : "#F9FAFB",
                 border: `1px solid ${isDark ? "rgba(255,255,255,0.05)" : "rgba(0,0,0,0.05)"}`,
               }}
             >
-              <div
-                className="w-7 h-7 rounded-lg flex items-center justify-center mb-2.5"
-                style={{ background: `${kpi.color}20` }}
-              >
-                <kpi.icon size={14} style={{ color: kpi.color }} />
+              <div className="min-w-0">
+                <div
+                  className="w-7 h-7 rounded-lg flex items-center justify-center mb-2.5"
+                  style={{ background: `${kpi.color}20` }}
+                >
+                  <kpi.icon size={14} style={{ color: kpi.color }} />
+                </div>
+                <p
+                  className="text-lg font-bold leading-tight text-slate-900 dark:text-white truncate"
+                  style={{ fontFamily: "'Geist Mono', monospace" }}
+                  title={kpi.value}
+                >
+                  {kpi.value}
+                </p>
+                <p className="text-[11px] mt-1.5 font-medium text-slate-500 dark:text-slate-400 leading-tight">
+                  {kpi.label}
+                </p>
               </div>
-              <p
-                className="text-lg font-bold leading-none text-slate-900 dark:text-white"
-                style={{ fontFamily: "'Geist Mono', monospace" }}
-              >
-                {kpi.value}
-              </p>
-              <p className="text-[11px] mt-1.5 font-medium text-slate-500 dark:text-slate-400">
-                {kpi.label}
-              </p>
-              <p className="text-[10px] mt-0.5" style={{ color: kpi.color, fontFamily: "'Geist Mono', monospace" }}>
+              <p className="text-[11px] mt-1 font-medium leading-tight text-slate-400" style={{ color: kpi.color, fontFamily: "'Geist Mono', monospace" }}>
                 {kpi.sub}
               </p>
             </div>

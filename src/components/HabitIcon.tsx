@@ -173,6 +173,12 @@ export const HabitIcon: React.FC<HabitIconProps> = ({ emoji, name, size = 20, cl
 };
 
 export function cleanHabitName(name: string): string {
-  // Removes common emojis from the beginning of the string
-  return name.replace(/^[\u{1F300}-\u{1F9FF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}\s]+/u, '');
+  if (!name) return '';
+  // 1. Removes common emojis from the beginning of the string
+  let cleaned = name.replace(/^[\u{1F300}-\u{1F9FF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}\s]+/u, '');
+  // 2. Removes raw Lucide icon string prefixes if present
+  cleaned = cleaned.replace(/^(Sun|BookOpen|Dumbbell|Utensils|Moon|Coffee|Sparkles|Droplets|Footprints|Apple|Brain|Music|Sunrise|Heart|Target|Zap|Monitor|ShieldAlert|PenTool|Smartphone|Gamepad2|CheckSquare|Activity|Timer|Clock|Shield|Flame|Trophy)\s+/i, '');
+  // 3. Typo fixes
+  cleaned = cleaned.replace(/Universititet/gi, "Universitet");
+  return cleaned.trim();
 }

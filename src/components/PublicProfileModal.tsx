@@ -15,6 +15,7 @@ import { useLang } from "../store/LangContext";
 import type { T } from "../store/LangContext";
 import { UserBadge } from "./UserBadge";
 import { AvatarFrame } from "./AvatarFrame";
+import { useScrollLock } from "../hooks/useScrollLock";
 
 interface Badge { emoji: string; label: string; color: string }
 
@@ -41,6 +42,7 @@ const LEVEL_LABELS = ["", "level_1", "level_2", "level_3", "level_4", "level_5",
 
 export function PublicProfileModal({ isDark, viewingId, myProfile, onClose }: PublicProfileModalProps) {
   const { t } = useLang();
+  useScrollLock(true);
   const [data, setData] = useState<{
     profile: Profile;
     totalCompleted: number;
@@ -71,7 +73,7 @@ export function PublicProfileModal({ isDark, viewingId, myProfile, onClose }: Pu
         setData(s);
         setFollowCounts(fc);
         setIsFollowing(following as boolean);
-        if (!isSelf && s?.profile?.telegram_private && s?.profile?.telegram_username) {
+        if (!isSelf && s?.profile?.telegram_private && s?.profile?.has_telegram) {
           const { status, retryAt } = await getTelegramRequestStatus(myProfile.id, viewingId);
           setTgStatus(status);
           setTgRetryAt(retryAt || null);
@@ -158,24 +160,28 @@ export function PublicProfileModal({ isDark, viewingId, myProfile, onClose }: Pu
   // yuborish" tugmasi orqali ruxsat so'raladi (Actions bo'limi).
   const canSeeTelegram = isSelf || !profile.telegram_private || tgStatus === 'approved';
 
+  // Keyboard Escape listener for Android hardware back button
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        onClose();
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [onClose]);
+
   return (
     <div
       ref={backdropRef}
       role="dialog"
       aria-modal="true"
-      className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4"
-      style={{ background: "rgba(0,0,0,0.65)", backdropFilter: "blur(6px)" }}
-      onClick={(e) => { if (e.target === backdropRef.current) onClose(); }}
+      className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/80 backdrop-blur-md overscroll-contain touch-none"
+      onClick={onClose}
     >
       <div
-        className="w-full sm:max-w-md rounded-t-3xl sm:rounded-3xl overflow-hidden"
-        style={{
-          background: isDark ? "#0E1117" : "#fff",
-          border: `1px solid ${isDark ? "rgba(255,255,255,0.08)" : "rgba(0,0,0,0.08)"}`,
-          maxHeight: "90vh",
-          overflowY: "auto",
-          paddingBottom: "env(safe-area-inset-bottom)",
-        }}
+        className="w-full sm:max-w-md rounded-t-3xl sm:rounded-3xl bg-slate-900 border border-slate-800/90 text-white shadow-2xl max-h-[85vh] overflow-y-auto overscroll-contain touch-pan-y relative"
+        onClick={(e) => e.stopPropagation()}
       >
         {/* Hero */}
         <div className="relative p-6 pb-4"
@@ -344,8 +350,9 @@ export function PublicProfileModal({ isDark, viewingId, myProfile, onClose }: Pu
 
             <div className="flex gap-2">
               {/* Telegram */}
-              {profile.telegram_username && (
-                !profile.telegram_private || tgStatus === 'approved' ? (
+              {(profile.telegram_username || profile.has_telegram) && (
+                // username server tomonidan faqat ruxsat bo'lsa qaytariladi (get_telegram_contact)
+                profile.telegram_username && (!profile.telegram_private || tgStatus === 'approved') ? (
                   <a href={`https://t.me/${profile.telegram_username}`}
                     target="_blank" rel="noreferrer"
                     className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-2xl text-sm font-medium"

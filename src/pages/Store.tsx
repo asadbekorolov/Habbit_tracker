@@ -10,13 +10,14 @@ import {
 import { useUser } from "../store/UserContext";
 import { useLang } from "../store/LangContext";
 import {
-  purchaseCoinItem, buyStar, isStarActive, getOwnedItemIds,
-  updateUserProfile, getFramePurchases, cleanupExpiredFrame
+  purchaseShopItem, buyStar, isStarActive, getOwnedItemIds,
+  equipCosmetic, getMyProfile, getFramePurchases, cleanupExpiredFrame
 } from "../services/db";
 import { supabase } from "../services/supabase";
 import { FRAMES, FRAME_DURATION_DAYS, PREMIUM_AVATAR_COLORS, USERNAME_GLOW_ID, USERNAME_GLOW_PRICE, getUsernameGlowStyle } from "../utils/cosmetics";
 import { AvatarFrame } from "../components/AvatarFrame";
 import type { Profile } from "../services/supabase";
+import { useScrollLock } from "../hooks/useScrollLock";
 
 interface StoreProps {
   isDark?: boolean;
@@ -112,6 +113,8 @@ export function Store({ isDark = true, profile: propsProfile, onProfileUpdate, o
   // Confirmation dialog state
   const [confirmItem, setConfirmItem] = useState<{ item: ShopItem | any; action: () => Promise<void> } | null>(null);
 
+  useScrollLock(showTopUpModal || !!confirmItem);
+
   useEffect(() => {
     if (!profile) return;
     setCurrentCoins(profile.coins ?? 0);
@@ -181,7 +184,7 @@ export function Store({ isDark = true, profile: propsProfile, onProfileUpdate, o
     const next = activeFrame === frameId ? null : frameId;
     setEquipping(frameId);
     try {
-      const updated = await updateUserProfile(profile.id, { active_frame: next });
+      const updated = await equipCosmetic('frame', next);
       setActiveFrame(next);
       setProfile(updated);
       onProfileUpdate?.(updated);
@@ -198,7 +201,7 @@ export function Store({ isDark = true, profile: propsProfile, onProfileUpdate, o
     const next = activeTitle === titleId ? null : titleId;
     setEquipping(titleId);
     try {
-      const updated = await updateUserProfile(profile.id, { active_title: next });
+      const updated = await equipCosmetic('title', next);
       setActiveTitle(next);
       setProfile(updated);
       onProfileUpdate?.(updated);
@@ -233,7 +236,7 @@ export function Store({ isDark = true, profile: propsProfile, onProfileUpdate, o
   async function buyItemStandard(item: ShopItem) {
     setBuying(item.id);
     try {
-      const newBalance = await purchaseCoinItem(profile.id, item.id, item.price);
+      const newBalance = await purchaseShopItem(item.id);
       setCurrentCoins(newBalance);
       updateCoins(newBalance);
       setOwnedIds((prev) => new Set(prev).add(item.id));
@@ -274,12 +277,13 @@ export function Store({ isDark = true, profile: propsProfile, onProfileUpdate, o
   async function buyGlowName() {
     setBuying(USERNAME_GLOW_ID);
     try {
-      const newBalance = await purchaseCoinItem(profile.id, USERNAME_GLOW_ID, USERNAME_GLOW_PRICE);
+      const newBalance = await purchaseShopItem(USERNAME_GLOW_ID);
       setCurrentCoins(newBalance);
       updateCoins(newBalance);
       setOwnedIds((prev) => new Set(prev).add(USERNAME_GLOW_ID));
 
-      const updated = await updateUserProfile(profile.id, { username_glow: true });
+      // Server xarid paytida username_glow ni o'zi yoqadi.
+      const updated = (await getMyProfile()) || { ...profile, coins: newBalance, username_glow: true };
       setProfile(updated);
       onProfileUpdate?.(updated);
 
@@ -294,19 +298,20 @@ export function Store({ isDark = true, profile: propsProfile, onProfileUpdate, o
   async function buyCosmetic(itemId: string, price: number, isFrame = false, isTitle = false) {
     setBuying(itemId);
     try {
-      const newBalance = await purchaseCoinItem(profile.id, itemId, price);
+      const newBalance = await purchaseShopItem(itemId);
       setCurrentCoins(newBalance);
       updateCoins(newBalance);
       setOwnedIds((prev) => new Set(prev).add(itemId));
 
       if (isFrame) {
-        const updated = await updateUserProfile(profile.id, { active_frame: itemId });
+        // Server xarid paytida ramkani o'zi taqadi.
+        const updated = (await getMyProfile()) || { ...profile, coins: newBalance, active_frame: itemId };
         setActiveFrame(itemId);
         setProfile(updated);
         onProfileUpdate?.(updated);
         toast.success("Ramka xarid qilindi va taqildi! 🎨");
       } else if (isTitle) {
-        const updated = await updateUserProfile(profile.id, { active_title: itemId });
+        const updated = (await getMyProfile()) || { ...profile, coins: newBalance, active_title: itemId };
         setActiveTitle(itemId);
         setProfile(updated);
         onProfileUpdate?.(updated);
@@ -814,17 +819,25 @@ export function Store({ isDark = true, profile: propsProfile, onProfileUpdate, o
       {/* Real Monetization Top-Up Modal */}
       <AnimatePresence>
         {showTopUpModal && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-md">
+          <div
+            role="dialog"
+            aria-modal="true"
+            onClick={() => setShowTopUpModal(false)}
+            className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-md overscroll-contain touch-none"
+          >
             <motion.div
               initial={{ scale: 0.9, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.9, opacity: 0 }}
-              className="w-full max-w-md bg-slate-900 border border-slate-700/80 rounded-3xl p-6 shadow-2xl relative overflow-hidden"
+              onClick={(e) => e.stopPropagation()}
+              className="w-full max-w-md bg-slate-900 border border-slate-700/80 rounded-3xl p-6 shadow-2xl relative overflow-hidden max-h-[85vh] overflow-y-auto overscroll-contain touch-pan-y"
             >
               <button
                 type="button"
+                data-modal-close-trigger
+                aria-label="yopish"
                 onClick={() => setShowTopUpModal(false)}
-                className="absolute top-4 right-4 p-2 rounded-full bg-slate-800 text-slate-400 hover:text-white"
+                className="absolute top-4 right-4 p-2 rounded-full bg-slate-800 text-slate-400 hover:text-white cursor-pointer"
               >
                 <X size={16} />
               </button>
@@ -956,12 +969,18 @@ export function Store({ isDark = true, profile: propsProfile, onProfileUpdate, o
       {/* Confirmation Dialog Modal */}
       <AnimatePresence>
         {confirmItem && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-sm">
+          <div
+            role="dialog"
+            aria-modal="true"
+            onClick={() => setConfirmItem(null)}
+            className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-sm overscroll-contain touch-none"
+          >
             <motion.div
               initial={{ scale: 0.9, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.9, opacity: 0 }}
-              className="w-full max-w-sm bg-slate-900 border border-slate-700 rounded-3xl p-6 shadow-2xl text-center"
+              onClick={(e) => e.stopPropagation()}
+              className="w-full max-w-sm bg-slate-900 border border-slate-700 rounded-3xl p-6 shadow-2xl text-center max-h-[85vh] overflow-y-auto overscroll-contain touch-pan-y"
             >
               <div className="w-12 h-12 rounded-2xl bg-amber-500/20 border border-amber-500/30 text-amber-400 flex items-center justify-center mx-auto mb-3">
                 <AlertCircle className="w-6 h-6" />

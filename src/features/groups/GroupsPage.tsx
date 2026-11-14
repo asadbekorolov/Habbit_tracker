@@ -1,4 +1,6 @@
 import { useState, useEffect, useRef } from "react";
+import { useQueryClient } from "@tanstack/react-query";
+import { useMyGroupsQuery, queryKeys } from "../../hooks/queries";
 import { motion, AnimatePresence } from "framer-motion";
 import { useLang } from "../../store/LangContext";
 import { ResponsiveContainer, ComposedChart, Area, XAxis, YAxis, CartesianGrid, Tooltip } from "recharts";
@@ -13,18 +15,19 @@ import {
 } from "lucide-react";
 import { HabitIcon, cleanHabitName } from "../../components/HabitIcon";
 import { getHabitCategory, getCategoryTheme } from "../../utils/categoryTheme";
-import { toDateStr } from "../../utils/date";
+import { tashkentTodayAnchor, toDateStr } from "../../utils/date";
 import {
-  createGroup, joinGroup, getMyGroups, getGroupMembers,
+  createGroup, joinGroup, getGroupMembers,
   getGroupHabits, addGroupHabit, updateGroupHabit, deleteGroupHabit,
   getGroupLeaderboard, logGroupHabit, getTodayGroupLogs,
   getPendingGroupApprovals, approveGroupLog, rejectGroupLog,
   getGroupMembersMonthlyStats, updateGroupTelegramLink,
   getGroupSubteams, createSubteam, addSubteamMember, removeSubteamMember, deleteSubteam,
-  isStarActive, leaveGroup, kickMember, deleteGroup, setGroupMemberRole, transferGroupOwnership,
+  isStarActive, leaveGroup, kickMember, deleteGroup, setGroupMemberRole, transferGroupOwnership
 } from "../../services/db";
 import { supabase } from "../../services/supabase";
 import type { Profile } from "../../services/supabase";
+import { postApi } from "../../services/apiClient";
 import { trackEvent } from "../../utils/analytics";
 import { UserBadge } from "../../components/UserBadge";
 import { GroupWeeklyCompetition } from "./GroupWeeklyCompetition";
@@ -53,10 +56,22 @@ export function GroupsPage({ isDark, profile, onUserClick }: GroupsPageProps) {
   const { t } = useLang();
   const [view, setView] = useState<View>("list");
   const [subView, setSubView] = useState<"my" | "explore">("my");
-  const [groups, setGroups] = useState<any[]>([]);
   const [selectedGroup, setSelectedGroup] = useState<any>(null);
-  const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+
+  // Guruhlar ro'yxati — yagona React Query keshi. `setGroups` keshni darhol
+  // o'zgartiradi (setQueryData) va serverdan qayta tekshiradi (invalidate).
+  const queryClient = useQueryClient();
+  const groupsQ = useMyGroupsQuery(profile.id);
+  const groups: any[] = groupsQ.data || [];
+  const loading = groupsQ.isPending;
+  const setGroups = (updater: (prev: any[]) => any[]) => {
+    queryClient.setQueryData<any[]>(queryKeys.myGroups(profile.id), (old) => updater(old || []));
+    queryClient.invalidateQueries({ queryKey: queryKeys.myGroups(profile.id) });
+  };
+  useEffect(() => {
+    if (groupsQ.isError && !groupsQ.data) setError(t('groups_err_load'));
+  }, [groupsQ.isError, groupsQ.data]);
 
   const [showCreate, setShowCreate] = useState(false);
   const [showJoin, setShowJoin] = useState(false);
@@ -65,19 +80,7 @@ export function GroupsPage({ isDark, profile, onUserClick }: GroupsPageProps) {
   const [joinCode, setJoinCode] = useState("");
   const [joining, setJoining] = useState(false);
 
-  useEffect(() => { loadGroups(); }, [profile.id]);
 
-  async function loadGroups() {
-    setLoading(true);
-    try {
-      const data = await getMyGroups(profile.id);
-      setGroups((data || []).map((m: any) => m.groups).filter(Boolean));
-    } catch {
-      setError(t('groups_err_load'));
-    } finally {
-      setLoading(false);
-    }
-  }
 
   async function handleCreate() {
     if (!newGroupName.trim()) return;
@@ -283,9 +286,10 @@ export function GroupsPage({ isDark, profile, onUserClick }: GroupsPageProps) {
         </div>
       )}
 
-      {loading ? (
-        <div className="flex items-center justify-center h-48">
-          <Loader2 size={22} className="animate-spin" style={{ color: "var(--neon-green)" }} />
+      {loading && groups.length === 0 ? (
+        <div className="flex flex-col gap-4 max-w-2xl animate-pulse">
+          <div className="h-28 bg-slate-800/40 rounded-3xl w-full" />
+          <div className="h-28 bg-slate-800/40 rounded-3xl w-full" />
         </div>
       ) : groups.length === 0 ? (
         <div style={card} className="p-10 flex flex-col items-center gap-3">
@@ -338,16 +342,16 @@ export function GroupsPage({ isDark, profile, onUserClick }: GroupsPageProps) {
                       {isOwner && <Crown size={16} className="text-amber-500 dark:text-amber-400" />}
                     </div>
 
-                    <div className="flex items-center gap-3 mt-1.5">
-                       <span className="text-[10px] font-black px-2 py-0.5 rounded-full bg-slate-100 dark:bg-white/5 text-slate-500 dark:text-slate-400 border border-slate-200 dark:border-white/5 uppercase tracking-tighter">
-                          {memberCount} / {maxMembers} a'zo
+                    <div className="flex items-center gap-1.5 shrink-0 mt-1.5">
+                       <span className="text-[10px] font-['Geist_Mono',monospace] font-mono font-bold px-2 py-0.5 rounded-full bg-slate-800/80 text-slate-300 border border-slate-700/60 uppercase tracking-tight shrink-0">
+                          {memberCount}/{maxMembers} A'ZO
                        </span>
-                       <span className="text-[10px] font-black px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 uppercase tracking-tighter">
-                          Bugun {groupProgress}%
+                       <span className="text-[10px] font-['Geist_Mono',monospace] font-mono font-bold px-2 py-0.5 rounded-full bg-emerald-950/60 text-emerald-400 border border-emerald-500/30 uppercase tracking-tight shrink-0">
+                          BUGUN {groupProgress}%
                        </span>
                     </div>
 
-                    <div className="mt-3 w-full h-1 bg-slate-100 dark:bg-white/5 rounded-full overflow-hidden">
+                    <div className="mt-3 w-full h-1 bg-slate-800 rounded-full overflow-hidden">
                        <motion.div
                          initial={{ width: 0 }}
                          animate={{ width: `${groupProgress}%` }}
@@ -356,10 +360,11 @@ export function GroupsPage({ isDark, profile, onUserClick }: GroupsPageProps) {
                     </div>
                   </div>
                   <button
+                    type="button"
                     onClick={() => { setSelectedGroup(group); setView("detail"); }}
-                    className="self-center w-10 h-10 rounded-full flex items-center justify-center bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500 hover:text-white dark:hover:text-black transition-all"
+                    className="self-center w-9 h-9 rounded-2xl bg-slate-800/60 border border-slate-700/60 shrink-0 flex items-center justify-center text-emerald-400 hover:bg-emerald-500 hover:text-slate-950 transition-all cursor-pointer"
                   >
-                    <ChevronRight size={20} />
+                    <ChevronRight className="w-5 h-5 stroke-[2.2]" />
                   </button>
                 </div>
 
@@ -563,16 +568,12 @@ function GroupDetail({
       setLeaderboard(lb || []);
 
       if (logItem) {
-        fetch('/api/notify-group', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            completer_name: logItem.profiles?.display_name || "A'zo",
-            habit_emoji: logItem.group_habits?.emoji || '🎯',
-            habit_name: logItem.group_habits?.name || '',
-            group_id: group.id,
-            completer_id: logItem.user_id,
-          }),
+        postApi('/api/notify-group', {
+          completer_name: logItem.profiles?.display_name || "A'zo",
+          habit_emoji: logItem.group_habits?.emoji || '🎯',
+          habit_name: logItem.group_habits?.name || '',
+          group_id: group.id,
+          completer_id: logItem.user_id,
         }).catch(() => {});
       }
     } catch (e: any) {
@@ -761,7 +762,7 @@ function GroupDetail({
         useCORS: true,
       });
       const link = document.createElement("a");
-      const monthLabel = new Date().toLocaleDateString("uz-UZ", { month: "long", year: "numeric" });
+      const monthLabel = tashkentTodayAnchor().toLocaleDateString("uz-UZ", { month: "long", year: "numeric" });
       link.download = `${group.name}-${monthLabel}.png`;
       link.href = canvas.toDataURL("image/png");
       link.click();
@@ -853,7 +854,7 @@ function GroupDetail({
   // (approved/auto) loglar soni — bo'sh kunlar ham 0 bilan chizilishi uchun
   // to'liq sana ro'yxati generatsiya qilinadi (faqat log bo'lgan kunlar emas).
   const uzMonthsShort = ["Yan", "Fev", "Mar", "Apr", "May", "Iyn", "Iyl", "Avg", "Sen", "Okt", "Noy", "Dek"];
-  const nowForStats = new Date();
+  const nowForStats = tashkentTodayAnchor();
   const daysElapsed = nowForStats.getDate();
   const dailyTrendMap: Record<string, number> = {};
   for (const row of monthlyStats) {
@@ -1501,7 +1502,7 @@ function GroupDetail({
             <div className="flex flex-col gap-4">
               <div className="flex items-center justify-between px-1">
                 <p className="text-xs" style={{ color: "var(--muted-foreground)" }}>
-                  {t('groups_month_all_stats').replace('{date}', new Date().toLocaleDateString(DATE_LOCALE[lang], { month: 'long', year: 'numeric' }))}
+                  {t('groups_month_all_stats').replace('{date}', tashkentTodayAnchor().toLocaleDateString(DATE_LOCALE[lang], { month: 'long', year: 'numeric' }))}
                 </p>
                 {rankedMemberStats.length > 0 && (
                   <button
@@ -1525,16 +1526,17 @@ function GroupDetail({
                 style={{ background: isDark ? "#0D1117" : "#F9FAFB" }}>
                 {/* Report header (visible in downloaded image) */}
                 <div className="flex items-center justify-between mb-1">
-                  <div>
-                    <p className="text-sm font-bold" style={{ color: "var(--foreground)" }}>👥 {group.name}</p>
-                    <p className="text-xs" style={{ color: "var(--muted-foreground)" }}>
-                      {new Date().toLocaleDateString(DATE_LOCALE[lang], { month: 'long', year: 'numeric' })} {t('groups_month_report_suffix')}
-                    </p>
+                  <div className="flex items-center gap-2.5">
+                    <div className="p-2 rounded-xl bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 shrink-0">
+                      <Users size={16} className="stroke-[2.2]" />
+                    </div>
+                    <div>
+                      <p className="text-sm font-bold" style={{ color: "var(--foreground)" }}>{group.name}</p>
+                      <p className="text-xs" style={{ color: "var(--muted-foreground)" }}>
+                        {tashkentTodayAnchor().toLocaleDateString(DATE_LOCALE[lang], { month: 'long', year: 'numeric' })} {t('groups_month_report_suffix')}
+                      </p>
+                    </div>
                   </div>
-                  <p className="text-[10px] px-2 py-0.5 rounded-lg font-medium"
-                    style={{ background: "rgba(74,222,128,0.12)", color: "#4ADE80" }}>
-                    traccer.app
-                  </p>
                 </div>
 
                 {/* KPI grid */}

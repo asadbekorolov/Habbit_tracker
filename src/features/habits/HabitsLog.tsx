@@ -1,14 +1,15 @@
 import { useState, useEffect, useRef } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { motion, AnimatePresence } from "framer-motion";
 import { toast } from "sonner";
 import { Check, Flame, Loader2, Lock, Save, ChevronLeft, ChevronRight, Snowflake, WifiOff, X, SlidersHorizontal, Shield, ClipboardList, TrendingUp, AlertCircle, ShieldCheck, HeartCrack, Zap, Coins, CheckCircle2 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { HabitIcon, cleanHabitName } from "../../components/HabitIcon";
 import { getHabitCategory, getCategoryTheme } from "../../utils/categoryTheme";
-import { HABIT_FAILURE_COLOR, HABIT_SUCCESS_COLOR, getHabits, getLogsForDate, toggleHabitLog, deleteHabitLog, getLast30DaysLogs, getStreakFreezes, getMonthlyFreezeCount, useStreakFreeze, getExtraFreezeCount, FREE_FREEZES_PER_MONTH, isLogDateLocked, computeHabitProgress, checkAndUnlockAchievements, getHealthLog, upsertHabitMetric, type HabitMetricKey } from "../../services/db";
-import { sortByOrder } from "../../utils/habitOrder";
-import { toDateStr } from "../../utils/date";
-import { cacheHabits, getCachedHabits, cacheLogs, getCachedLogs, cacheStreaks, getCachedStreaks, addPendingLog, getPendingLogs, savePendingLogs } from "../../services/offline";
+import { HABIT_FAILURE_COLOR, HABIT_SUCCESS_COLOR, getStreakFreezes, getMonthlyFreezeCount, getExtraFreezeCount, FREE_FREEZES_PER_MONTH, isLogDateLocked, computeHabitProgress, checkAndUnlockAchievements, getHealthLog, upsertHabitMetric, type HabitMetricKey } from "../../services/db";
+import { tashkentTodayAnchor, toDateStr, addDays } from "../../utils/date";
+import { habitSyncQueue } from "../../services/habitSyncQueue";
+import { useHabitsQuery, useDayLogsQuery, useLogsRangeQuery, queryKeys } from "../../hooks/queries";
 import type { Habit, Profile } from "../../services/supabase";
 import { useLang } from "../../store/LangContext";
 import { QuickLogModal } from "../../components/QuickLogModal";
@@ -67,17 +68,9 @@ export function HabitsLog({ isDark, profile, onCompletedChange, onScoreChange, o
   const [negStreaks, setNegStreaks] = useState<Record<string, number>>({});
   const [loggedIds, setLoggedIds] = useState<Set<string>>(new Set());
   const [selectedDate, setSelectedDate] = useState(() => toDateStr());
-  const [loading, setLoading] = useState(true);
-  const [freezeDates, setFreezeDates] = useState<Set<string>>(new Set());
-  const [monthlyFreezeCount, setMonthlyFreezeCount] = useState(0);
   const [freezeLoading, setFreezeLoading] = useState(false);
   const [freezeError, setFreezeError] = useState("");
   const [streakAtRisk, setStreakAtRisk] = useState(false);
-  const [extraFreezeCount, setExtraFreezeCount] = useState(0);
-  const [isOffline, setIsOffline] = useState(!navigator.onLine);
-  const [fromCache, setFromCache] = useState(false);
-  const [pendingCount, setPendingCount] = useState(0);
-  const [syncError, setSyncError] = useState("");
   const [activeLogHabit, setActiveLogHabit] = useState<Habit | null>(null);
   const timelineRef = useRef<HTMLDivElement>(null);
 
@@ -85,40 +78,29 @@ export function HabitsLog({ isDark, profile, onCompletedChange, onScoreChange, o
   const isToday = selectedDate === today;
   const dateLocked = isLogDateLocked(selectedDate);
 
-  useEffect(() => { loadData(selectedDate); }, [profile.id, selectedDate]);
-
-  useEffect(() => {
-    setPendingCount(getPendingLogs(profile.id).length);
-    function handleOnline() {
-      setIsOffline(false);
-      flushPendingLogs();
-    }
-    function handleOffline() { setIsOffline(true); }
-    window.addEventListener("online", handleOnline);
-    window.addEventListener("offline", handleOffline);
-    return () => {
-      window.removeEventListener("online", handleOnline);
-      window.removeEventListener("offline", handleOffline);
-    };
-  }, [profile.id]);
-
-  async function flushPendingLogs() {
-    const pending = getPendingLogs(profile.id);
-    if (pending.length === 0) return;
-    const failed: typeof pending = [];
-    for (const log of pending) {
-      try {
-        await toggleHabitLog(log.habitId, log.userId, log.completed, log.value, log.prevCompleted, log.isNegative, log.date);
-      } catch {
-        failed.push(log);
-      }
-    }
-    savePendingLogs(profile.id, failed);
-    setPendingCount(failed.length);
-    if (failed.length > 0) setSyncError(t('log_sync_error').replace('{n}', String(failed.length)));
-    else setSyncError("");
-    loadData(selectedDate);
-  }
+  // ─── Ma'lumot: yagona React Query keshi ─────────────────────────────
+  // Kunlik loglar keshi navbatdagi (hali yuborilmagan) belgilarni ham o'z
+  // ichiga oladi; har bosishda navbat keshni darhol yangilaydi, server rad
+  // etsa — kesh serverdan qayta yuklanadi (queryClient.onHabitSyncRejected).
+  const habitsQ = useHabitsQuery(profile.id);
+  const dayLogsQ = useDayLogsQuery(profile.id, selectedDate);
+  const historyQ = useLogsRangeQuery(profile.id, addDays(today, -30), today);
+  const freezeQ = useQuery({
+    queryKey: queryKeys.freezes(profile.id),
+    queryFn: async () => {
+      const [dates, monthly, extra] = await Promise.all([
+        getStreakFreezes(profile.id),
+        getMonthlyFreezeCount(profile.id),
+        getExtraFreezeCount(profile.id),
+      ]);
+      return { dates: dates as string[], monthly, extra };
+    },
+    enabled: !!profile.id,
+  });
+  const freezeDates = new Set<string>(freezeQ.data?.dates || []);
+  const monthlyFreezeCount = freezeQ.data?.monthly ?? 0;
+  const extraFreezeCount = freezeQ.data?.extra ?? 0;
+  const loading = habitsQ.isPending || dayLogsQ.isPending;
 
   useEffect(() => {
     if (!loading && timelineRef.current) {
@@ -128,143 +110,100 @@ export function HabitsLog({ isDark, profile, onCompletedChange, onScoreChange, o
     }
   }, [loading]);
 
-  async function loadData(date: string) {
-    setLoading(true);
-    try {
-      const [habitsData, logsData, historyData, freezeDatesData, freezeCount, extraFreeze] = await Promise.all([
-        getHabits(profile.id),
-        getLogsForDate(profile.id, date),
-        getLast30DaysLogs(profile.id),
-        getStreakFreezes(profile.id),
-        getMonthlyFreezeCount(profile.id),
-        getExtraFreezeCount(profile.id),
-      ]);
-      setFreezeDates(new Set(freezeDatesData));
-      setMonthlyFreezeCount(freezeCount);
-      setExtraFreezeCount(extraFreeze);
+  // Kesh o'zgarganda (yuklash, bosish, server javobi) ko'rinish holatini qayta hisoblaymiz.
+  useEffect(() => {
+    if (!habitsQ.data || !dayLogsQ.data) return;
+    const sorted = habitsQ.data;
+    const effectiveLogs = dayLogsQ.data;
+    const historyData = historyQ.data || [];
+    const freezeDatesData = freezeQ.data?.dates || [];
 
-      const sorted = sortByOrder(habitsData || [], profile.id);
-      const posHabits = sorted.filter((h: Habit) => h.type === "positive");
-      const negHabits = sorted.filter((h: Habit) => h.type === "negative");
-      setPositiveHabits(posHabits);
-      setNegativeHabits(negHabits);
+    const posHabits = sorted.filter((h: Habit) => h.type === "positive");
+    const negHabits = sorted.filter((h: Habit) => h.type === "negative");
+    setPositiveHabits(posHabits);
+    setNegativeHabits(negHabits);
 
-      const completed = new Set<string>();
-      const logged = new Set<string>();
-      const values: Record<string, number> = {};
-      for (const log of logsData || []) {
-        logged.add(log.habit_id);
-        if (log.completed) completed.add(log.habit_id);
-        values[log.habit_id] = log.value || (log.completed ? 1 : 0);
-      }
-      setCompletedIds(completed);
-      setLoggedIds(logged);
-      setLogValues(values);
-
-      if (isToday) {
-        const { completed: doneCount, total } = computeHabitProgress([...posHabits, ...negHabits], logsData || []);
-        onCompletedChange(doneCount, total);
-      }
-
-      const todayStr = toDateStr();
-      const byHabit: Record<string, Set<string>> = {};
-      for (const log of historyData || []) {
-        if (log.completed) {
-          if (!byHabit[log.habit_id]) byHabit[log.habit_id] = new Set();
-          byHabit[log.habit_id].add(log.log_date);
-        }
-      }
-      for (const id of Array.from(completed)) {
-        if (!byHabit[id]) byHabit[id] = new Set();
-        byHabit[id].add(todayStr);
-      }
-      const newStreaks: Record<string, number> = {};
-      const now = new Date();
-      const freezeSet = new Set(freezeDatesData);
-      for (const [habitId, days] of Object.entries(byHabit)) {
-        let streak = 0;
-        const startOffset = days.has(todayStr) ? 0 : 1;
-        for (let i = startOffset; i < 31; i++) {
-          const dd = new Date(now);
-          dd.setDate(dd.getDate() - i);
-          const ds = toDateStr(dd);
-          if (days.has(ds) || freezeSet.has(ds)) streak++;
-          else break;
-        }
-        if (streak > 0) newStreaks[habitId] = streak;
-      }
-      setStreaks(newStreaks);
-
-      const negHabitIds = new Set(sorted.filter((h: Habit) => h.type === "negative").map((h: Habit) => h.id));
-      const negByHabit: Record<string, Set<string>> = {};
-      for (const log of historyData || []) {
-        if (negHabitIds.has(log.habit_id) && log.completed) {
-          if (!negByHabit[log.habit_id]) negByHabit[log.habit_id] = new Set();
-          negByHabit[log.habit_id].add(log.log_date);
-        }
-      }
-      for (const log of logsData || []) {
-        if (negHabitIds.has(log.habit_id) && log.completed) {
-          if (!negByHabit[log.habit_id]) negByHabit[log.habit_id] = new Set();
-          negByHabit[log.habit_id].add(date);
-        }
-      }
-      const newNegStreaks: Record<string, number> = {};
-      for (const [habitId, days] of Object.entries(negByHabit)) {
-        let streak = 0;
-        const startOffset = days.has(todayStr) ? 0 : 1;
-        for (let i = startOffset; i < 31; i++) {
-          const dd = new Date(now);
-          dd.setDate(dd.getDate() - i);
-          const ds = toDateStr(dd);
-          if (days.has(ds)) streak++;
-          else break;
-        }
-        if (streak > 0) newNegStreaks[habitId] = streak;
-      }
-      setNegStreaks(newNegStreaks);
-
-      cacheHabits(profile.id, habitsData || []);
-      cacheLogs(profile.id, date, logsData || []);
-      cacheStreaks(profile.id, newStreaks);
-      setFromCache(false);
-
-      const yesterdayStr = toDateStr(new Date(now.getTime() - 86400000));
-      const atRisk = Object.entries(byHabit).some(([, days]) =>
-        days.size > 0 && !days.has(yesterdayStr) && !freezeSet.has(yesterdayStr)
-      );
-      setStreakAtRisk(atRisk);
-    } catch (e) {
-      const cachedHabits = getCachedHabits(profile.id);
-      if (cachedHabits) {
-        const sorted = sortByOrder(cachedHabits, profile.id);
-        const posHabits = sorted.filter((h: Habit) => h.type === "positive");
-        const negHabits = sorted.filter((h: Habit) => h.type === "negative");
-        setPositiveHabits(posHabits);
-        setNegativeHabits(negHabits);
-        const cachedLogs = getCachedLogs(profile.id, date) || [];
-        const completed = new Set<string>();
-        const logged = new Set<string>();
-        const values: Record<string, number> = {};
-        for (const log of cachedLogs) {
-          logged.add(log.habit_id);
-          if (log.completed) completed.add(log.habit_id);
-          values[log.habit_id] = log.value || (log.completed ? 1 : 0);
-        }
-        setCompletedIds(completed);
-        setLoggedIds(logged);
-        setLogValues(values);
-        if (date === toDateStr()) {
-          const { completed: doneCount, total } = computeHabitProgress([...posHabits, ...negHabits], cachedLogs);
-          onCompletedChange(doneCount, total);
-        }
-        setStreaks(getCachedStreaks(profile.id));
-        setFromCache(true);
-      }
-      console.error(e);
+    const completed = new Set<string>();
+    const logged = new Set<string>();
+    const values: Record<string, number> = {};
+    for (const log of effectiveLogs) {
+      logged.add(log.habit_id);
+      if (log.completed) completed.add(log.habit_id);
+      values[log.habit_id] = log.value || (log.completed ? 1 : 0);
     }
-    finally { setLoading(false); }
-  }
+    setCompletedIds(completed);
+    setLoggedIds(logged);
+    setLogValues(values);
+
+    if (isToday) {
+      const { completed: doneCount, total } = computeHabitProgress([...posHabits, ...negHabits], effectiveLogs);
+      onCompletedChange(doneCount, total);
+    }
+
+    const todayStr = toDateStr();
+    const byHabit: Record<string, Set<string>> = {};
+    for (const log of historyData) {
+      if (log.completed) {
+        if (!byHabit[log.habit_id]) byHabit[log.habit_id] = new Set();
+        byHabit[log.habit_id].add(log.log_date);
+      }
+    }
+    for (const id of Array.from(completed)) {
+      if (!byHabit[id]) byHabit[id] = new Set();
+      byHabit[id].add(todayStr);
+    }
+    const newStreaks: Record<string, number> = {};
+    const now = tashkentTodayAnchor();
+    const freezeSet = new Set(freezeDatesData);
+    for (const [habitId, days] of Object.entries(byHabit)) {
+      let streak = 0;
+      const startOffset = days.has(todayStr) ? 0 : 1;
+      for (let i = startOffset; i < 31; i++) {
+        const dd = new Date(now);
+        dd.setDate(dd.getDate() - i);
+        const ds = toDateStr(dd);
+        if (days.has(ds) || freezeSet.has(ds)) streak++;
+        else break;
+      }
+      if (streak > 0) newStreaks[habitId] = streak;
+    }
+    setStreaks(newStreaks);
+
+    const negHabitIds = new Set(negHabits.map((h: Habit) => h.id));
+    const negByHabit: Record<string, Set<string>> = {};
+    for (const log of historyData) {
+      if (negHabitIds.has(log.habit_id) && log.completed) {
+        if (!negByHabit[log.habit_id]) negByHabit[log.habit_id] = new Set();
+        negByHabit[log.habit_id].add(log.log_date);
+      }
+    }
+    for (const log of effectiveLogs) {
+      if (negHabitIds.has(log.habit_id) && log.completed) {
+        if (!negByHabit[log.habit_id]) negByHabit[log.habit_id] = new Set();
+        negByHabit[log.habit_id].add(selectedDate);
+      }
+    }
+    const newNegStreaks: Record<string, number> = {};
+    for (const [habitId, days] of Object.entries(negByHabit)) {
+      let streak = 0;
+      const startOffset = days.has(todayStr) ? 0 : 1;
+      for (let i = startOffset; i < 31; i++) {
+        const dd = new Date(now);
+        dd.setDate(dd.getDate() - i);
+        const ds = toDateStr(dd);
+        if (days.has(ds)) streak++;
+        else break;
+      }
+      if (streak > 0) newNegStreaks[habitId] = streak;
+    }
+    setNegStreaks(newNegStreaks);
+
+    const yesterdayStr = toDateStr(new Date(now.getTime() - 86400000));
+    const atRisk = Object.entries(byHabit).some(([, days]) =>
+      days.size > 0 && !days.has(yesterdayStr) && !freezeSet.has(yesterdayStr)
+    );
+    setStreakAtRisk(atRisk);
+  }, [habitsQ.data, dayLogsQ.data, historyQ.data, freezeQ.data, selectedDate, isToday]);
 
   function reportProgress(nextCompleted: Set<string>, nextLogged: Set<string>) {
     const allHabits = [...positiveHabits, ...negativeHabits];
@@ -277,12 +216,18 @@ export function HabitsLog({ isDark, profile, onCompletedChange, onScoreChange, o
     checkAndUnlockAchievements(profile.id).catch(() => {});
   }
 
-  async function toggleHabit(habitId: string, isNegative = false) {
+  function toggleHabit(habitId: string, isNegative = false) {
     if (dateLocked) { toast.error(t('log_locked_error')); return; }
     const wasDone = completedIds.has(habitId);
     const wasLogged = loggedIds.has(habitId);
     const newState = !wasDone;
     const resetting = wasDone && !newState;
+
+    const snapshot = {
+      completedIds: new Set(completedIds),
+      loggedIds: new Set(loggedIds),
+      streaks: { ...streaks },
+    };
 
     const nextCompleted = new Set(completedIds);
     if (newState) nextCompleted.add(habitId); else nextCompleted.delete(habitId);
@@ -304,39 +249,42 @@ export function HabitsLog({ isDark, profile, onCompletedChange, onScoreChange, o
     } else if (!newState && !isNegative) {
       setStreaks(p => ({ ...p, [habitId]: Math.max(0, (p[habitId] || 1) - 1) }));
     }
-    setSavingIds(p => new Set(p).add(habitId));
-    if (!navigator.onLine) {
-      addPendingLog(profile.id, { habitId, userId: profile.id, date: selectedDate, completed: newState, value: newState ? 1 : 0, prevCompleted: wasDone, isNegative });
-      const count = getPendingLogs(profile.id).length;
-      setPendingCount(count);
-      const existing = getCachedLogs(profile.id, selectedDate) || [];
-      const updated = existing.filter((l: any) => l.habit_id !== habitId);
-      updated.push({ habit_id: habitId, completed: newState, value: newState ? 1 : 0, log_date: selectedDate });
-      cacheLogs(profile.id, selectedDate, updated);
-      setSavingIds(p => { const n = new Set(p); n.delete(habitId); return n; });
-      return;
-    }
-    try {
-      if (resetting) {
-        await deleteHabitLog(habitId, profile.id, selectedDate);
-      } else {
-        await toggleHabitLog(habitId, profile.id, newState, newState ? 1 : 0, wasDone, isNegative, selectedDate);
+
+    habitSyncQueue.enqueue({
+      habitId,
+      userId: profile.id,
+      completed: newState,
+      value: newState ? 1 : 0,
+      prevCompleted: wasDone,
+      isNegative,
+      date: selectedDate,
+      isDelete: resetting,
+      snapshot,
+      onRollback: (snap) => {
+        if (snap.completedIds) setCompletedIds(snap.completedIds);
+        if (snap.loggedIds) setLoggedIds(snap.loggedIds);
+        if (snap.streaks) setStreaks(snap.streaks);
+        if (!isNegative) reportProgress(snap.completedIds || completedIds, snap.loggedIds || loggedIds);
+      },
+      onSuccess: () => {
         if (newState) triggerAchievementCheck();
-      }
-    } catch {
-      setCompletedIds(completedIds);
-      setLoggedIds(loggedIds);
-      if (!isNegative) reportProgress(completedIds, loggedIds);
-    } finally {
-      setSavingIds(p => { const n = new Set(p); n.delete(habitId); return n; });
-    }
+      },
+    });
   }
 
-  async function handleValueChange(habit: Habit, newValue: number) {
+  function handleValueChange(habit: Habit, newValue: number) {
     if (dateLocked) { toast.error(t('log_locked_error')); return; }
     const target = habit.target_value || 1;
     const completed = newValue >= target;
     const prevCompleted = completedIds.has(habit.id);
+
+    const snapshot = {
+      completedIds: new Set(completedIds),
+      loggedIds: new Set(loggedIds),
+      logValues: { ...logValues },
+      streaks: { ...streaks },
+    };
+
     setLogValues(p => ({ ...p, [habit.id]: newValue }));
     const nextCompleted = new Set(completedIds);
     if (completed) nextCompleted.add(habit.id); else nextCompleted.delete(habit.id);
@@ -344,6 +292,7 @@ export function HabitsLog({ isDark, profile, onCompletedChange, onScoreChange, o
     const nextLogged = new Set(loggedIds);
     nextLogged.add(habit.id);
     setLoggedIds(nextLogged);
+
     if (habit.type === "positive") reportProgress(nextCompleted, nextLogged);
     if (completed !== prevCompleted) {
       onScoreChange?.(completed ? 1 : -1);
@@ -355,82 +304,144 @@ export function HabitsLog({ isDark, profile, onCompletedChange, onScoreChange, o
         setStreaks(p => ({ ...p, [habit.id]: Math.max(0, (p[habit.id] || 1) - 1) }));
       }
     }
-    setSavingIds(p => new Set(p).add(habit.id));
-    if (!navigator.onLine) {
-      addPendingLog(profile.id, { habitId: habit.id, userId: profile.id, date: selectedDate, completed, value: newValue, prevCompleted, isNegative: false });
-      const count = getPendingLogs(profile.id).length;
-      setPendingCount(count);
-      const existing = getCachedLogs(profile.id, selectedDate) || [];
-      const updated = existing.filter((l: any) => l.habit_id !== habit.id);
-      updated.push({ habit_id: habit.id, completed, value: newValue, log_date: selectedDate });
-      cacheLogs(profile.id, selectedDate, updated);
-      setSavingIds(p => { const n = new Set(p); n.delete(habit.id); return n; });
-      return;
-    }
-    try {
-      await toggleHabitLog(habit.id, profile.id, completed, newValue, prevCompleted, false, selectedDate);
-      if (completed) triggerAchievementCheck();
-    } catch { /* revert handled by reload */ }
-    finally { setSavingIds(p => { const n = new Set(p); n.delete(habit.id); return n; }); }
+
+    habitSyncQueue.enqueue({
+      habitId: habit.id,
+      userId: profile.id,
+      completed,
+      value: newValue,
+      prevCompleted,
+      date: selectedDate,
+      snapshot,
+      onRollback: (snap) => {
+        if (snap.completedIds) setCompletedIds(snap.completedIds);
+        if (snap.loggedIds) setLoggedIds(snap.loggedIds);
+        if (snap.logValues) setLogValues(snap.logValues);
+        if (snap.streaks) setStreaks(snap.streaks);
+        if (habit.type === "positive") reportProgress(snap.completedIds || completedIds, snap.loggedIds || loggedIds);
+      },
+      onSuccess: () => {
+        if (completed) triggerAchievementCheck();
+      },
+    });
   }
 
-  async function markNegativeHabit(habitId: string, broke: boolean) {
+  function markNegativeHabit(habitId: string, broke: boolean) {
     if (dateLocked) { toast.error(t('log_locked_error')); return; }
     const alreadyLogged = loggedIds.has(habitId);
     const alreadyKept = alreadyLogged && completedIds.has(habitId);
     const alreadyBroke = alreadyLogged && !completedIds.has(habitId);
     const sameState = (broke && alreadyBroke) || (!broke && alreadyKept);
-    setSavingIds(p => new Set(p).add(habitId));
-    try {
-      if (sameState) {
-        await deleteHabitLog(habitId, profile.id, selectedDate);
-        const nextLogged = new Set(loggedIds); nextLogged.delete(habitId);
-        const nextCompleted = new Set(completedIds); nextCompleted.delete(habitId);
-        setLoggedIds(nextLogged);
-        setCompletedIds(nextCompleted);
-        reportProgress(nextCompleted, nextLogged);
-      } else {
-        const completed = !broke;
-        await toggleHabitLog(habitId, profile.id, completed, completed ? 1 : 0, alreadyKept, true, selectedDate);
-        if (completed) triggerAchievementCheck();
-        const nextLogged = new Set(loggedIds); nextLogged.add(habitId);
-        const nextCompleted = new Set(completedIds);
-        if (completed) nextCompleted.add(habitId); else nextCompleted.delete(habitId);
-        setLoggedIds(nextLogged);
-        setCompletedIds(nextCompleted);
-        reportProgress(nextCompleted, nextLogged);
-      }
-    } catch (e) { console.error(e); }
-    finally { setSavingIds(p => { const n = new Set(p); n.delete(habitId); return n; }); }
+
+    const snapshot = {
+      completedIds: new Set(completedIds),
+      loggedIds: new Set(loggedIds),
+    };
+
+    if (sameState) {
+      const nextLogged = new Set(loggedIds); nextLogged.delete(habitId);
+      const nextCompleted = new Set(completedIds); nextCompleted.delete(habitId);
+      setLoggedIds(nextLogged);
+      setCompletedIds(nextCompleted);
+      reportProgress(nextCompleted, nextLogged);
+
+      habitSyncQueue.enqueue({
+        habitId,
+        userId: profile.id,
+        completed: false,
+        value: 0,
+        isDelete: true,
+        date: selectedDate,
+        snapshot,
+        onRollback: (snap) => {
+          if (snap.completedIds) setCompletedIds(snap.completedIds);
+          if (snap.loggedIds) setLoggedIds(snap.loggedIds);
+          reportProgress(snap.completedIds || completedIds, snap.loggedIds || loggedIds);
+        },
+      });
+    } else {
+      const completed = !broke;
+      const nextLogged = new Set(loggedIds); nextLogged.add(habitId);
+      const nextCompleted = new Set(completedIds);
+      if (completed) nextCompleted.add(habitId); else nextCompleted.delete(habitId);
+      setLoggedIds(nextLogged);
+      setCompletedIds(nextCompleted);
+      reportProgress(nextCompleted, nextLogged);
+
+      habitSyncQueue.enqueue({
+        habitId,
+        userId: profile.id,
+        completed,
+        value: completed ? 1 : 0,
+        prevCompleted: alreadyKept,
+        isNegative: true,
+        date: selectedDate,
+        snapshot,
+        onRollback: (snap) => {
+          if (snap.completedIds) setCompletedIds(snap.completedIds);
+          if (snap.loggedIds) setLoggedIds(snap.loggedIds);
+          reportProgress(snap.completedIds || completedIds, snap.loggedIds || loggedIds);
+        },
+        onSuccess: () => {
+          if (completed) triggerAchievementCheck();
+        },
+      });
+    }
   }
 
-  async function markPositiveFailed(habit: Habit) {
+  function markPositiveFailed(habit: Habit) {
     if (dateLocked) { toast.error(t('log_locked_error')); return; }
     const wasDone = completedIds.has(habit.id);
     const wasLogged = loggedIds.has(habit.id);
     const wasFailed = wasLogged && !wasDone;
 
-    setSavingIds((p) => new Set(p).add(habit.id));
-    try {
-      if (wasFailed) {
-        await deleteHabitLog(habit.id, profile.id, selectedDate);
-        const nextLogged = new Set(loggedIds); nextLogged.delete(habit.id);
-        const nextCompleted = new Set(completedIds); nextCompleted.delete(habit.id);
-        setLoggedIds(nextLogged);
-        setCompletedIds(nextCompleted);
-        reportProgress(nextCompleted, nextLogged);
-      } else {
-        await toggleHabitLog(habit.id, profile.id, false, 0, wasDone, false, selectedDate);
-        const nextLogged = new Set(loggedIds); nextLogged.add(habit.id);
-        const nextCompleted = new Set(completedIds); nextCompleted.delete(habit.id);
-        setLoggedIds(nextLogged);
-        setCompletedIds(nextCompleted);
-        reportProgress(nextCompleted, nextLogged);
-      }
-    } catch (e) {
-      console.error(e);
-    } finally {
-      setSavingIds((p) => { const n = new Set(p); n.delete(habit.id); return n; });
+    const snapshot = {
+      completedIds: new Set(completedIds),
+      loggedIds: new Set(loggedIds),
+    };
+
+    if (wasFailed) {
+      const nextLogged = new Set(loggedIds); nextLogged.delete(habit.id);
+      const nextCompleted = new Set(completedIds); nextCompleted.delete(habit.id);
+      setLoggedIds(nextLogged);
+      setCompletedIds(nextCompleted);
+      reportProgress(nextCompleted, nextLogged);
+
+      habitSyncQueue.enqueue({
+        habitId: habit.id,
+        userId: profile.id,
+        completed: false,
+        value: 0,
+        isDelete: true,
+        date: selectedDate,
+        snapshot,
+        onRollback: (snap) => {
+          if (snap.completedIds) setCompletedIds(snap.completedIds);
+          if (snap.loggedIds) setLoggedIds(snap.loggedIds);
+          reportProgress(snap.completedIds || completedIds, snap.loggedIds || loggedIds);
+        },
+      });
+    } else {
+      const nextLogged = new Set(loggedIds); nextLogged.add(habit.id);
+      const nextCompleted = new Set(completedIds); nextCompleted.delete(habit.id);
+      setLoggedIds(nextLogged);
+      setCompletedIds(nextCompleted);
+      reportProgress(nextCompleted, nextLogged);
+
+      habitSyncQueue.enqueue({
+        habitId: habit.id,
+        userId: profile.id,
+        completed: false,
+        value: 0,
+        prevCompleted: wasDone,
+        date: selectedDate,
+        snapshot,
+        onRollback: (snap) => {
+          if (snap.completedIds) setCompletedIds(snap.completedIds);
+          if (snap.loggedIds) setLoggedIds(snap.loggedIds);
+          reportProgress(snap.completedIds || completedIds, snap.loggedIds || loggedIds);
+        },
+      });
     }
   }
 
@@ -531,7 +542,7 @@ export function HabitsLog({ isDark, profile, onCompletedChange, onScoreChange, o
             onClick={() => {
               const d = new Date(selectedDate + "T00:00:00");
               d.setDate(d.getDate() - 7);
-              const minDate = new Date(); minDate.setDate(minDate.getDate() - 30);
+              const minDate = tashkentTodayAnchor(); minDate.setDate(minDate.getDate() - 30);
               if (d >= minDate) setSelectedDate(toDateStr(d));
             }}
             className="flex items-center gap-1.5 text-[10px] font-black uppercase tracking-widest px-3 py-2 rounded-xl transition-colors text-slate-500 bg-white/5"

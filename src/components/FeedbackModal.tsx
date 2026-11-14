@@ -4,6 +4,7 @@ import { X, Send, Loader2, CheckCircle2 } from "lucide-react";
 import { submitFeedback } from "../services/db";
 import type { Profile } from "../services/supabase";
 import { useLang } from "../store/LangContext";
+import { useScrollLock } from "../hooks/useScrollLock";
 
 interface FeedbackModalProps {
   isDark: boolean;
@@ -13,6 +14,7 @@ interface FeedbackModalProps {
 
 export function FeedbackModal({ isDark, profile, onClose }: FeedbackModalProps) {
   const { t } = useLang();
+  useScrollLock(true);
   const [content, setContent] = useState("");
   const [sending, setSending] = useState(false);
   const [sent, setSent] = useState(false);
@@ -40,12 +42,12 @@ export function FeedbackModal({ isDark, profile, onClose }: FeedbackModalProps) 
     <div
       role="dialog"
       aria-modal="true"
-      className="fixed inset-0 z-[9999] flex items-end sm:items-center justify-center p-0 sm:p-4"
-      style={{ background: "rgba(0,0,0,0.6)", backdropFilter: "blur(4px)" }}
+      className="fixed inset-0 z-[9999] flex items-end sm:items-center justify-center p-0 sm:p-4 overscroll-contain touch-none"
+      style={{ background: "rgba(0,0,0,0.75)", backdropFilter: "blur(4px)" }}
       onClick={onClose}
     >
       <div
-        className="w-full sm:max-w-md rounded-t-3xl sm:rounded-2xl overflow-hidden"
+        className="w-full sm:max-w-md rounded-t-3xl sm:rounded-2xl overflow-hidden max-h-[85vh] overflow-y-auto overscroll-contain touch-pan-y"
         style={{ background: isDark ? "#161B22" : "#fff", paddingBottom: "env(safe-area-inset-bottom)" }}
         onClick={(e) => e.stopPropagation()}
       >

@@ -2,6 +2,7 @@ import { useEffect, useRef } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { Capacitor } from '@capacitor/core';
 import { App as CapApp } from '@capacitor/app';
+import { Haptics, ImpactStyle } from '@capacitor/haptics';
 import { toast } from 'sonner';
 
 export function useHardwareBackButton() {
@@ -14,6 +15,11 @@ export function useHardwareBackButton() {
     if (!Capacitor.isNativePlatform()) return;
 
     const backButtonListener = CapApp.addListener('backButton', () => {
+      // Light haptic feedback on physical back button press
+      try {
+        Haptics.impact({ style: ImpactStyle.Light }).catch(() => {});
+      } catch {}
+
       // 1. Check for explicit data-modal-close-trigger elements in DOM
       const closeTriggers = document.querySelectorAll('[data-modal-close-trigger]');
       if (closeTriggers.length > 0) {

@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, lazy, Suspense } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Routes, Route, Navigate, useNavigate, useLocation } from "react-router-dom";
 import { ProtectedRoute } from "./components/ProtectedRoute";
@@ -7,38 +7,28 @@ import {
   LayoutGrid, ClipboardList, ListChecks, Users, BarChart3, User as UserIcon,
   Heart, MoreHorizontal, Trophy, ShieldAlert, X as CloseIcon,
   Wallet, Settings, Sun, Moon, Activity as ActivityIcon, Globe, TrendingUp, Bell as BellIcon, Loader2, CheckCircle2, Flame, Zap,
-  Coins, Plus
+  Coins, Plus, Home, CheckSquare, BookOpen
 } from "lucide-react";
 import { HabitIcon } from "./components/HabitIcon";
 import { soundService } from "./services/soundService";
 import { getLevel } from "./utils/levels";
 import { Sidebar } from "./components/Sidebar";
-import { HabitsLog } from "./features/habits/HabitsLog";
-import { Analytics } from "./features/analytics/Analytics";
 import { LoginPage } from "./features/auth/LoginPage";
-import { HabitsManager } from "./features/habits/HabitsManager";
-import { SettingsPage } from "./features/profile/SettingsPage";
-import { GlobalLeaderboardPage } from "./features/leaderboard/GlobalLeaderboardPage";
-import { ProfilePage } from "./features/profile/ProfilePage";
 import { NotificationBell } from "./components/NotificationBell";
-import { Achievements } from "./features/profile/Achievements";
-import { AdminPanel } from "./features/groups/AdminPanel";
 import { App as CapacitorApp } from "@capacitor/app";
+import { Browser } from "@capacitor/browser";
 import { Dashboard } from "./features/dashboard/Dashboard";
-import { GroupsPage } from "./features/groups/GroupsPage";
-import { FeedPage } from "./features/feed/FeedPage";
 import { MonthGrid } from "./features/dashboard/MonthGrid";
 import { DailyNotes } from "./features/dashboard/DailyNotes";
 import { LevelUpToast } from "./components/LevelUpToast";
 import { WeeklyReflection } from "./features/dashboard/WeeklyReflection";
-import { EditProfilePage } from "./features/profile/EditProfilePage";
 import { PublicProfileModal } from "./components/PublicProfileModal";
-import { HealthPage } from "./features/habits/HealthPage";
-import { JournalPage } from "./pages/JournalPage";
-import { Store } from "./pages/Store";
 import { ResetPasswordPage } from "./features/auth/ResetPasswordPage";
 import { supabase } from "./services/supabase";
-import { getProfileById, signOutUser, getHabits, getTodayLogs, touchLastSeen, computeHabitProgress, addHabit } from "./services/db";
+import { getProfileById, signOutUser, touchLastSeen, computeHabitProgress, addHabit } from "./services/db";
+import { clearQueryCache } from "./services/queryClient";
+import { useHabitsQuery, useDayLogsQuery, habitCache } from "./hooks/queries";
+import { toDateStr } from "./utils/date";
 import type { Profile } from "./services/supabase";
 import { LangContext, buildLangValue, type Lang } from "./store/LangContext";
 import { useUser } from "./store/UserContext";
@@ -50,36 +40,39 @@ import { nativeNotificationService } from "./services/nativeNotificationService"
 import { notificationService } from "./services/notificationService";
 import { useHaptics } from "./hooks/useHaptics";
 import { AddHabitModal } from "./components/AddHabitModal";
+import { BiometricsOnboardingModal } from "./components/BiometricsOnboardingModal";
 import { useQueryClient } from "@tanstack/react-query";
-
 import { useTheme } from "./store/ThemeContext";
 
-const LEVEL_LABELS = ["", "level_1", "level_2", "level_3", "level_4", "level_5", "level_6", "level_7", "level_8", "level_9", "level_10"] as const;
+// Lazy-loaded routes for code splitting & instant rendering
+const HabitsManager = lazy(() => import("./features/habits/HabitsManager").then(m => ({ default: m.HabitsManager })));
+const Analytics = lazy(() => import("./features/analytics/Analytics").then(m => ({ default: m.Analytics })));
+const SettingsPage = lazy(() => import("./features/profile/SettingsPage").then(m => ({ default: m.SettingsPage })));
+const GlobalLeaderboardPage = lazy(() => import("./features/leaderboard/GlobalLeaderboardPage").then(m => ({ default: m.GlobalLeaderboardPage })));
+const ProfilePage = lazy(() => import("./features/profile/ProfilePage").then(m => ({ default: m.ProfilePage })));
+const Achievements = lazy(() => import("./features/profile/Achievements").then(m => ({ default: m.Achievements })));
+const AdminPanel = lazy(() => import("./features/groups/AdminPanel").then(m => ({ default: m.AdminPanel })));
+const GroupsPage = lazy(() => import("./features/groups/GroupsPage").then(m => ({ default: m.GroupsPage })));
+const FeedPage = lazy(() => import("./features/feed/FeedPage").then(m => ({ default: m.FeedPage })));
+const EditProfilePage = lazy(() => import("./features/profile/EditProfilePage").then(m => ({ default: m.EditProfilePage })));
+const HealthPage = lazy(() => import("./features/habits/HealthPage").then(m => ({ default: m.HealthPage })));
+const JournalPage = lazy(() => import("./pages/JournalPage").then(m => ({ default: m.JournalPage })));
+const Store = lazy(() => import("./pages/Store").then(m => ({ default: m.Store })));
 
-function HeaderProgress({ percent, completed, total, isDark, lang }: { percent: number; completed: number; total: number; isDark: boolean; lang: Lang }) {
-  const t = buildLangValue(lang).t;
+function ScreenSkeleton() {
   return (
-    <div className="flex flex-col justify-center w-24 sm:w-32">
-      <div className="flex items-center justify-between mb-1">
-        <span className="text-[10px] font-bold tracking-tight uppercase text-muted-foreground">
-          {t('today')}
-        </span>
-        <span className="text-[10px] font-bold text-primary">
-          {percent}%
-        </span>
+    <div className="w-full max-w-2xl mx-auto space-y-4 animate-pulse pt-2">
+      <div className="h-28 bg-slate-800/50 rounded-3xl w-full border border-white/5" />
+      <div className="grid grid-cols-2 gap-3">
+        <div className="h-24 bg-slate-800/40 rounded-2xl w-full" />
+        <div className="h-24 bg-slate-800/40 rounded-2xl w-full" />
       </div>
-      <div className="w-full h-1.5 rounded-full bg-secondary overflow-hidden">
-        <motion.div
-          initial={{ width: 0 }}
-          animate={{ width: `${percent}%` }}
-          className="h-full rounded-full bg-primary shadow-[0_0_10px_rgba(16,185,129,0.3)]"
-          transition={{ duration: 1, ease: "easeOut" }}
-        />
-      </div>
+      <div className="h-44 bg-slate-800/40 rounded-3xl w-full" />
     </div>
   );
 }
 
+const LEVEL_LABELS = ["", "level_1", "level_2", "level_3", "level_4", "level_5", "level_6", "level_7", "level_8", "level_9", "level_10"] as const;
 
 export default function App() {
   const { isDark, setTheme } = useTheme();
@@ -88,11 +81,12 @@ export default function App() {
     try { return (localStorage.getItem("lang") as Lang) || "uz"; } catch { return "uz"; }
   });
   const [viewingUserId, setViewingUserId] = useState<string | null>(null);
-  const [logsView, setLogsView] = useState<"today" | "month" | "notes" | "weekly">("today");
   const [completedToday, setCompletedToday] = useState(0);
   const [totalHabits, setTotalHabits] = useState(0);
   const [isResettingPassword, setIsResettingPassword] = useState(false);
   const [showAddHabitModal, setShowAddHabitModal] = useState(false);
+  const [isKeyboardVisible, setIsKeyboardVisible] = useState(false);
+  const [showBiometricsOnboarding, setShowBiometricsOnboarding] = useState(false);
 
   const { profile, setProfile, refreshUserProfile, loading: userLoading } = useUser();
 
@@ -106,23 +100,125 @@ export default function App() {
 
   const location = useLocation();
   const navigate = useNavigate();
-  const { selectionChanged } = useHaptics();
+
+  // Biometrics Onboarding popup trigger (only for new registrations / uncompleted first visits)
+  useEffect(() => {
+    if (!profile) {
+      setShowBiometricsOnboarding(false);
+      return;
+    }
+
+    const isCompleted = localStorage.getItem(`biometrics_completed_${profile.id}`) === 'true';
+    const hasAllFields = !!(profile.birth_date && profile.height_cm && profile.weight_kg);
+
+    if (hasAllFields) {
+      try {
+        localStorage.setItem(`biometrics_completed_${profile.id}`, 'true');
+      } catch {}
+      setShowBiometricsOnboarding(false);
+    } else if (!isCompleted) {
+      setShowBiometricsOnboarding(true);
+    } else {
+      setShowBiometricsOnboarding(false);
+    }
+  }, [profile?.id, profile?.birth_date, profile?.height_cm, profile?.weight_kg]);
+
+  // Dynamic Keyboard Visibility listener to hide bottom dock while typing
+  useEffect(() => {
+    let showListener: any;
+    let hideListener: any;
+
+    if (Capacitor.isNativePlatform()) {
+      import('@capacitor/keyboard').then(({ Keyboard }) => {
+        showListener = Keyboard.addListener('keyboardWillShow', () => setIsKeyboardVisible(true));
+        hideListener = Keyboard.addListener('keyboardWillHide', () => setIsKeyboardVisible(false));
+      }).catch(() => {});
+    }
+
+    const handleResize = () => {
+      if (window.visualViewport) {
+        setIsKeyboardVisible(window.visualViewport.height < window.innerHeight - 150);
+      }
+    };
+
+    if (window.visualViewport) {
+      window.visualViewport.addEventListener('resize', handleResize);
+    }
+
+    return () => {
+      showListener?.then?.((h: any) => h.remove());
+      hideListener?.then?.((h: any) => h.remove());
+      if (window.visualViewport) {
+        window.visualViewport.removeEventListener('resize', handleResize);
+      }
+    };
+  }, []);
 
   useEffect(() => {
     notificationService.createNotificationChannel();
 
-    // 1. Supabase Auth Event Listener for Password Recovery
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
+    // 1. Supabase Auth Event Listener for Password Recovery & Session Changes
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       if (event === 'PASSWORD_RECOVERY') {
         setIsResettingPassword(true);
       }
+      if (session?.user) {
+        refreshUserProfile();
+      }
     });
 
-    // 2. Capacitor Deep Link Listener
+    // 2. Capacitor Deep Link Listener for OAuth & Password Reset
     const urlListener = CapacitorApp.addListener('appUrlOpen', async (data) => {
-      const url = new URL(data.url);
-      // Check if the URL matches our reset password pattern
-      if (url.pathname.includes('reset-password') || url.hash.includes('type=recovery')) {
+      const rawUrl = data.url;
+
+      if (
+        rawUrl.startsWith('com.tracker.app://') ||
+        rawUrl.includes('auth-callback') ||
+        rawUrl.includes('login-callback')
+      ) {
+        try {
+          await Browser.close();
+        } catch (_) {}
+
+        const normalizedUrl = rawUrl.replace('com.tracker.app://', 'https://tracker.app/');
+        let parsedUrl: URL | null = null;
+        try {
+          parsedUrl = new URL(normalizedUrl);
+        } catch {}
+
+        if (parsedUrl) {
+          if (parsedUrl.hash) {
+            const hashParams = new URLSearchParams(parsedUrl.hash.substring(1));
+            const accessToken = hashParams.get('access_token');
+            const refreshToken = hashParams.get('refresh_token');
+
+            if (accessToken && refreshToken) {
+              const { error } = await supabase.auth.setSession({
+                access_token: accessToken,
+                refresh_token: refreshToken,
+              });
+              if (error) {
+                console.error('Failed to set Supabase session from hash:', error.message);
+              } else {
+                refreshUserProfile();
+              }
+              return;
+            }
+          }
+
+          const code = parsedUrl.searchParams.get('code');
+          if (code) {
+            const { error } = await supabase.auth.exchangeCodeForSession(code);
+            if (error) {
+              console.error('Failed to exchange code for session:', error.message);
+            } else {
+              refreshUserProfile();
+            }
+          }
+        }
+      }
+
+      if (rawUrl.includes('reset-password') || rawUrl.includes('type=recovery')) {
         setIsResettingPassword(true);
       }
     });
@@ -131,10 +227,28 @@ export default function App() {
       subscription.unsubscribe();
       urlListener.then(l => l.remove());
     };
-  }, []);
+  }, [refreshUserProfile]);
 
-  // Mobile lifecycle management (status bar, back button, keyboard, health sync)
+  // Mobile lifecycle management (status bar, hardware back button, health sync)
   useMobileLifecycle({ isDark, profileId: profile?.id });
+
+  // Navbat serverdan haqiqiy balans/darajani qaytarganda header'dagi
+  // optimistik qiymatlarni server qiymati bilan almashtiramiz.
+  useEffect(() => {
+    const onSynced = (e: Event) => {
+      const r = (e as CustomEvent).detail?.result;
+      if (!r || typeof r.coins !== 'number') return;
+      setProfile((prev) => prev ? {
+        ...prev,
+        coins: r.coins,
+        score: r.score ?? prev.score,
+        total_xp: r.total_xp ?? prev.total_xp,
+        current_level: r.level ?? prev.current_level,
+      } : prev);
+    };
+    window.addEventListener('habit-sync-success', onSynced);
+    return () => window.removeEventListener('habit-sync-success', onSynced);
+  }, []);
 
   const currentPath = location.pathname.substring(1);
 
@@ -179,7 +293,6 @@ export default function App() {
     document.body.style.fontFamily = "'Inter', -apple-system, BlinkMacSystemFont, sans-serif";
 
     if (profile) {
-      // Sync prevLevel from localStorage or current level on first load
       if (prevLevel === null) {
         const currentLevel = getLevel(profile.score || 0).level;
         const savedLevel = localStorage.getItem(`last_known_level_${profile.id}`);
@@ -192,15 +305,24 @@ export default function App() {
       if (location.pathname === "/login" || location.pathname === "/") {
         navigate("/dashboard");
       }
-      loadTodayStats(profile.id);
       touchLastSeen();
     }
   }, [profile?.id]);
 
+  // Bugungi progress — React Query keshidan (navbatdagi belgilar bilan).
+  const todayStr = toDateStr();
+  const { data: statsHabits } = useHabitsQuery(profile?.id);
+  const { data: statsTodayLogs } = useDayLogsQuery(profile?.id, todayStr);
+  useEffect(() => {
+    if (!statsHabits || !statsTodayLogs) return;
+    const { completed, total } = computeHabitProgress(statsHabits, statsTodayLogs);
+    setTotalHabits(total);
+    setCompletedToday(completed);
+  }, [statsHabits, statsTodayLogs]);
+
   useEffect(() => {
     if (!profile) return;
 
-    // Strict boot-time daily reminder scheduling (called ONCE per app boot / profile load)
     if (Capacitor.isNativePlatform()) {
       let settings: { enabled?: boolean; time?: string } = {};
       try {
@@ -215,7 +337,6 @@ export default function App() {
       } else if (settings.enabled === false) {
         notificationService.cancelDailyReminder();
       } else {
-        // Default: schedule daily reminder at 21:00 once per day
         notificationService.scheduleDailyReminder(21, 0);
       }
     }
@@ -235,15 +356,9 @@ export default function App() {
     }
   }, [profile?.score, prevLevel, profile?.id]);
 
-  // Screen-view + first-screen-exit tracking (drop-off analysis).
-  // entryScreenRef captures the very first screen a session lands on;
-  // the first time the user navigates away from it (or backgrounds/closes
-  // the tab while still on it), a single "first_screen_exit" event fires.
   useEffect(() => {
     if (!profile) return;
     trackEvent('screen_view', { screen: activeTab }, profile.id);
-
-    // Refresh user profile on tab switch to ensure coins are up to date
     refreshUserProfile();
 
     if (entryScreenRef.current === null) {
@@ -266,21 +381,12 @@ export default function App() {
     return () => document.removeEventListener("visibilitychange", handler);
   }, [profile?.id]);
 
-  async function loadTodayStats(userId: string) {
-    try {
-      const [habitsData, logsData] = await Promise.all([getHabits(userId), getTodayLogs(userId)]);
-      const { completed, total } = computeHabitProgress(habitsData || [], logsData || []);
-      setTotalHabits(total);
-      setCompletedToday(completed);
-    } catch {}
-  }
 
   const handleLogin = (p: Profile) => {
     entryScreenRef.current = null;
     exitTrackedRef.current = false;
     setProfile(p);
     setPrevLevel(getLevel(p.score || 0).level);
-    loadTodayStats(p.id);
     touchLastSeen();
     navigate("/dashboard");
   };
@@ -290,12 +396,16 @@ export default function App() {
   };
 
   const handleLogout = async () => {
-    await signOutUser();
+    try {
+      await signOutUser();
+    } catch (e) {
+      console.warn("Logout warning:", e);
+    }
     setProfile(null);
-    navigate("/login");
+    localStorage.removeItem("user_profile_latest");
+    await clearQueryCache();
+    navigate("/login", { replace: true });
   };
-
-  const handleToggleDark = () => setTheme(isDark ? 'light' : 'dark');
 
   const handleLangChange = (l: Lang) => {
     setLang(l);
@@ -329,12 +439,10 @@ export default function App() {
     streakTimerRef.current = window.setTimeout(() => setStreakToast(null), 4000);
   }
 
-  const overallPercent = totalHabits > 0 ? Math.round((completedToday / totalHabits) * 100) : 0;
   const langVal = buildLangValue(lang);
   const t = langVal.t;
 
   const now = new Date();
-  const dateStr = `${DAYS_FULL[lang][now.getDay()]}, ${now.getDate()} ${MONTHS_FULL[lang][now.getMonth()]} ${now.getFullYear()}`;
   const hour = now.getHours();
   const greeting = hour < 12 ? t('greeting_morning') : hour < 17 ? t('greeting_afternoon') : t('greeting_evening');
 
@@ -343,9 +451,7 @@ export default function App() {
       if (!profile) return <Navigate to="/login" replace />;
 
       return (
-        <div
-          className="flex min-h-screen w-full bg-background"
-        >
+        <div className="flex min-h-screen w-full bg-background">
           <Sidebar isDark={isDark} activeTab={activeTab} onTabChange={setActiveTab} profile={profile} onProfileClick={() => setActiveTab("profile")} />
 
           <div className="flex-1 flex flex-col min-w-0">
@@ -445,7 +551,7 @@ export default function App() {
             </header>
 
             {/* Content */}
-            <main className="flex-1 px-4 pt-4 pb-32 overflow-y-auto bg-background app-main-padding">
+            <main className="flex-1 px-4 pt-4 pb-36 md:pb-4 overflow-y-auto bg-background app-main-padding">
               <AnimatePresence mode="wait">
                 <motion.div
                   key={location.pathname}
@@ -455,143 +561,57 @@ export default function App() {
                   transition={{ duration: 0.3 }}
                   className="w-full max-w-2xl mx-auto"
                 >
-                  {contentNode}
+                  <Suspense fallback={<ScreenSkeleton />}>
+                    {contentNode}
+                  </Suspense>
                 </motion.div>
               </AnimatePresence>
             </main>
           </div>
 
-          {/* Mobile floating bottom navigation */}
-          <nav
-            className="fixed bottom-5 left-4 right-4 z-30 md:hidden bg-slate-950/85 backdrop-blur-xl border border-white/10 rounded-[2.5rem] shadow-2xl px-2 py-1.5"
-          >
-            <div className="flex items-center justify-between h-16 relative">
-              {/* Item 1: Bosh sahifa */}
-              <button
-                type="button"
-                onClick={() => setActiveTab("dashboard")}
-                className="flex flex-col items-center justify-center flex-1 h-full transition-all active:scale-90 relative cursor-pointer"
-              >
-                {activeTab === "dashboard" && (
-                  <motion.div
-                    layoutId="nav-pill"
-                    className="absolute inset-x-1 inset-y-1 bg-primary/10 rounded-2xl"
-                    transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
-                  />
-                )}
-                <LayoutGrid
-                  size={20}
-                  strokeWidth={activeTab === "dashboard" ? 2.5 : 1.8}
-                  className="relative transition-all duration-300"
-                  style={{ color: activeTab === "dashboard" ? "var(--primary)" : "var(--muted-foreground)" }}
-                />
-                <span
-                  className="relative text-[10px] font-bold mt-1 transition-all duration-300 tracking-tight"
-                  style={{ color: activeTab === "dashboard" ? "var(--primary)" : "var(--muted-foreground)" }}
-                >
-                  Bosh sahifa
-                </span>
-              </button>
-
-              {/* Item 2: Odatlar */}
-              <button
-                type="button"
-                onClick={() => setActiveTab("habits")}
-                className="flex flex-col items-center justify-center flex-1 h-full transition-all active:scale-90 relative cursor-pointer"
-              >
-                {activeTab === "habits" && (
-                  <motion.div
-                    layoutId="nav-pill"
-                    className="absolute inset-x-1 inset-y-1 bg-primary/10 rounded-2xl"
-                    transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
-                  />
-                )}
-                <ListChecks
-                  size={20}
-                  strokeWidth={activeTab === "habits" ? 2.5 : 1.8}
-                  className="relative transition-all duration-300"
-                  style={{ color: activeTab === "habits" ? "var(--primary)" : "var(--muted-foreground)" }}
-                />
-                <span
-                  className="relative text-[10px] font-bold mt-1 transition-all duration-300 tracking-tight"
-                  style={{ color: activeTab === "habits" ? "var(--primary)" : "var(--muted-foreground)" }}
-                >
-                  Odatlar
-                </span>
-              </button>
-
-              {/* Item 3 (Center): Elevated Prominent "+" Action Button */}
-              <div className="flex flex-col items-center justify-center flex-1 h-full relative">
-                <button
-                  type="button"
-                  onClick={() => {
-                    soundService.play('tab_click');
-                    setShowAddHabitModal(true);
-                  }}
-                  aria-label="Yangi odat qo'shish"
-                  className="w-13 h-13 rounded-full bg-gradient-to-tr from-emerald-500 to-teal-400 text-slate-950 shadow-xl shadow-emerald-500/40 flex items-center justify-center transition-all active:scale-90 hover:scale-105 relative -mt-6 border-4 border-slate-950 cursor-pointer shrink-0"
-                >
-                  <Plus size={24} strokeWidth={3} className="text-slate-950" />
-                </button>
+          {/* Mobile floating bottom navigation (Icon-Only Minimalist Dock) - Dynamically hidden when virtual keyboard opens */}
+          {!isKeyboardVisible && (
+            <nav
+              className="fixed bottom-4 left-4 right-4 z-40 max-w-md mx-auto md:hidden bg-slate-900/90 backdrop-blur-xl border border-white/10 shadow-2xl shadow-black/60 rounded-full py-2.5 px-4 transition-all duration-200"
+            >
+              <div className="flex items-center justify-around w-full">
+                {[
+                  { id: "dashboard", label: "Asosiy", icon: Home },
+                  { id: "journal", label: "Kundalik", icon: BookOpen },
+                  { id: "analytics", label: "Tahlil", icon: BarChart3 },
+                  { id: "profile", label: "Profil", icon: UserIcon },
+                ].map((tab) => {
+                  const isActive = activeTab === tab.id;
+                  const Icon = tab.icon;
+                  return (
+                    <motion.button
+                      key={tab.id}
+                      type="button"
+                      onClick={() => setActiveTab(tab.id)}
+                      aria-label={tab.label}
+                      whileTap={{ scale: 0.9 }}
+                      className="relative flex items-center justify-center flex-1 py-2 px-3 rounded-2xl transition-all duration-200 cursor-pointer group"
+                    >
+                      {isActive && (
+                        <motion.div
+                          layoutId="nav-pill"
+                          className="absolute inset-0 bg-emerald-500/15 border border-emerald-500/25 rounded-2xl shadow-[0_0_12px_rgba(16,185,129,0.2)]"
+                          transition={{ type: "spring", stiffness: 400, damping: 30 }}
+                        />
+                      )}
+                      <Icon
+                        className={`w-6 h-6 relative z-10 transition-all duration-200 ${
+                          isActive
+                            ? "text-emerald-400 scale-110"
+                            : "text-slate-400 group-hover:text-slate-200"
+                        }`}
+                      />
+                    </motion.button>
+                  );
+                })}
               </div>
-
-              {/* Item 4: Statistika */}
-              <button
-                type="button"
-                onClick={() => setActiveTab("analytics")}
-                className="flex flex-col items-center justify-center flex-1 h-full transition-all active:scale-90 relative cursor-pointer"
-              >
-                {activeTab === "analytics" && (
-                  <motion.div
-                    layoutId="nav-pill"
-                    className="absolute inset-x-1 inset-y-1 bg-primary/10 rounded-2xl"
-                    transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
-                  />
-                )}
-                <BarChart3
-                  size={20}
-                  strokeWidth={activeTab === "analytics" ? 2.5 : 1.8}
-                  className="relative transition-all duration-300"
-                  style={{ color: activeTab === "analytics" ? "var(--primary)" : "var(--muted-foreground)" }}
-                />
-                <span
-                  className="relative text-[10px] font-bold mt-1 transition-all duration-300 tracking-tight"
-                  style={{ color: activeTab === "analytics" ? "var(--primary)" : "var(--muted-foreground)" }}
-                >
-                  Statistika
-                </span>
-              </button>
-
-              {/* Item 5: Profil */}
-              <button
-                type="button"
-                onClick={() => setActiveTab("profile")}
-                className="flex flex-col items-center justify-center flex-1 h-full transition-all active:scale-90 relative cursor-pointer"
-              >
-                {activeTab === "profile" && (
-                  <motion.div
-                    layoutId="nav-pill"
-                    className="absolute inset-x-1 inset-y-1 bg-primary/10 rounded-2xl"
-                    transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
-                  />
-                )}
-                <UserIcon
-                  size={20}
-                  strokeWidth={activeTab === "profile" ? 2.5 : 1.8}
-                  className="relative transition-all duration-300"
-                  style={{ color: activeTab === "profile" ? "var(--primary)" : "var(--muted-foreground)" }}
-                />
-                <span
-                  className="relative text-[10px] font-bold mt-1 transition-all duration-300 tracking-tight"
-                  style={{ color: activeTab === "profile" ? "var(--primary)" : "var(--muted-foreground)" }}
-                >
-                  Profil
-                </span>
-              </button>
-            </div>
-          </nav>
-
-
+            </nav>
+          )}
 
           {/* All-done celebration toast */}
           {allDoneToast && (
@@ -751,7 +771,7 @@ export default function App() {
 
   };
 
-  if (userLoading) {
+  if (userLoading && !profile) {
     return (
       <div className="flex items-center justify-center min-h-screen bg-[#0E1117]">
         <Loader2 size={32} className="animate-spin text-[#4ADE80]" />
@@ -823,7 +843,6 @@ export default function App() {
         </Route>
       </Routes>
 
-
       {viewingUserId && profile && (
         <PublicProfileModal
           isDark={isDark}
@@ -864,13 +883,38 @@ export default function App() {
                 await notificationService.initNotifications();
                 await notificationService.scheduleHabitReminder(habit.id, habitData.name, habitData.reminder);
               }
-              queryClient.invalidateQueries({ queryKey: ['habits', profile.id] });
+              habitCache.added(queryClient, profile.id, habit);
               setShowAddHabitModal(false);
               toast.success("Yangi odat muvaffaqiyatli qo'shildi!");
             } catch (err: any) {
               toast.error(err?.message || "Odat qo'shishda xatolik yuz berdi");
             }
           }}
+        />
+      )}
+
+      {profile && showBiometricsOnboarding && (
+        <BiometricsOnboardingModal
+          isOpen={showBiometricsOnboarding}
+          profile={profile}
+          onProfileUpdate={(updated) => {
+            if (profile?.id) {
+              try {
+                localStorage.setItem(`biometrics_completed_${profile.id}`, 'true');
+              } catch {}
+            }
+            setShowBiometricsOnboarding(false);
+            handleProfileUpdate(updated);
+          }}
+          onClose={() => {
+            if (profile?.id) {
+              try {
+                localStorage.setItem(`biometrics_completed_${profile.id}`, 'true');
+              } catch {}
+            }
+            setShowBiometricsOnboarding(false);
+          }}
+          allowDismiss={true}
         />
       )}
     </LangContext.Provider>

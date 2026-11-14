@@ -36,8 +36,6 @@ export function Sidebar({ isDark, activeTab, onTabChange, profile, onProfileClic
     { id: "journal", label: t('nav_logs'), icon: ClipboardList },
     { id: "analytics", label: t('nav_analytics'), icon: BarChart3 },
     { id: "store", label: "Do'kon", icon: ShoppingBag },
-    { id: "health", label: t('nav_health'), icon: Heart },
-    { id: "groups", label: t('nav_groups'), icon: Users },
     { id: "habits", label: t('nav_habits'), icon: ListChecks },
     { id: "achievements", label: t('nav_achievements'), icon: Award },
     { id: "profile", label: t('nav_profile'), icon: UserIcon },

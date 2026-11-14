@@ -1,7 +1,11 @@
+import { Capacitor } from '@capacitor/core'
+import { GoogleAuth } from '@codetrix-studio/capacitor-google-auth'
 import { supabase } from './supabase'
-import type { Profile } from './supabase'
-import { toDateStr } from '../utils/date'
+import type { Profile, Routine, RoutineItem } from './supabase'
+import { tashkentTodayAnchor, toDateStr, isTashkentDateOpen } from '../utils/date'
+import { fetchAllPages, PAGE_SIZE } from '../utils/pagination'
 import { FREE_AVATAR_COLORS } from '../utils/cosmetics'
+import { nativeNotificationService } from './nativeNotificationService'
 
 export const HABIT_SUCCESS_COLOR = "#4ADE80"
 export const HABIT_FAILURE_COLOR = "#F87171"
@@ -16,52 +20,46 @@ export function getHabitStatusColor(completed: boolean): string {
 
 const AVATAR_COLORS = FREE_AVATAR_COLORS
 
-// ─── IN-MEMORY & LOCALSTORAGE CACHE ────────────────────────
-const memoryCache: Record<string, any> = {};
+// Kesh: bu fayl faqat serverdan o'qiydi/yozadi. Yagona kesh — React Query
+// (src/services/queryClient.ts + src/hooks/queries.ts), localStorage'ga
+// persister orqali saqlanadi.
 
-export function getCached<T>(key: string): T | null {
-  if (memoryCache[key] !== undefined) {
-    return memoryCache[key] as T;
-  }
-  try {
-    const raw = localStorage.getItem(`db_cache_${key}`);
-    if (raw) {
-      const parsed = JSON.parse(raw);
-      memoryCache[key] = parsed;
-      return parsed as T;
-    }
-  } catch {}
-  return null;
+// ─── SAHIFALAB YUKLASH (PostgREST 1000 qator chegarasi) ────
+// fetchAllPages: src/utils/pagination.ts (unit-test qilingan).
+export { fetchAllPages, PAGE_SIZE }
+
+/** Analytics va statistikalar uchun ixcham log qatori. */
+export type CompactLog = { habit_id: string; log_date: string; completed: boolean; value: number | null }
+export const COMPACT_LOG_COLUMNS = 'habit_id, log_date, completed, value'
+
+// ─── PROFIL USTUNLARI (047: shaxsiy ustunlar boshqalarga yopiq) ─────
+// profiles jadvalida endi ustun darajasidagi ruxsatlar bor: phone,
+// telegram_chat_id, telegram_username, is_admin, is_banned, last_seen_at,
+// height_cm, weight_kg, birth_date, birth_year faqat egasiga ochiq va
+// faqat get_my_profile() RPC orqali o'qiladi. Shu sabab profiles'dan
+// HECH QACHON select('*') qilmang — quyidagi ro'yxatni ishlating.
+export const PUBLIC_PROFILE_COLUMNS =
+  'id, username, display_name, full_name, avatar_url, avatar_color, bio, score, coins, total_xp, current_level, active_frame, active_title, username_glow, has_star, star_expires_at, profile_private, telegram_private, instagram_username, is_pro, created_at'
+
+// Joriy foydalanuvchining to'liq profili (shaxsiy ustunlar bilan).
+export async function getMyProfile(): Promise<Profile | null> {
+  const { data, error } = await supabase.rpc('get_my_profile')
+  if (error) throw error
+  return (data as Profile) || null
 }
 
-export function setCached(key: string, data: any) {
-  memoryCache[key] = data;
-  try {
-    localStorage.setItem(`db_cache_${key}`, JSON.stringify(data));
-  } catch {}
-}
-
-export function invalidateCache(keyPrefix?: string) {
-  if (!keyPrefix) {
-    Object.keys(memoryCache).forEach((k) => delete memoryCache[k]);
-  } else {
-    Object.keys(memoryCache)
-      .filter((k) => k.startsWith(keyPrefix))
-      .forEach((k) => delete memoryCache[k]);
-  }
+async function getMyProfileOrThrow(): Promise<Profile> {
+  const p = await getMyProfile()
+  if (!p) throw new Error('Profil topilmadi')
+  return p
 }
 
 // ─── AUTH ──────────────────────────────────────────────────
 export async function signInUser(email: string, password: string): Promise<Profile> {
-  const { data: authData, error: authError } = await supabase.auth.signInWithPassword({ email, password })
+  const { error: authError } = await supabase.auth.signInWithPassword({ email, password })
   if (authError) throw authError
 
-  const { data, error } = await supabase
-    .from('profiles')
-    .select('*')
-    .eq('id', authData.user.id)
-    .single()
-  if (error) throw error
+  const data = await getMyProfileOrThrow()
 
   if (data.is_banned) {
     await supabase.auth.signOut();
@@ -137,13 +135,11 @@ export async function verifyEmailOtpAndCreateAccount(
   if (updateError) throw updateError;
 
   const color = AVATAR_COLORS[Math.floor(Math.random() * AVATAR_COLORS.length)];
-  const { data, error } = await supabase
+  const { error } = await supabase
     .from('profiles')
-    .upsert({ id: user.id, username, display_name: displayName, avatar_color: color })
-    .select()
-    .single();
+    .upsert({ id: user.id, username, display_name: displayName, avatar_color: color });
   if (error) throw error;
-  return data;
+  return getMyProfileOrThrow();
 }
 
 export async function deleteOwnAccount() {
@@ -161,25 +157,136 @@ export async function updateUserPassword(newPassword: string) {
 }
 
 export async function signOutUser() {
-  await supabase.auth.signOut()
+  try {
+    await supabase.auth.signOut();
+  } catch (e) {
+    console.warn("signOutUser error:", e);
+  }
 }
 
 export async function getProfileById(userId: string): Promise<Profile> {
-  const { data, error } = await supabase
-    .from('profiles')
-    .select('*')
-    .eq('id', userId)
-    .single()
-  if (error) throw error
+  // O'z profili — to'liq (shaxsiy ustunlar bilan); boshqalarniki — faqat ochiq ustunlar.
+  const { data: { session } } = await supabase.auth.getSession()
+  let data: Profile
+  if (session?.user?.id === userId) {
+    data = await getMyProfileOrThrow()
+  } else {
+    const res = await supabase
+      .from('profiles')
+      .select(PUBLIC_PROFILE_COLUMNS)
+      .eq('id', userId)
+      .single()
+    if (res.error) throw res.error
+    data = res.data as unknown as Profile
+  }
+
+  // Merge local cached biometrics if database columns are awaiting schema cache refresh
+  try {
+    const rawLocal = localStorage.getItem(`user_biometrics_${userId}`);
+    if (rawLocal) {
+      const localBio = JSON.parse(rawLocal);
+      return {
+        ...data,
+        birth_date: data.birth_date || localBio.birth_date || null,
+        height_cm: data.height_cm || localBio.height_cm || null,
+        weight_kg: data.weight_kg || localBio.weight_kg || null,
+      };
+    }
+  } catch {}
+
   return data
 }
 
+export async function updateBiometrics(
+  userId: string,
+  heightCm: number,
+  weightKg: number,
+  birthDateStr: string
+): Promise<Profile> {
+  const numHeight = Number(heightCm);
+  const numWeight = Number(weightKg);
+
+  // 1. Format date strictly as YYYY-MM-DD
+  let formattedDate = birthDateStr;
+  let birthYear = 2000;
+  try {
+    const d = new Date(birthDateStr);
+    if (!isNaN(d.getTime())) {
+      const year = d.getFullYear();
+      birthYear = year;
+      const month = String(d.getMonth() + 1).padStart(2, '0');
+      const day = String(d.getDate()).padStart(2, '0');
+      formattedDate = `${year}-${month}-${day}`;
+    }
+  } catch {}
+
+  // Save to local storage cache so local UI profile state retains biometrics immediately
+  try {
+    localStorage.setItem(`user_biometrics_${userId}`, JSON.stringify({
+      height_cm: numHeight,
+      weight_kg: numWeight,
+      birth_date: formattedDate,
+      birth_year: birthYear,
+    }));
+  } catch (e) {
+    console.warn("LocalStorage biometrics caching warning:", e);
+  }
+
+  // 2. Update (047 migratsiyasi birth_date/birth_year/height_cm/weight_kg
+  //    ustunlari mavjudligini kafolatlaydi). Natija get_my_profile() orqali
+  //    o'qiladi — profiles'dan select('*') endi ruxsat etilmaydi.
+  try {
+    const payload: Record<string, any> = {
+      birth_date: formattedDate,
+      height_cm: numHeight,
+      weight_kg: numWeight,
+    };
+    if (!isNaN(birthYear) && birthYear > 1900) {
+      payload.birth_year = birthYear;
+    }
+
+    const { error } = await supabase
+      .from('profiles')
+      .update(payload)
+      .eq('id', userId);
+
+    if (error) {
+      console.error("Supabase Biometrics Update Error:", error);
+    } else {
+      const fresh = await getMyProfile();
+      if (fresh) {
+        return {
+          ...fresh,
+          birth_date: formattedDate,
+          height_cm: numHeight,
+          weight_kg: numWeight,
+        };
+      }
+    }
+
+    // Return locally cached metrics if DB schema rejected column
+    return {
+      id: userId,
+      birth_date: formattedDate,
+      height_cm: numHeight,
+      weight_kg: numWeight,
+    } as any;
+
+  } catch (err: any) {
+    console.error("Uncaught Biometrics Update Exception:", err);
+
+    // Return locally augmented profile so user is NEVER blocked from onboarding
+    return {
+      id: userId,
+      birth_date: formattedDate,
+      height_cm: numHeight,
+      weight_kg: numWeight,
+    } as any;
+  }
+}
+
 export async function ensureProfileForUser(user: any): Promise<Profile> {
-  const { data: existingProfile } = await supabase
-    .from('profiles')
-    .select('*')
-    .eq('id', user.id)
-    .maybeSingle();
+  const existingProfile = await getMyProfile().catch(() => null);
 
   if (existingProfile) {
     if (existingProfile.is_banned) {
@@ -195,7 +302,7 @@ export async function ensureProfileForUser(user: any): Promise<Profile> {
   const cleanUsername = (email.split('@')[0] || 'user').toLowerCase().replace(/[^a-z0-9_]/g, '') + '_' + Math.floor(Math.random() * 1000);
   const color = AVATAR_COLORS[Math.floor(Math.random() * AVATAR_COLORS.length)];
 
-  const { data: newProfile, error } = await supabase
+  const { error } = await supabase
     .from('profiles')
     .upsert({
       id: user.id,
@@ -204,33 +311,76 @@ export async function ensureProfileForUser(user: any): Promise<Profile> {
       username: cleanUsername,
       avatar_url: meta.avatar_url || meta.picture || null,
       avatar_color: color,
-    })
-    .select('*')
-    .single();
+    });
 
   if (error) throw error;
-  return newProfile;
+  return getMyProfileOrThrow();
 }
 
+export async function createProfileForGoogleUser(
+  user: any,
+  displayName: string,
+  username: string
+): Promise<Profile> {
+  const { data: existingUsername } = await supabase
+    .from('profiles')
+    .select('username')
+    .eq('username', username)
+    .maybeSingle();
+  if (existingUsername) {
+    throw new Error("Bu username allaqachon band. Iltimos, boshqasini tanlang");
+  }
+
+  const meta = user.user_metadata || {};
+  const color = AVATAR_COLORS[Math.floor(Math.random() * AVATAR_COLORS.length)];
+
+  const { error } = await supabase
+    .from('profiles')
+    .upsert({
+      id: user.id,
+      display_name: displayName,
+      full_name: displayName,
+      username: username,
+      avatar_url: meta.avatar_url || meta.picture || null,
+      avatar_color: color,
+    });
+
+  if (error) throw error;
+
+  try {
+    await supabase.auth.updateUser({ data: { registration_completed: true } });
+  } catch (_) {}
+
+  return getMyProfileOrThrow();
+}
+
+// Faqat foydalanuvchi o'zgartira oladigan ustunlar (047 GRANT UPDATE ro'yxati).
+// Ramka/unvon — equipCosmetic(), yaltiroq ism — purchaseShopItem() orqali.
 export async function updateUserProfile(
   userId: string,
   updates: {
-    display_name?: string; username?: string; avatar_url?: string | null;
+    display_name?: string; full_name?: string; username?: string; avatar_url?: string | null;
     bio?: string | null; telegram_username?: string | null;
     instagram_username?: string | null; telegram_private?: boolean;
-    profile_private?: boolean; avatar_color?: string; active_frame?: string | null;
-    active_title?: string | null;
-    username_glow?: boolean;
+    profile_private?: boolean; avatar_color?: string;
+    height_cm?: number | null;
+    weight_kg?: number | null;
+    birth_date?: string | null;
   }
 ): Promise<Profile> {
-  const { data, error } = await supabase
+  const { error } = await supabase
     .from('profiles')
     .update(updates)
     .eq('id', userId)
-    .select()
-    .single()
   if (error) throw error
-  return data
+  return getMyProfileOrThrow()
+}
+
+// Ramka yoki unvonni taqish/yechish — egalik serverda tekshiriladi.
+export async function equipCosmetic(kind: 'frame' | 'title', itemId: string | null): Promise<Profile> {
+  const { error } = await supabase.rpc('equip_cosmetic', { p_kind: kind, p_item_id: itemId })
+  if (error) throw new Error(error.message.includes('not_owned') ? "Bu buyum sizda yo'q yoki muddati tugagan" : error.message)
+  return getMyProfileOrThrow()
 }
 
 export async function uploadAvatar(userId: string, file: File): Promise<string> {
@@ -260,7 +410,7 @@ export async function getOrCreateProfile(username: string, displayName: string) 
   // Avval mavjudini qidirish
   const { data: existing } = await supabase
     .from('profiles')
-    .select('*')
+    .select(PUBLIC_PROFILE_COLUMNS)
     .eq('username', username)
     .single()
 
@@ -270,7 +420,7 @@ export async function getOrCreateProfile(username: string, displayName: string) 
   const { data, error } = await supabase
     .from('profiles')
     .insert({ username, display_name: displayName })
-    .select()
+    .select(PUBLIC_PROFILE_COLUMNS)
     .single()
 
   if (error) throw error
@@ -280,7 +430,7 @@ export async function getOrCreateProfile(username: string, displayName: string) 
 export async function getAllProfiles() {
   const { data, error } = await supabase
     .from('profiles')
-    .select('*')
+    .select(PUBLIC_PROFILE_COLUMNS)
     .order('created_at', { ascending: true })
   if (error) throw error
   return data
@@ -291,7 +441,7 @@ export async function getGlobalStats() {
     { count: usersCount },
     { count: habitsCount },
   ] = await Promise.all([
-    supabase.from('profiles').select('*', { count: 'exact', head: true }),
+    supabase.from('profiles').select('id', { count: 'exact', head: true }),
     supabase.from('habits').select('*', { count: 'exact', head: true }),
   ]);
   return {
@@ -369,9 +519,36 @@ export async function getUserHabitsAdmin(userId: string) {
 }
 
 // ─── USER FEEDBACK ──────────────────────────────────────────
-export async function submitFeedback(userId: string, content: string) {
-  const { error } = await supabase.from('user_feedback').insert({ user_id: userId, content });
-  if (error) throw error;
+export async function submitFeedback(
+  userId: string,
+  typeOrContent: 'bug' | 'suggestion' | 'feedback' | string,
+  message?: string
+) {
+  let type: 'bug' | 'suggestion' | 'feedback' = 'feedback';
+  let content = '';
+
+  if (message !== undefined) {
+    type = typeOrContent as 'bug' | 'suggestion' | 'feedback';
+    content = message;
+  } else {
+    content = typeOrContent as string;
+  }
+
+  // 1. Try inserting into feedback_reports table
+  const { error } = await supabase.from('feedback_reports').insert({
+    user_id: userId,
+    type,
+    message: content,
+  });
+
+  if (error) {
+    // 2. Fallback to user_feedback table if feedback_reports doesn't exist
+    const { error: fallbackErr } = await supabase.from('user_feedback').insert({
+      user_id: userId,
+      content,
+    });
+    if (fallbackErr) throw error;
+  }
 }
 
 export type FeedbackEntry = {
@@ -458,26 +635,25 @@ export async function sendGlobalNotification(title: string, body: string) {
 
 // ─── HABITS ────────────────────────────────────────────────
 export async function getHabits(userId: string) {
-  const cacheKey = `habits_${userId}`;
-  const cached = getCached<any[]>(cacheKey);
-
-  const fetchPromise = supabase
+  const { data, error } = await supabase
     .from('habits')
     .select('*')
     .eq('user_id', userId)
     .eq('is_active', true)
     .order('created_at', { ascending: true })
-    .then(({ data, error }) => {
-      if (error) throw error;
-      setCached(cacheKey, data || []);
-      return data || [];
-    });
+  if (error) throw error
+  return data || []
+}
 
-  if (cached) {
-    Promise.resolve(fetchPromise).catch(() => {});
-    return cached;
-  }
-  return await fetchPromise;
+/** Barcha odatlar (o'chirilganlari ham) — eski loglarga nom/tur berish uchun. */
+export type HabitMeta = { id: string; name: string; emoji: string | null; type: 'positive' | 'negative'; is_active: boolean }
+export async function getHabitsMeta(userId: string): Promise<HabitMeta[]> {
+  const { data, error } = await supabase
+    .from('habits')
+    .select('id, name, emoji, type, is_active')
+    .eq('user_id', userId)
+  if (error) throw error
+  return (data || []) as HabitMeta[]
 }
 
 export async function addHabit(
@@ -533,26 +709,7 @@ export async function deleteHabit(habitId: string) {
 
 // ─── HABIT LOGS ────────────────────────────────────────────
 export async function getTodayLogs(userId: string) {
-  const today = toDateStr();
-  const cacheKey = `today_logs_${userId}_${today}`;
-  const cached = getCached<any[]>(cacheKey);
-
-  const fetchPromise = supabase
-    .from('habit_logs')
-    .select('*')
-    .eq('user_id', userId)
-    .eq('log_date', today)
-    .then(({ data, error }) => {
-      if (error) throw error;
-      setCached(cacheKey, data || []);
-      return data || [];
-    });
-
-  if (cached) {
-    Promise.resolve(fetchPromise).catch(() => {});
-    return cached;
-  }
-  return await fetchPromise;
+  return getLogsForDate(userId, toDateStr())
 }
 
 export async function getLogsForDate(userId: string, date: string) {
@@ -565,46 +722,87 @@ export async function getLogsForDate(userId: string, date: string) {
   return data
 }
 
+// ─── ODAT BELGILASH (047: yagona yo'l — toggle_habit_atomic RPC) ─────
+// habit_logs'ga mijoz endi to'g'ridan-to'g'ri yoza olmaydi. Server bitta
+// tranzaksiyada: egalik va sana qulfini tekshiradi, logni yozadi/o'chiradi,
+// reward_ledger orqali mukofotni beradi yoki qaytarib oladi (qayta-qayta
+// belgilash qo'shimcha tanga bermaydi) va kunlik vazifalarni qayta hisoblaydi.
+export type HabitStatus = 'done' | 'fail' | 'neutral'
+
+export interface HabitStatusResult {
+  status: HabitStatus
+  coins: number
+  score: number
+  total_xp: number
+  level: number
+  reconciliation?: ReconciliationResult
+}
+
+// Navbat (habitSyncQueueCore) xatoni `code` bo'yicha vaqtinchalik yoki doimiy
+// deb ajratadi: date_locked/habit_not_found/banned/invalid_status — doimiy,
+// network/auth — vaqtinchalik (qayta uriniladi).
+export type HabitSyncErrorCode =
+  | 'date_locked' | 'habit_not_found' | 'banned' | 'invalid_status'
+  | 'auth' | 'network' | 'unknown'
+
+export class HabitSyncError extends Error {
+  code: HabitSyncErrorCode
+  constructor(code: HabitSyncErrorCode, message: string) {
+    super(message)
+    this.name = 'HabitSyncError'
+    this.code = code
+  }
+}
+
+function mapHabitRpcError(error: { message?: string; code?: string }): HabitSyncError {
+  const msg = error?.message || ''
+  const lower = msg.toLowerCase()
+  if (msg.includes('date_locked')) return new HabitSyncError('date_locked', LOG_LOCKED_MESSAGE)
+  if (msg.includes('habit_not_found')) return new HabitSyncError('habit_not_found', "Odat topilmadi")
+  if (msg.includes('banned')) return new HabitSyncError('banned', "Sizning akkauntingiz bloklangan.")
+  if (msg.includes('invalid_status')) return new HabitSyncError('invalid_status', "Noto'g'ri holat")
+  if (msg.includes('not_authenticated') || error?.code === 'PGRST301' || lower.includes('jwt'))
+    return new HabitSyncError('auth', "Qaytadan tizimga kiring.")
+  if (lower.includes('fetch') || lower.includes('network') || lower.includes('timeout'))
+    return new HabitSyncError('network', "Internet aloqasi yo'q")
+  return new HabitSyncError('unknown', msg || "Saqlashda xatolik yuz berdi")
+}
+
+export async function setHabitStatus(
+  habitId: string,
+  status: HabitStatus,
+  value: number = 1,
+  date?: string
+): Promise<HabitStatusResult> {
+  const logDate = date || toDateStr()
+  if (isLogDateLocked(logDate)) throw new HabitSyncError('date_locked', LOG_LOCKED_MESSAGE)
+  let res
+  try {
+    res = await supabase.rpc('toggle_habit_atomic', {
+      p_habit_id: habitId,
+      p_date: logDate,
+      p_status: status,
+      p_value: value,
+    })
+  } catch (e: any) {
+    throw new HabitSyncError('network', e?.message || "Internet aloqasi yo'q")
+  }
+  if (res.error) throw mapHabitRpcError(res.error)
+  return res.data as HabitStatusResult
+}
+
+// Eski chaqiruvlar bilan moslik uchun saqlangan o'ram. userId, prevCompleted
+// va isNegative endi ishlatilmaydi — hammasini server hal qiladi.
 export async function toggleHabitLog(
   habitId: string,
-  userId: string,
+  _userId: string,
   completed: boolean,
   value: number = 1,
-  prevCompleted?: boolean,
-  isNegative: boolean = false,
+  _prevCompleted?: boolean,
+  _isNegative: boolean = false,
   date?: string
-) {
-  const today = toDateStr()
-  const logDate = date || today
-  if (isLogDateLocked(logDate)) throw new Error(LOG_LOCKED_MESSAGE)
-  const { data, error } = await supabase
-    .from('habit_logs')
-    .upsert({
-      habit_id: habitId,
-      user_id: userId,
-      log_date: logDate,
-      completed,
-      value,
-    }, { onConflict: 'habit_id,user_id,log_date' })
-    .select()
-    .single()
-  if (error) throw error
-
-  // Score + Coins: bugungi ijobiy va salbiy odatlar uchun tangential tangalar va ochkolar
-  if (logDate === today && prevCompleted !== undefined && prevCompleted !== completed) {
-    const scoreDelta = completed ? 1 : -1
-    const coinsDelta = completed ? (isNegative ? 10 : 1) : (isNegative ? -10 : -1)
-    try { await supabase.rpc('increment_score', { uid: userId, delta: scoreDelta }) } catch { /* server-side tekshiruv rad etsa, jim o'tkazamiz */ }
-    try { await supabase.rpc('increment_coins', { uid: userId, delta: coinsDelta }) } catch {}
-  }
-
-  // XP + Daraja: umr bo'yi progress hisoblagichi
-  if (logDate === today && completed && prevCompleted !== completed) {
-    const xpAmount = isNegative ? 15 : 5
-    try { await addXpToUser(habitId, xpAmount) } catch { /* allaqachon berilgan yoki tasdiqlanmagan bo'lishi mumkin */ }
-  }
-
-  return data
+): Promise<HabitStatusResult> {
+  return setHabitStatus(habitId, completed ? 'done' : 'fail', value, date)
 }
 
 // Kunlik Jurnal — qat'iy qulflash: har bir kun uchun belgilash/o'zgartirish
@@ -616,29 +814,19 @@ export async function toggleHabitLog(
 // sof vaqt matematikasi (serverda cron yoki avtomatik yozuv shart emas)
 // va universal — barcha odat turlariga (vaqtli/vaqtsiz/musbat/salbiy)
 // bab-baravar qo'llaniladi, faqat sanaga bog'liq.
-const LOCK_GRACE_HOUR = 9
+// Qoida server bilan bir xil (047: is_log_date_open) va Toshkent vaqti bo'yicha
+// hisoblanadi — qurilma vaqt zonasi ta'sir qilmaydi.
 export const LOG_LOCKED_MESSAGE = "Bu kun uchun belgilash muddati tugagan (ertasi kuni soat 09:00 gacha ochiq edi)."
 
 export function isLogDateLocked(dateStr: string, now: Date = new Date()): boolean {
-  const windowStart = new Date(dateStr + 'T00:00:00')
-  const windowEnd = new Date(windowStart)
-  windowEnd.setDate(windowEnd.getDate() + 1)
-  windowEnd.setHours(LOCK_GRACE_HOUR, 0, 0, 0)
-  return !(now >= windowStart && now < windowEnd)
+  return !isTashkentDateOpen(dateStr, now)
 }
 
 // "Kutilmoqda" holatiga qaytarish (log qatorini o'chirish) — toggleHabitLog
 // bilan bir xil qulflash tekshiruvidan o'tadi, shuning uchun HabitsLog.tsx
 // endi bevosita supabase.from('habit_logs').delete() chaqirmaydi.
-export async function deleteHabitLog(habitId: string, userId: string, date: string) {
-  if (isLogDateLocked(date)) throw new Error(LOG_LOCKED_MESSAGE)
-  const { error } = await supabase
-    .from('habit_logs')
-    .delete()
-    .eq('habit_id', habitId)
-    .eq('user_id', userId)
-    .eq('log_date', date)
-  if (error) throw error
+export async function deleteHabitLog(habitId: string, _userId: string, date?: string): Promise<HabitStatusResult> {
+  return setHabitStatus(habitId, 'neutral', 1, date)
 }
 
 // Kunlik progress hisob-kitobi — YAGONA MANBA. App.tsx, Dashboard.tsx va HabitsLog.tsx
@@ -659,14 +847,6 @@ export function computeHabitProgress(
     if (completedSet.has(h.id)) completed++
   }
   return { completed, total }
-}
-
-export type XpResult = { total_xp: number; level: number; xp_gained: number }
-
-export async function addXpToUser(habitId: string, xpAmount = 5): Promise<XpResult> {
-  const { data, error } = await supabase.rpc('add_xp_to_user', { p_habit_id: habitId, p_xp_amount: xpAmount })
-  if (error) throw error
-  return data as XpResult
 }
 
 export async function getMonthLogs(userId: string, year: number, month: number) {
@@ -693,145 +873,107 @@ export type LeaderboardEntry = {
   username_glow: boolean
   score: number
   efficiency_pct: number
+  /** Davr ichida bajarilgan odatlar soni (048) */
+  completed_count?: number
+  /** Reytingdagi o'rni (048) */
+  rank?: number
   is_private: boolean
   has_star: boolean
 }
 
-export async function getLeaderboard(period: 'daily' | 'monthly' | '6months' | 'yearly' | 'all' = 'monthly'): Promise<LeaderboardEntry[]> {
-  let query = supabase.from('profiles').select('id, display_name, username, avatar_url, avatar_color, score, star_expires_at, active_frame, username_glow, profile_private, created_at');
+export type LeaderboardPeriod = 'daily' | 'monthly' | '6months' | 'yearly' | 'all'
 
-  const now = new Date();
-  let startDate: string | null = null;
-  if (period === 'daily') {
-    startDate = toDateStr(now);
-  } else if (period === 'monthly') {
-    const firstDay = new Date(now.getFullYear(), now.getMonth(), 1);
-    startDate = toDateStr(firstDay);
-  } else if (period === '6months') {
-    const d = new Date(now);
-    d.setMonth(d.getMonth() - 6);
-    startDate = toDateStr(d);
-  } else if (period === 'yearly') {
-    const d = new Date(now);
-    d.setFullYear(d.getFullYear() - 1);
-    startDate = toDateStr(d);
+// Reyting serverda hisoblanadi (048: get_leaderboard_period) — mijoz endi
+// barcha profillar va loglarni yuklamaydi. 048 hali qo'yilmagan bazada
+// (PGRST202: funksiya topilmadi) eski 30 kunlik get_leaderboard ishlatiladi.
+export async function getLeaderboard(period: LeaderboardPeriod = 'monthly'): Promise<LeaderboardEntry[]> {
+  const { data, error } = await supabase.rpc('get_leaderboard_period', { p_period: period })
+  if (!error) return (data || []) as LeaderboardEntry[]
+  if (error.code === 'PGRST202') {
+    const legacy = await supabase.rpc('get_leaderboard')
+    if (legacy.error) throw legacy.error
+    return (legacy.data || []) as LeaderboardEntry[]
   }
-
-  const { data: profiles, error } = await query;
-  if (error) throw error;
-  if (!profiles) return [];
-
-  if (period === 'all' || !startDate) {
-    return profiles.map((p: any) => ({
-      id: p.id,
-      username: p.username || 'user',
-      display_label: p.display_name ? `${p.display_name.split(' ')[0]} ${p.display_name.split(' ')[1]?.[0] || ''}.` : (p.username || 'User'),
-      avatar_color: p.avatar_color || '#4ADE80',
-      avatar_url: p.avatar_url,
-      active_frame: p.active_frame,
-      username_glow: !!p.username_glow,
-      score: p.score || 0,
-      efficiency_pct: Math.min(100, Math.round((p.score || 0) / 10)),
-      is_private: !!(p.profile_private ?? p.is_private),
-      has_star: p.star_expires_at ? new Date(p.star_expires_at) > now : false,
-    })).sort((a, b) => b.score - a.score);
-  }
-
-  const { data: logs } = await supabase
-    .from('habit_logs')
-    .select('user_id, completed')
-    .gte('log_date', startDate)
-    .eq('completed', true);
-
-  const counts: Record<string, number> = {};
-  for (const l of (logs || [])) {
-    counts[l.user_id] = (counts[l.user_id] || 0) + 1;
-  }
-
-  return profiles.map((p: any) => {
-    const count = counts[p.id] || 0;
-    return {
-      id: p.id,
-      username: p.username || 'user',
-      display_label: p.display_name ? `${p.display_name.split(' ')[0]} ${p.display_name.split(' ')[1]?.[0] || ''}.` : (p.username || 'User'),
-      avatar_color: p.avatar_color || '#4ADE80',
-      avatar_url: p.avatar_url,
-      active_frame: p.active_frame,
-      username_glow: !!p.username_glow,
-      score: count * 10,
-      efficiency_pct: Math.min(100, count * 5),
-      is_private: !!(p.profile_private ?? p.is_private),
-      has_star: p.star_expires_at ? new Date(p.star_expires_at) > now : false,
-    };
-  }).sort((a, b) => b.score - a.score);
+  throw error
 }
 
-export async function getUserRank(userId: string): Promise<number> {
-  const { data, error } = await supabase.rpc('get_user_rank_efficiency', { p_user_id: userId })
-  if (error) return 0
-  return data || 0
+// Joriy foydalanuvchining o'rni (048: get_my_leaderboard_rank). userId faqat
+// eski chaqiruvlar bilan moslik uchun — server auth.uid() ni ishlatadi.
+export async function getUserRank(userId: string, period: LeaderboardPeriod = 'monthly'): Promise<number> {
+  const { data, error } = await supabase.rpc('get_my_leaderboard_rank', { p_period: period })
+  if (!error) return (data as number) || 0
+  if (error.code === 'PGRST202') {
+    const legacy = await supabase.rpc('get_user_rank_efficiency', { p_user_id: userId })
+    return legacy.error ? 0 : (legacy.data || 0)
+  }
+  return 0
 }
 
 export async function getAllTimeLogs(userId: string) {
-  const { data, error } = await supabase
-    .from('habit_logs')
-    .select('habit_id, log_date, completed, habits(type)')
-    .eq('user_id', userId)
-    .eq('completed', true)
-  if (error) throw error
-  return data
+  return fetchAllPages<any>((from, to) =>
+    supabase
+      .from('habit_logs')
+      .select('habit_id, log_date, completed, habits(type)')
+      .eq('user_id', userId)
+      .eq('completed', true)
+      .order('log_date', { ascending: true })
+      .order('habit_id', { ascending: true })
+      .range(from, to)
+  )
+}
+
+/**
+ * [fromDate, toDate] oralig'idagi loglar — faqat 4 ta ustun, 1000 lik
+ * bo'laklarda. (habit_id, log_date) foydalanuvchi uchun noyob, shu sabab
+ * tartib barqaror va sahifalar bir-birini takrorlamaydi.
+ */
+export async function getLogsBetween(userId: string, fromDate: string, toDate: string): Promise<CompactLog[]> {
+  return fetchAllPages<CompactLog>((from, to) =>
+    supabase
+      .from('habit_logs')
+      .select(COMPACT_LOG_COLUMNS)
+      .eq('user_id', userId)
+      .gte('log_date', fromDate)
+      .lte('log_date', toDate)
+      .order('log_date', { ascending: true })
+      .order('habit_id', { ascending: true })
+      .range(from, to) as any
+  )
 }
 
 export async function getLogsByRange(userId: string, days: number) {
-  const from = new Date();
+  const from = tashkentTodayAnchor();
   from.setDate(from.getDate() - days);
   const startDate = toDateStr(from);
-  const cacheKey = `logs_range_${userId}_${days}`;
-  const cached = getCached<any[]>(cacheKey);
+  return fetchAllPages<any>((f, t) =>
+    supabase
+      .from('habit_logs')
+      .select('*, habits(name, emoji, type)')
+      .eq('user_id', userId)
+      .gte('log_date', startDate)
+      .order('log_date', { ascending: false })
+      .order('habit_id', { ascending: true })
+      .range(f, t)
+  )
+}
 
-  const fetchPromise = supabase
-    .from('habit_logs')
-    .select('*, habits(name, emoji, type)')
-    .eq('user_id', userId)
-    .gte('log_date', startDate)
-    .order('log_date', { ascending: false })
-    .then(({ data, error }) => {
-      if (error) throw error;
-      setCached(cacheKey, data || []);
-      return data || [];
-    });
-
-  if (cached) {
-    Promise.resolve(fetchPromise).catch(() => {});
-    return cached;
-  }
-  return await fetchPromise;
+export async function getHealthLogsBetween(userId: string, fromDate: string, toDate: string) {
+  return fetchAllPages<any>((from, to) =>
+    supabase
+      .from('health_logs')
+      .select('*')
+      .eq('user_id', userId)
+      .gte('log_date', fromDate)
+      .lte('log_date', toDate)
+      .order('log_date', { ascending: true })
+      .range(from, to)
+  )
 }
 
 export async function getHealthLogsByRange(userId: string, days: number) {
-  const from = new Date();
+  const from = tashkentTodayAnchor();
   from.setDate(from.getDate() - days);
-  const startDate = toDateStr(from);
-  const cacheKey = `health_logs_${userId}_${days}`;
-  const cached = getCached<any[]>(cacheKey);
-
-  const fetchPromise = supabase
-    .from('health_logs')
-    .select('*')
-    .eq('user_id', userId)
-    .gte('log_date', startDate)
-    .order('log_date', { ascending: false })
-    .then(({ data, error }) => {
-      if (error) throw error;
-      setCached(cacheKey, data || []);
-      return data || [];
-    });
-
-  if (cached) {
-    Promise.resolve(fetchPromise).catch(() => {});
-    return cached;
-  }
-  return await fetchPromise;
+  return getHealthLogsBetween(userId, toDateStr(from), toDateStr());
 }
 
 export async function getLast30DaysLogs(userId: string) {
@@ -921,16 +1063,16 @@ export async function transferGroupOwnership(groupId: string, newOwnerId: string
 export async function getMyGroups(userId: string) {
   const { data, error } = await supabase
     .from('group_members')
-    .select('*, groups(*, admin_profile:profiles!admin_id(id, display_name, username, avatar_url, avatar_color, telegram_username, telegram_private))')
+    .select('*, groups(*, admin_profile:profiles!admin_id(id, display_name, username, avatar_url, avatar_color, telegram_private))')
     .eq('user_id', userId)
   if (error) throw error
-  return data
+  return data || []
 }
 
 export async function getGroupMembers(groupId: string) {
   const { data, error } = await supabase
     .from('group_members')
-    .select('*, profiles(*)')
+    .select(`*, profiles(${PUBLIC_PROFILE_COLUMNS})`)
     .eq('group_id', groupId)
   if (error) throw error
   return data
@@ -1059,7 +1201,7 @@ export async function getGroupLeaderboard(groupId: string) {
 // berilmaydi (faqat ko'rish uchun) — mukofot faqat settleGroupWeek() orqali,
 // hafta TUGAGANDA beriladi.
 export async function getGroupWeeklyLeaderboard(groupId: string) {
-  const now = new Date()
+  const now = tashkentTodayAnchor()
   const day = (now.getDay() + 6) % 7 // 0=Dushanba
   const weekStart = new Date(now)
   weekStart.setDate(now.getDate() - day)
@@ -1199,7 +1341,7 @@ export async function rejectGroupLog(logId: string, reason: string) {
 }
 
 export async function getGroupMembersMonthlyStats(groupId: string) {
-  const now = new Date()
+  const now = tashkentTodayAnchor()
   const firstDay = toDateStr(new Date(now.getFullYear(), now.getMonth(), 1))
   const { data, error } = await supabase
     .from('group_habit_logs')
@@ -1306,26 +1448,11 @@ export async function upsertCoachNote(userId: string, note: string): Promise<voi
 }
 
 // ─── AI ANALYSIS — COIN-GATED ────────────────────────────────
-// Har bir AI tahlil (Coach Note) generatsiyasi 50 tanga turadi — bu
-// api/ai-coach.ts orqali sarflanadigan haqiqiy LLM chaqiruvi xarajatini
-// cheklaydi. spend_coins RPC (setup.sql/006_xp_leveling.sql) allaqachon
-// bitta atomik UPDATE ichida balansni tekshirib yechadi — xuddi
-// purchaseCoinItem'da ishlatilgani kabi — shu bilan ikkita bir vaqtdagi
-// so'rov (double-tap, 2 tab) bir xil boshlang'ich balansni o'qib,
-// bir-birini bosib ketishining oldini oladi.
-export const AI_ANALYSIS_COST = 50
-
-export async function spendCoinsForAnalysis(userId: string): Promise<boolean> {
-  const { error } = await supabase.rpc('spend_coins', { uid: userId, price: AI_ANALYSIS_COST })
-  return !error
-}
-
-// AI chaqiruvi texnik sababdan (tarmoq, API xatosi, "not_configured" va h.k.)
-// muvaffaqiyatsiz bo'lsa, foydalanuvchi tangasini abadiy yo'qotmasligi
-// uchun — purchaseCoinItem'dagi refund naqshiga mos.
-export async function refundAnalysisCoins(userId: string): Promise<void> {
-  try { await supabase.rpc('increment_coins', { uid: userId, delta: AI_ANALYSIS_COST }) } catch { /* best-effort */ }
-}
+// AI tahlil narxi (200 tanga) endi faqat serverda yechiladi:
+// api/ai-analysis.ts -> spend_coins_for_ai (service_role), AI xato bersa
+// o'sha joyda refund_coins_for_ai bilan qaytariladi. Mijoz faqat UI uchun
+// balansni oldindan tekshiradi.
+export const AI_ANALYSIS_COST = 200
 
 // ─── PUSH NOTIFICATIONS ────────────────────────────────────
 function urlBase64ToUint8Array(base64String: string) {
@@ -1391,11 +1518,15 @@ export async function subscribeToPushNotifications(userId: string) {
 
 // ─── PUBLIC PROFILE ─────────────────────────────────────────
 export async function getPublicProfileStats(userId: string) {
-  const [profile, allLogs, habits] = await Promise.all([
+  const [baseProfile, allLogs, habits, tg] = await Promise.all([
     getProfileById(userId),
     getAllTimeLogs(userId),
     getHabits(userId),
+    getTelegramContact(userId),
   ])
+  // telegram_username endi to'g'ridan-to'g'ri o'qilmaydi: server faqat ruxsat
+  // bo'lsa (o'zi / ochiq / so'rov tasdiqlangan) qaytaradi.
+  const profile = { ...baseProfile, telegram_username: tg.username, has_telegram: tg.has_telegram }
   const totalCompleted = (allLogs || []).filter((l: any) => l.habits?.type === 'positive').length
   return { profile, totalCompleted, habitsCount: (habits || []).length }
 }
@@ -1493,7 +1624,7 @@ export async function getFollowingFeed(userId: string) {
 
   const followingIds = followingData.map((f: any) => f.following_id)
 
-  const from = new Date()
+  const from = tashkentTodayAnchor()
   from.setDate(from.getDate() - 7)
 
   const { data, error } = await supabase
@@ -1512,7 +1643,7 @@ export async function getFollowingFeed(userId: string) {
 
 export async function getFollowingStreaks(userIds: string[]): Promise<Record<string, number>> {
   if (userIds.length === 0) return {}
-  const from = new Date()
+  const from = tashkentTodayAnchor()
   from.setDate(from.getDate() - 60)
   const { data } = await supabase
     .from('habit_logs')
@@ -1532,7 +1663,7 @@ export async function getFollowingStreaks(userIds: string[]): Promise<Record<str
     let streak = 0
     const startI = dates.has(todayStr) ? 0 : 1
     for (let i = startI; i <= 60; i++) {
-      const d = new Date()
+      const d = tashkentTodayAnchor()
       d.setDate(d.getDate() - i)
       if (dates.has(toDateStr(d))) streak++
       else break
@@ -1649,7 +1780,7 @@ export async function getStreakFreezes(userId: string): Promise<string[]> {
 }
 
 export async function getMonthlyFreezeCount(userId: string): Promise<number> {
-  const now = new Date()
+  const now = tashkentTodayAnchor()
   const monthStart = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-01`
   const { count } = await supabase
     .from('streak_freezes')
@@ -1659,29 +1790,38 @@ export async function getMonthlyFreezeCount(userId: string): Promise<number> {
   return count || 0
 }
 
-export async function useStreakFreeze(userId: string, date: string): Promise<void> {
-  const { error } = await supabase
-    .from('streak_freezes')
-    .insert({ user_id: userId, freeze_date: date })
-  if (error) throw error
-}
-
 // ─── COIN SHOP ───────────────────────────────────────────────
-export async function purchaseCoinItem(userId: string, itemId: string, price: number): Promise<number> {
-  // spend_coins RPC bitta atomik UPDATE ichida balansni tekshiradi va yechadi,
-  // shu bilan ikkita bir vaqtdagi xarid (double-tap, 2 tab) bir xil boshlang'ich
-  // balansni o'qib, bir-birini bosib ketishining oldini oladi.
-  const { data: newBalance, error: rpcErr } = await supabase.rpc('spend_coins', { uid: userId, price })
-  if (rpcErr) throw new Error(rpcErr.message.includes('yetarli') ? rpcErr.message : 'Tangalar yetarli emas')
-  const { error } = await supabase.from('coin_purchases').insert({ user_id: userId, item_id: itemId })
+// Narx serverdagi shop_items katalogidan olinadi (mijoz narx yubormaydi).
+// purchase_shop_item bitta tranzaksiyada balansni tekshiradi, yechadi,
+// coin_purchases'ga yozadi va ramka/unvon/yaltiroq ismni qo'llaydi.
+export async function purchaseShopItem(itemId: string): Promise<number> {
+  const { data, error } = await supabase.rpc('purchase_shop_item', { p_item_id: itemId })
   if (error) {
-    try { await supabase.rpc('increment_coins', { uid: userId, delta: price }) } catch {}
-    throw error
+    const msg = error.message || ''
+    if (msg.includes('insufficient_coins')) throw new Error('Tangalar yetarli emas')
+    if (msg.includes('already_owned')) throw new Error('Bu buyum sizda allaqachon bor')
+    if (msg.includes('unknown_item')) throw new Error('Bu buyum sotuvda yo\'q')
+    throw new Error(msg || 'Xarid qilishda xatolik yuz berdi')
   }
-  return newBalance as number
+  return (data as { coins: number }).coins
 }
 
-// ─── KUNLIK VAZIFALAR (Daily Quests) ────────────────────────
+// ─── KUNLIK VAZIFALAR (Daily Quests & Two-Way Reconciliation) ──────
+export interface QuestDelta {
+  questId: string;
+  rewardCoins: number;
+  rewardXp: number;
+}
+
+export interface ReconciliationResult {
+  coins: number;
+  score: number;
+  coinsDelta: number;
+  xpDelta: number;
+  grantedQuests: QuestDelta[];
+  revokedQuests: QuestDelta[];
+}
+
 export async function getTodayQuestClaims(userId: string): Promise<Set<string>> {
   const today = toDateStr()
   const { data } = await supabase
@@ -1692,17 +1832,33 @@ export async function getTodayQuestClaims(userId: string): Promise<Set<string>> 
   return new Set((data || []).map((r) => r.quest_id))
 }
 
-// Shart serverda claim_daily_quest() RPC ichida mustaqil qayta tekshiriladi
-// (bu yerdagi hisob-kitob faqat UI uchun) — shuning uchun client hech qachon
-// tekshiruvsiz mukofot ololmaydi.
-export async function claimDailyQuest(userId: string, questId: string): Promise<number> {
-  const { data, error } = await supabase.rpc('claim_daily_quest', { uid: userId, p_quest_id: questId })
+// Kunlik vazifalar faqat serverda hisoblanadi (reconcile_daily_missions RPC:
+// faqat o'zi uchun va faqat ochiq kun uchun). Mijozdagi zaxira hisoblash
+// olib tashlandi — u profiles.coins'ni to'g'ridan-to'g'ri yozardi.
+export async function reconcileDailyMissions(userId: string, dateStr?: string): Promise<ReconciliationResult> {
+  const { data, error } = await supabase.rpc('reconcile_daily_missions', {
+    p_user_id: userId,
+    p_date: dateStr || toDateStr(),
+  })
   if (error) throw error
-  return data as number
+  const r = (data || {}) as Partial<ReconciliationResult>
+  return {
+    coins: r.coins ?? 0,
+    score: r.score ?? 0,
+    coinsDelta: r.coinsDelta ?? 0,
+    xpDelta: r.xpDelta ?? 0,
+    grantedQuests: r.grantedQuests || [],
+    revokedQuests: r.revokedQuests || [],
+  }
+}
+
+export async function claimDailyQuest(userId: string, _questId: string): Promise<number> {
+  const res = await reconcileDailyMissions(userId)
+  return res.coins
 }
 
 export async function getExtraFreezeCount(userId: string): Promise<number> {
-  const now = new Date()
+  const now = tashkentTodayAnchor()
   const monthStart = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-01`
   const { count } = await supabase
     .from('coin_purchases')
@@ -1820,6 +1976,49 @@ export async function unlinkTelegramBot(_userId: string) {
   if (error) throw error
 }
 
+// Botni ulash: server 15 daqiqalik bir martalik kod beradi, havola
+// t.me/<bot>?start=<kod> ko'rinishida bo'ladi. Bot (api/telegram.ts) kodni
+// service_role orqali link_telegram_account'ga uzatadi.
+export async function createTelegramLinkToken(): Promise<string> {
+  const { data, error } = await supabase.rpc('create_telegram_link_token')
+  if (error) throw error
+  return data as string
+}
+
+export async function getTelegramBotLinkUrl(): Promise<string | null> {
+  const bot = import.meta.env.VITE_TELEGRAM_BOT_USERNAME
+  if (!bot) return null
+  const token = await createTelegramLinkToken()
+  return `https://t.me/${bot}?start=${token}`
+}
+
+// Boshqa foydalanuvchining Telegram username'i (faqat ruxsat bo'lsa).
+export async function getTelegramContact(userId: string): Promise<{ has_telegram: boolean; username: string | null }> {
+  const { data, error } = await supabase.rpc('get_telegram_contact', { p_user_id: userId })
+  if (error) return { has_telegram: false, username: null }
+  return data as { has_telegram: boolean; username: string | null }
+}
+
+// ─── SCHOOL21 NISHONLARI (shartlar serverda tekshiriladi) ─────────
+export async function getBadgeClaims(userId: string): Promise<Set<string>> {
+  const { data } = await supabase
+    .from('badge_claims')
+    .select('badge_id')
+    .eq('user_id', userId)
+  return new Set((data || []).map((r: any) => r.badge_id))
+}
+
+export async function claimBadgeReward(badgeId: string): Promise<{ coins: number; score: number; rewardXp: number; rewardCoins: number }> {
+  const { data, error } = await supabase.rpc('claim_badge_reward', { p_badge_id: badgeId })
+  if (error) {
+    const msg = error.message || ''
+    if (msg.includes('already_claimed')) throw new Error('Bu mukofot allaqachon olingan')
+    if (msg.includes('not_eligible')) throw new Error("Nishon shartlari hali bajarilmagan")
+    throw new Error(msg || 'Mukofotni olishda xatolik yuz berdi')
+  }
+  return data as { coins: number; score: number; rewardXp: number; rewardCoins: number }
+}
+
 // ─── GROUP SUBTEAMS ───────────────────────────────────────────
 export async function getGroupSubteams(groupId: string) {
   const { data, error } = await supabase
@@ -1929,7 +2128,7 @@ export async function getMonthHealthLogs(userId: string, year: number, month: nu
 }
 
 export async function getWeeklyHealthLogs(userId: string): Promise<any[]> {
-  const from = new Date()
+  const from = tashkentTodayAnchor()
   from.setDate(from.getDate() - 6)
   const { data } = await supabase
     .from('health_logs')
@@ -1938,4 +2137,262 @@ export async function getWeeklyHealthLogs(userId: string): Promise<any[]> {
     .gte('log_date', toDateStr(from))
     .order('log_date')
   return data || []
+}
+
+// ─── ROUTINES & ROUTINE ITEMS ──────────────────────────────────────────────
+
+export async function fetchRoutines(userId: string): Promise<Routine[]> {
+  try {
+    const authUser = (await supabase.auth.getUser()).data.user?.id;
+    console.log('[DEBUG ROUTINES] Current auth user:', authUser);
+    console.log('[DEBUG ROUTINES] fetchRoutines requested for userId:', userId);
+
+    const { data, error } = await supabase
+      .from('routines')
+      .select('*, routine_items(*)')
+      .eq('user_id', userId)
+      .order('time_start', { ascending: true });
+
+    console.log('[DEBUG ROUTINES] fetchRoutines query result:', { dataLength: data?.length, data, error });
+
+    if (error) {
+      console.warn('Silent routines fetch fallback:', error.message);
+      return [];
+    }
+    if (!data || data.length === 0) return [];
+
+    const todayStr = toDateStr();
+    const itemsToResetInDb: string[] = [];
+
+    const routines = data.map((r: any) => {
+      const rawItems = r.routine_items || r.items || [];
+      const items = rawItems
+        .map((item: any) => {
+          let completedToday = item.is_completed_today;
+          if (completedToday && item.updated_at) {
+            const itemUpdateDateStr = toDateStr(new Date(item.updated_at));
+            if (itemUpdateDateStr !== todayStr) {
+              completedToday = false;
+              itemsToResetInDb.push(item.id);
+            }
+          }
+          return {
+            ...item,
+            is_completed_today: completedToday
+          };
+        })
+        .sort((a: any, b: any) => (a.order_index ?? 0) - (b.order_index ?? 0));
+
+      return {
+        ...r,
+        items
+      };
+    });
+
+    if (itemsToResetInDb.length > 0) {
+      supabase
+        .from('routine_items')
+        .update({ is_completed_today: false })
+        .in('id', itemsToResetInDb)
+        .then(() => {})
+        .catch(() => {});
+    }
+
+    return routines;
+  } catch (err) {
+    console.warn('Routines network error:', err);
+    return [];
+  }
+}
+
+export async function createRoutine(
+  userId: string,
+  routineData: { title: string; time_start: string; time_end: string; icon_name?: string; days_of_week?: number[]; is_active?: boolean },
+  items: { title: string; habit_id?: string | null; order_index?: number }[] = []
+): Promise<Routine> {
+  let uid = userId;
+  try {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (user?.id) {
+      uid = user.id;
+    }
+  } catch {}
+
+  const formattedStart = routineData.time_start.length === 5 ? `${routineData.time_start}:00` : routineData.time_start;
+  const formattedEnd = routineData.time_end.length === 5 ? `${routineData.time_end}:00` : routineData.time_end;
+
+  const { data: routine, error: routineError } = await supabase
+    .from('routines')
+    .insert({
+      user_id: uid,
+      title: routineData.title,
+      time_start: formattedStart,
+      time_end: formattedEnd,
+      icon_name: routineData.icon_name || 'Sun',
+      days_of_week: routineData.days_of_week || [1, 2, 3, 4, 5, 6, 7],
+      is_active: routineData.is_active ?? true,
+    })
+    .select('*')
+    .single();
+
+  if (routineError) {
+    console.error('PostgreSQL/Supabase error creating routine:', routineError.message);
+    throw routineError;
+  }
+
+  let createdItems: RoutineItem[] = [];
+  if (items.length > 0) {
+    const itemsToInsert = items.map((it, idx) => ({
+      routine_id: routine.id,
+      title: it.title,
+      habit_id: it.habit_id || null,
+      order_index: it.order_index ?? idx,
+      is_completed_today: false,
+    }));
+
+    const { data: insertedItems, error: itemsError } = await supabase
+      .from('routine_items')
+      .insert(itemsToInsert)
+      .select('*');
+
+    if (itemsError) {
+      console.warn('PostgreSQL error creating routine_items:', itemsError.message);
+    }
+    createdItems = insertedItems || [];
+  }
+
+  const result: Routine = { ...routine, items: createdItems };
+
+  try {
+    await nativeNotificationService.scheduleRoutineNotifications(result);
+  } catch (notifErr) {
+    console.warn('Non-critical background warning scheduling routine notifications:', notifErr);
+  }
+
+  return result;
+}
+
+export async function updateRoutine(
+  routineId: string,
+  routineData: Partial<Routine>,
+  items?: { id?: string; title: string; habit_id?: string | null; order_index?: number }[]
+): Promise<Routine> {
+  const { data: routine, error: routineError } = await supabase
+    .from('routines')
+    .update({
+      ...(routineData.title ? { title: routineData.title } : {}),
+      ...(routineData.time_start ? { time_start: routineData.time_start } : {}),
+      ...(routineData.time_end ? { time_end: routineData.time_end } : {}),
+      ...(routineData.icon_name ? { icon_name: routineData.icon_name } : {}),
+      ...(routineData.days_of_week ? { days_of_week: routineData.days_of_week } : {}),
+      ...(routineData.is_active !== undefined ? { is_active: routineData.is_active } : {}),
+    })
+    .eq('id', routineId)
+    .select('*')
+    .single();
+
+  if (routineError) throw routineError;
+
+  let updatedItems: RoutineItem[] = [];
+  if (items !== undefined) {
+    try {
+      await supabase.from('routine_items').delete().eq('routine_id', routineId);
+    } catch (delErr) {
+      console.warn('Non-critical background warning deleting routine items:', delErr);
+    }
+
+    if (items.length > 0) {
+      try {
+        const itemsToInsert = items.map((it, idx) => ({
+          routine_id: routineId,
+          title: it.title,
+          habit_id: it.habit_id || null,
+          order_index: it.order_index ?? idx,
+          is_completed_today: false,
+        }));
+
+        const { data: insertedItems, error: itemsError } = await supabase
+          .from('routine_items')
+          .insert(itemsToInsert)
+          .select('*');
+
+        if (itemsError) {
+          console.warn('PostgreSQL error updating routine_items:', itemsError.message);
+        }
+        updatedItems = insertedItems || [];
+      } catch (itemErr) {
+        console.warn('Non-critical background warning updating routine items:', itemErr);
+      }
+    }
+  } else {
+    try {
+      const { data: existingItems } = await supabase
+        .from('routine_items')
+        .select('*')
+        .eq('routine_id', routineId)
+        .order('order_index', { ascending: true });
+      updatedItems = existingItems || [];
+    } catch (fetchErr) {
+      console.warn('Non-critical background warning fetching routine items:', fetchErr);
+    }
+  }
+
+  const result: Routine = { ...routine, items: updatedItems };
+
+  try {
+    await nativeNotificationService.scheduleRoutineNotifications(result);
+  } catch (err) {
+    console.warn('Failed to schedule routine notification:', err);
+  }
+
+  return result;
+}
+
+export async function deleteRoutine(routineId: string): Promise<void> {
+  const { error } = await supabase
+    .from('routines')
+    .delete()
+    .eq('id', routineId);
+
+  if (error) console.warn('Supabase deleteRoutine error:', error.message);
+
+  try {
+    await nativeNotificationService.cancelRoutineNotifications(routineId);
+  } catch (err) {
+    console.warn('Failed to cancel routine notifications:', err);
+  }
+}
+
+export async function toggleRoutineItemCompletion(
+  itemId: string,
+  isCompleted: boolean,
+  habitId?: string | null,
+  userId?: string,
+  isNegative: boolean = false
+): Promise<void> {
+  if (!itemId.startsWith('local_')) {
+    try {
+      const { error } = await supabase
+        .from('routine_items')
+        .update({
+          is_completed_today: isCompleted,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', itemId);
+
+      if (error) {
+        console.warn('PostgreSQL error updating routine_items completion:', error.message);
+      }
+    } catch (err) {
+      console.warn('Non-critical background warning in toggleRoutineItemCompletion:', err);
+    }
+  }
+
+  if (habitId && userId) {
+    try {
+      await toggleHabitLog(habitId, userId, isCompleted, 1, !isCompleted, isNegative);
+    } catch (e) {
+      console.warn('Failed to toggle habit log from routine item:', e);
+    }
+  }
 }

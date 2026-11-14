@@ -1,6 +1,8 @@
 
   import { createRoot } from "react-dom/client";
-  import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+  import { QueryClientProvider } from "@tanstack/react-query";
+  import { PersistQueryClientProvider } from "@tanstack/react-query-persist-client";
+  import { queryClient, queryPersister, CACHE_MAX_AGE, CACHE_BUSTER, shouldPersistQuery } from "./services/queryClient";
   import { BrowserRouter } from "react-router-dom";
   import React, { Component, ErrorInfo, ReactNode } from "react";
   import App from "./App.tsx";
@@ -62,11 +64,30 @@
   import { UserProvider } from "./store/UserContext.tsx";
   import { ThemeProvider } from "./store/ThemeContext.tsx";
 
-  const queryClient = new QueryClient();
+  // Yagona kesh: React Query + localStorage (7 kun). Persister bo'lmasa
+  // (storage yopiq) — oddiy provayder.
+  function QueryProvider({ children }: { children: ReactNode }) {
+    if (!queryPersister) {
+      return <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>;
+    }
+    return (
+      <PersistQueryClientProvider
+        client={queryClient}
+        persistOptions={{
+          persister: queryPersister,
+          maxAge: CACHE_MAX_AGE,
+          buster: CACHE_BUSTER,
+          dehydrateOptions: { shouldDehydrateQuery: shouldPersistQuery },
+        }}
+      >
+        {children}
+      </PersistQueryClientProvider>
+    );
+  }
 
   createRoot(document.getElementById("root")!).render(
     <ErrorBoundary>
-      <QueryClientProvider client={queryClient}>
+      <QueryProvider>
         <UserProvider>
           <ThemeProvider>
             <BrowserRouter>
@@ -74,7 +95,7 @@
             </BrowserRouter>
           </ThemeProvider>
         </UserProvider>
-      </QueryClientProvider>
+      </QueryProvider>
     </ErrorBoundary>
   );
 

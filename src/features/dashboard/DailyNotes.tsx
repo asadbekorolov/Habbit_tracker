@@ -1,9 +1,11 @@
 import { useState, useEffect, useCallback } from "react";
+import { useQueryClient } from "@tanstack/react-query";
+import { queryKeys } from "../../hooks/queries";
 import { toast } from "sonner";
 import { ChevronLeft, ChevronRight, Save, Moon, Monitor, Smile, Lock, Laugh, Meh, Frown, Angry } from "lucide-react";
 import { getDailyNote, upsertDailyNote, getHealthLog, upsertHealthLog } from "../../services/db";
 import type { Profile } from "../../services/supabase";
-import { toDateStr } from "../../utils/date";
+import { tashkentTodayAnchor, toDateStr } from "../../utils/date";
 import { useLang } from "../../store/LangContext";
 import { MONTHS_FULL, DAYS_SHORT, DAYS_FULL } from "../../utils/i18n";
 import { HabitIcon } from "../../components/HabitIcon";
@@ -15,6 +17,7 @@ interface DailyNotesProps {
 
 export function DailyNotes({ isDark, profile }: DailyNotesProps) {
   const { t, lang } = useLang();
+  const queryClient = useQueryClient();
   const MOODS = [
     { value: 5, icon: Laugh, label: t('notes_mood_excellent'), color: '#10B981', glow: 'rgba(16,185,129,0.3)' },
     { value: 4, icon: Smile, label: t('notes_mood_good'),      color: '#22D3EE', glow: 'rgba(34,211,238,0.3)' },
@@ -22,7 +25,7 @@ export function DailyNotes({ isDark, profile }: DailyNotesProps) {
     { value: 2, icon: Frown, label: t('notes_mood_bad'),       color: '#FB923C', glow: 'rgba(249,115,22,0.3)' },
     { value: 1, icon: Angry, label: t('notes_mood_terrible'),  color: '#F43F5E', glow: 'rgba(244,63,94,0.3)' },
   ];
-  const now = new Date();
+  const now = tashkentTodayAnchor();
   const todayStr = toDateStr(now);
 
   const [selectedDate, setSelectedDate] = useState(todayStr);
@@ -106,6 +109,9 @@ export function DailyNotes({ isDark, profile }: DailyNotesProps) {
       );
 
       await Promise.race([syncPromise, timeoutPromise]);
+      // Oylik jadval (MonthGrid), Analytics va Salomatlik keshlari yangilansin.
+      queryClient.invalidateQueries({ queryKey: ['notes', profile.id] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.health(profile.id) });
 
       setSaved(true);
       toast.success(t('log_metrics_saved'));
@@ -181,7 +187,7 @@ export function DailyNotes({ isDark, profile }: DailyNotesProps) {
         {/* Quick date chips: last 7 days */}
         <div className="flex gap-1.5 mt-3 overflow-x-auto pb-1 no-scrollbar">
           {Array.from({ length: 7 }, (_, i) => {
-            const d = new Date();
+            const d = tashkentTodayAnchor();
             d.setDate(d.getDate() - (6 - i));
             const ds = toDateStr(d);
             const isSelected = ds === selectedDate;

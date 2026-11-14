@@ -4,6 +4,8 @@ import { StatusBar, Style } from '@capacitor/status-bar';
 import { nativeNotificationService } from '../services/nativeNotificationService';
 import { healthSyncService } from '../services/healthSyncService';
 import { useHardwareBackButton } from './useHardwareBackButton';
+import { App as CapacitorApp } from '@capacitor/app';
+import { habitSyncQueue } from '../services/habitSyncQueue';
 
 interface UseMobileLifecycleOptions {
   isDark: boolean;
@@ -13,6 +15,13 @@ interface UseMobileLifecycleOptions {
 export function useMobileLifecycle({ isDark, profileId }: UseMobileLifecycleOptions) {
   // Mount global Android hardware back button listener (double-tap exit, modal close, subpage navigation)
   useHardwareBackButton();
+
+  // Ilova fondan qaytganda saqlangan belgilarni darhol yuborish
+  useEffect(() => {
+    if (!Capacitor.isNativePlatform()) return;
+    const handle = CapacitorApp.addListener('resume', () => habitSyncQueue.flush());
+    return () => { handle.then((h) => h.remove()).catch(() => {}); };
+  }, []);
 
   // Sync Status Bar theme with app theme
   useEffect(() => {

@@ -5,6 +5,7 @@ import { HabitIcon, cleanHabitName } from "./HabitIcon";
 import { getHabitCategory, getCategoryTheme } from "../utils/categoryTheme";
 import type { Habit } from "../services/supabase";
 import { useLang } from "../store/LangContext";
+import { useScrollLock } from "../hooks/useScrollLock";
 
 interface QuickLogModalProps {
   isDark?: boolean;
@@ -37,10 +38,7 @@ export function QuickLogModal({
   const theme = getCategoryTheme(category);
   const isTime = habit.unit === "daqiqa";
 
-  useEffect(() => {
-    document.body.style.overflow = 'hidden';
-    return () => { document.body.style.overflow = 'unset'; };
-  }, []);
+  useScrollLock(true);
 
   const handleSave = async () => {
     setSaving(true);
@@ -65,13 +63,13 @@ export function QuickLogModal({
   const presets = isTime ? [15, 30, 60] : (target >= 100 ? [10, 50, 100] : [1, 2, 5]);
 
   return (
-    <div role="dialog" aria-modal="true" className="fixed inset-0 z-[60] flex items-end sm:items-center justify-center p-0 sm:p-4">
+    <div role="dialog" aria-modal="true" className="fixed inset-0 z-[60] flex items-end sm:items-center justify-center p-0 sm:p-4 overscroll-contain touch-none">
       <motion.div
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
         onClick={onClose}
-        className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+        className="absolute inset-0 bg-black/75 backdrop-blur-sm"
       />
 
       <motion.div
@@ -79,7 +77,7 @@ export function QuickLogModal({
         animate={{ y: 0 }}
         exit={{ y: "100%" }}
         transition={{ type: "spring", damping: 25, stiffness: 200 }}
-        className="w-full sm:max-w-md bg-card border-t sm:border border-border rounded-t-[2.5rem] sm:rounded-3xl p-6 sm:p-8 relative z-10 shadow-2xl"
+        className="w-full sm:max-w-md bg-card border-t sm:border border-border rounded-t-[2.5rem] sm:rounded-3xl p-6 sm:p-8 relative z-10 shadow-2xl max-h-[85vh] overflow-y-auto overscroll-contain touch-pan-y"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="w-12 h-1 bg-border rounded-full mx-auto mb-6 sm:hidden" />

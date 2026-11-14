@@ -4,14 +4,19 @@ import { useUser } from "../../store/UserContext";
 import {
   Settings, Coins, Zap, Trophy, Loader2, Award,
   Crown, ChevronRight, Star, Flame, Target, Sparkles, X, CheckCircle2, ShoppingBag,
-  Lock, Check
+  Lock, Check, MessageSquarePlus, Send, ExternalLink, BookOpen, HelpCircle, Activity, Edit3
 } from "lucide-react";
 import { HabitIcon } from "../../components/HabitIcon";
 import {
-  getLast30DaysLogs, getHabits, getUserRank, getAllTimeLogs,
-  getProfileById, getFollowCounts, isStarActive, cleanupExpiredFrame, getCached
+  getProfileById, getFollowCounts, isStarActive, cleanupExpiredFrame
 } from "../../services/db";
+import { useHabitsQuery, useHabitsMetaQuery, useLogsRangeQuery, useAllTimeLogsQuery, useMyRankQuery } from "../../hooks/queries";
+import { toDateStr, addDays } from "../../utils/date";
 import { CoinShopModal } from "./CoinShopModal";
+import { FeedbackModal } from "./components/FeedbackModal";
+import { GuideModal } from "./components/GuideModal";
+import { BiometricsOnboardingModal } from "../../components/BiometricsOnboardingModal";
+import { MiniPipAvatar } from "../../components/MiniPipAvatar";
 import { getLevel } from "../../utils/levels";
 import { getUsernameGlowStyle } from "../../utils/cosmetics";
 import type { Profile } from "../../services/supabase";
@@ -47,34 +52,37 @@ export function ProfilePage({ isDark, profile: propsProfile, onNavigate, lang, o
   const { profile: contextProfile } = useUser();
   const profile = contextProfile || propsProfile;
 
-  const [logs30, setLogs30] = useState<any[]>([]);
-  const [allLogs, setAllLogs] = useState<any[]>([]);
-  const [habits, setHabits] = useState<any[]>([]);
-  const [rank, setRank] = useState(0);
+  // ─── Yagona kesh (React Query) ──────────────────────────────────────
+  const todayStr = toDateStr();
+  const habitsQ = useHabitsQuery(profile.id);
+  const metaQ = useHabitsMetaQuery(profile.id);
+  const logs30Q = useLogsRangeQuery(profile.id, addDays(todayStr, -30), todayStr);
+  const allLogsQ = useAllTimeLogsQuery(profile.id);
+  const rankQ = useMyRankQuery(profile.id, 'monthly');
+  const habits: any[] = habitsQ.data || [];
+  const allLogs: any[] = allLogsQ.data || [];
+  const rank = rankQ.data || 0;
+  // Ixcham loglarga odat turini qo'shamiz (o'chirilgan odatlar ham).
+  const logs30: any[] = useMemo(() => {
+    const typeById = new Map((metaQ.data || []).map((h) => [h.id, h.type]));
+    return (logs30Q.data || []).map((l) => ({ ...l, habits: { type: typeById.get(l.habit_id) } }));
+  }, [logs30Q.data, metaQ.data]);
   const [freshScore, setFreshScore] = useState<number | null>(null);
   const [freshCoins, setFreshCoins] = useState(profile.coins || 0);
   const [starExpiresAt, setStarExpiresAt] = useState<string | null>(profile.star_expires_at ?? null);
   const [showShop, setShowShop] = useState(false);
   const [showAllBadgesModal, setShowAllBadgesModal] = useState(false);
-  const initialCached = getCached<any[]>(`logs_range_${profile.id}_30`);
-  const [loading, setLoading] = useState(!initialCached);
+  const [showFeedbackModal, setShowFeedbackModal] = useState(false);
+  const [showGuideModal, setShowGuideModal] = useState(false);
+  const [showBiometricsModal, setShowBiometricsModal] = useState(false);
+  // Kesh bo'lsa darhol ko'rsatamiz; birinchi marta — asosiy ma'lumot kelguncha.
+  const loading = habitsQ.isPending || logs30Q.isPending;
 
   useEffect(() => {
-    const cached = getCached<any[]>(`logs_range_${profile.id}_30`);
-    if (!cached) setLoading(true);
-
     Promise.all([
-      getLast30DaysLogs(profile.id),
-      getAllTimeLogs(profile.id),
-      getHabits(profile.id),
-      getUserRank(profile.id),
       getProfileById(profile.id),
       cleanupExpiredFrame(profile.id),
-    ]).then(([l30, lAll, h, r, freshProfile, effectiveFrame]) => {
-      setLogs30(l30 || []);
-      setAllLogs(lAll || []);
-      setHabits(h || []);
-      setRank(r);
+    ]).then(([freshProfile, effectiveFrame]) => {
       if (freshProfile) {
         setFreshScore(freshProfile.score ?? 0);
         setFreshCoins(freshProfile.coins ?? 0);
@@ -83,7 +91,7 @@ export function ProfilePage({ isDark, profile: propsProfile, onNavigate, lang, o
           onProfileUpdate?.({ ...freshProfile, active_frame: effectiveFrame });
         }
       }
-    }).catch(() => {}).finally(() => setLoading(false));
+    }).catch(() => {});
   }, [profile.id]);
 
   const score = freshScore !== null ? freshScore : (profile.score || 0);
@@ -107,8 +115,6 @@ export function ProfilePage({ isDark, profile: propsProfile, onNavigate, lang, o
     return best;
   }, [logs30]);
 
-  const unlockedBadges = BADGE_DEFS.filter((b) => b.check(score, bestStreak, totalCompleted));
-
   const activeDays = useMemo(() => new Set(allLogs.map((l: any) => l.log_date)).size, [allLogs]);
 
   const statsForBadges = useMemo(() => ({
@@ -130,6 +136,25 @@ export function ProfilePage({ isDark, profile: propsProfile, onNavigate, lang, o
     return `${months[d.getMonth()]} ${d.getFullYear()}`;
   }, [profile.created_at]);
 
+  const heightCm = profile.height_cm || 175;
+  const weightKg = profile.weight_kg || 70;
+  const heightM = heightCm / 100;
+  const bmi = (weightKg / (heightM * heightM)).toFixed(1);
+
+  const age = useMemo(() => {
+    if (!profile.birth_date) return null;
+    const birth = new Date(profile.birth_date);
+    const now = new Date();
+    if (isNaN(birth.getTime())) return null;
+
+    let computedAge = now.getFullYear() - birth.getFullYear();
+    const monthDiff = now.getMonth() - birth.getMonth();
+    if (monthDiff < 0 || (monthDiff === 0 && now.getDate() < birth.getDate())) {
+      computedAge--;
+    }
+    return computedAge >= 0 && computedAge <= 120 ? computedAge : null;
+  }, [profile.birth_date]);
+
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -139,10 +164,15 @@ export function ProfilePage({ isDark, profile: propsProfile, onNavigate, lang, o
   }
 
   return (
-    <div className="flex flex-col gap-6 max-w-2xl mx-auto">
+    <div className="flex flex-col gap-6 max-w-2xl mx-auto pb-36 font-sans">
       {/* Profile Header & Character Showcase */}
       <div className="premium-card p-6 relative overflow-hidden">
         <div className="absolute top-0 right-0 w-40 h-40 bg-primary/5 rounded-full -mr-20 -mt-20 blur-3xl pointer-events-none" />
+
+        <div className="flex items-center justify-between mb-2 relative z-10">
+          <span className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Profil & Character</span>
+          <MiniPipAvatar profile={profile} onProfileUpdate={onProfileUpdate} />
+        </div>
 
         <div className="flex flex-col items-center text-center relative z-10">
           <div className="relative mb-4">
@@ -181,6 +211,54 @@ export function ProfilePage({ isDark, profile: propsProfile, onNavigate, lang, o
             <div className="px-3.5 py-1.5 rounded-2xl bg-amber-500/10 border border-amber-500/20 text-amber-400 text-xs font-bold flex items-center gap-2 shadow-sm">
               <Award size={15} className="text-amber-400" /> Nishonlar: {unlockedTieredCount}/{tieredBadges.length} ta
             </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Anthropometrics / Biometrics Card */}
+      <div
+        onClick={() => setShowBiometricsModal(true)}
+        className="premium-card p-5 cursor-pointer hover:border-emerald-500/30 transition-all active:scale-[0.99] group"
+      >
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2.5">
+            <div className="p-2 rounded-xl bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+              <Activity size={18} />
+            </div>
+            <div>
+              <h3 className="text-sm font-black uppercase tracking-wider text-white group-hover:text-emerald-400 transition-colors">
+                Shaxsiy parametrlar (Bo'y, Vazn, Yosh)
+              </h3>
+              <p className="text-[11px] text-slate-400 font-medium">
+                {heightCm} sm • {weightKg} kg {age !== null ? `• ${age} yosh` : ''} (BMI: {bmi})
+              </p>
+            </div>
+          </div>
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              setShowBiometricsModal(true);
+            }}
+            className="px-3 py-1.5 rounded-xl bg-emerald-500/10 text-emerald-400 font-bold text-xs border border-emerald-500/20 hover:bg-emerald-500/20 transition-all cursor-pointer flex items-center gap-1 shrink-0"
+          >
+            <Edit3 size={13} /> Tahrirlash
+          </button>
+        </div>
+        <div className="grid grid-cols-3 gap-2.5 mt-4">
+          <div className="p-3 rounded-2xl bg-slate-900/60 border border-slate-800/80 text-center">
+            <span className="text-[10px] font-['Geist_Mono',monospace] font-mono uppercase text-slate-400 block mb-0.5">Bo'y</span>
+            <p className="text-sm font-bold font-['Geist_Mono',monospace] font-mono text-emerald-400">{heightCm} sm</p>
+          </div>
+          <div className="p-3 rounded-2xl bg-slate-900/60 border border-slate-800/80 text-center">
+            <span className="text-[10px] font-['Geist_Mono',monospace] font-mono uppercase text-slate-400 block mb-0.5">Vazn</span>
+            <p className="text-sm font-bold font-['Geist_Mono',monospace] font-mono text-emerald-400">{weightKg} kg</p>
+          </div>
+          <div className="p-3 rounded-2xl bg-slate-900/60 border border-slate-800/80 text-center">
+            <span className="text-[10px] font-['Geist_Mono',monospace] font-mono uppercase text-slate-400 block mb-0.5">
+              {age !== null ? `${age} yosh` : "BMI"}
+            </span>
+            <p className="text-sm font-bold font-['Geist_Mono',monospace] font-mono text-emerald-400">{bmi}</p>
           </div>
         </div>
       </div>
@@ -326,6 +404,101 @@ export function ProfilePage({ isDark, profile: propsProfile, onNavigate, lang, o
         </div>
       </div>
 
+      {/* Help & Support Section */}
+      <div className="premium-card p-5">
+        <div className="flex items-center gap-2.5 mb-4">
+          <div className="p-2 rounded-xl bg-cyan-500/10 text-cyan-400 border border-cyan-500/20">
+            <HelpCircle size={18} />
+          </div>
+          <div>
+            <h3 className="text-sm font-black uppercase tracking-wider text-white">Yordam va Aloqa</h3>
+            <p className="text-[11px] text-slate-400 font-medium">Qo'llab-quvvatlash va fikr-mulohazalar</p>
+          </div>
+        </div>
+
+        <div className="space-y-3">
+          {/* Row 1: Feedback */}
+          <motion.div
+            whileHover={{ scale: 1.01 }}
+            whileTap={{ scale: 0.98 }}
+            onClick={() => setShowFeedbackModal(true)}
+            className="rounded-2xl bg-slate-900/60 border border-slate-800/80 p-4 hover:border-slate-700/80 transition-all flex items-center justify-between gap-3 cursor-pointer group"
+          >
+            <div className="flex items-center gap-3.5 min-w-0">
+              <div className="w-10 h-10 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400 shrink-0">
+                <MessageSquarePlus size={20} />
+              </div>
+              <div className="min-w-0">
+                <h4 className="text-xs font-bold text-white group-hover:text-emerald-400 transition-colors truncate">
+                  Fikr va taklif bildirish
+                </h4>
+                <p className="text-[11px] text-slate-400 truncate mt-0.5">
+                  Muammo yoki takliflaringizni yuboring
+                </p>
+              </div>
+            </div>
+            <ChevronRight size={18} className="text-slate-500 group-hover:text-emerald-400 transition-colors shrink-0" />
+          </motion.div>
+
+          {/* Row 2: Support */}
+          <motion.div
+            whileHover={{ scale: 1.01 }}
+            whileTap={{ scale: 0.98 }}
+            onClick={() => window.open('https://t.me/tracker_support_bot', '_blank')}
+            className="rounded-2xl bg-slate-900/60 border border-slate-800/80 p-4 hover:border-slate-700/80 transition-all flex items-center justify-between gap-3 cursor-pointer group"
+          >
+            <div className="flex items-center gap-3.5 min-w-0">
+              <div className="w-10 h-10 rounded-xl bg-cyan-500/10 border border-cyan-500/20 flex items-center justify-center text-cyan-400 shrink-0">
+                <Send size={20} />
+              </div>
+              <div className="min-w-0">
+                <h4 className="text-xs font-bold text-white group-hover:text-cyan-400 transition-colors truncate">
+                  Biz bilan bog'lanish
+                </h4>
+                <p className="text-[11px] text-slate-400 truncate mt-0.5">
+                  Telegram qo'llab-quvvatlash xizmati
+                </p>
+              </div>
+            </div>
+            <ExternalLink size={16} className="text-slate-500 group-hover:text-cyan-400 transition-colors shrink-0" />
+          </motion.div>
+
+          {/* Row 3: Guide */}
+          <motion.div
+            whileHover={{ scale: 1.01 }}
+            whileTap={{ scale: 0.98 }}
+            onClick={() => setShowGuideModal(true)}
+            className="rounded-2xl bg-slate-900/60 border border-slate-800/80 p-4 hover:border-slate-700/80 transition-all flex items-center justify-between gap-3 cursor-pointer group"
+          >
+            <div className="flex items-center gap-3.5 min-w-0">
+              <div className="w-10 h-10 rounded-xl bg-purple-500/10 border border-purple-500/20 flex items-center justify-center text-purple-400 shrink-0">
+                <BookOpen size={20} />
+              </div>
+              <div className="min-w-0">
+                <h4 className="text-xs font-bold text-white group-hover:text-purple-400 transition-colors truncate">
+                  Qo'llanma va FAQ
+                </h4>
+                <p className="text-[11px] text-slate-400 truncate mt-0.5">
+                  XP, tangalar va Health Connect haqida
+                </p>
+              </div>
+            </div>
+            <ChevronRight size={18} className="text-slate-500 group-hover:text-purple-400 transition-colors shrink-0" />
+          </motion.div>
+        </div>
+      </div>
+
+      {/* Biometrics Onboarding / Edit Modal */}
+      {showBiometricsModal && (
+        <BiometricsOnboardingModal
+          isOpen={showBiometricsModal}
+          onClose={() => setShowBiometricsModal(false)}
+          profile={profile}
+          onProfileUpdate={onProfileUpdate}
+          allowDismiss={true}
+        />
+      )}
+
       {/* Shop Modal */}
       {showShop && (
         <CoinShopModal
@@ -347,6 +520,24 @@ export function ProfilePage({ isDark, profile: propsProfile, onNavigate, lang, o
         profile={profile}
         stats={statsForBadges}
       />
+
+      {/* Feedback Modal */}
+      {showFeedbackModal && (
+        <FeedbackModal
+          isOpen={showFeedbackModal}
+          onClose={() => setShowFeedbackModal(false)}
+          isDark={isDark}
+          profile={profile}
+        />
+      )}
+
+      {/* Guide & FAQ Modal */}
+      {showGuideModal && (
+        <GuideModal
+          isOpen={showGuideModal}
+          onClose={() => setShowGuideModal(false)}
+        />
+      )}
     </div>
   );
 }

@@ -1,5 +1,6 @@
 package com.tracker.app;
 
+import android.content.pm.ApplicationInfo;
 import android.os.Bundle;
 import android.webkit.WebView;
 import com.getcapacitor.BridgeActivity;
@@ -12,8 +13,13 @@ public class MainActivity extends BridgeActivity {
         registerPlugin(LocalNotificationsPlugin.class);
         registerPlugin(GoogleAuth.class);
         super.onCreate(savedInstanceState);
-        // Clear cache on startup for development to avoid stale asset issues
-        WebView webView = this.bridge.getWebView();
-        webView.clearCache(true);
+        
+        boolean isDebug = (0 != (getApplicationInfo().flags & ApplicationInfo.FLAG_DEBUGGABLE));
+        if (isDebug) {
+            WebView webView = this.bridge.getWebView();
+            if (webView != null) {
+                webView.clearCache(true);
+            }
+        }
     }
 }

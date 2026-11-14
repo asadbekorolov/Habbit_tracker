@@ -1,13 +1,21 @@
-import { useState, useEffect, useMemo } from "react";
-import { ChevronLeft, ChevronRight, Loader2, NotebookText } from "lucide-react";
+import { useState, useMemo } from "react";
+import { Loader2, NotebookText, Maximize2, CalendarDays, AlertCircle } from "lucide-react";
 import { HabitIcon } from "../../components/HabitIcon";
-import { getHabitStatusColor, getHabits, getMonthLogs, getMonthNotes } from "../../services/db";
+import { useHabitsQuery, useLogsRangeQuery, useMonthNotesQuery } from "../../hooks/queries";
 import type { Profile } from "../../services/supabase";
-import { toDateStr } from "../../utils/date";
+import { tashkentTodayAnchor, toDateStr } from "../../utils/date";
 import { useLang } from "../../store/LangContext";
 import { MONTHS_FULL, DAYS_SHORT, DAYS_FULL } from "../../utils/i18n";
+import { FullScreenMonthlyMatrixModal } from "../../components/FullScreenMonthlyMatrixModal";
+import { useHaptics } from "../../hooks/useHaptics";
 
-const MOOD_MAP: Record<number, string> = { 1: "MoodTerrible", 2: "MoodBad", 3: "MoodNormal", 4: "MoodGood", 5: "MoodExcellent" };
+const MOOD_MAP: Record<number, string> = {
+  1: "MoodTerrible",
+  2: "MoodBad",
+  3: "MoodNormal",
+  4: "MoodGood",
+  5: "MoodExcellent",
+};
 
 interface MonthGridProps {
   isDark: boolean;
@@ -16,101 +24,99 @@ interface MonthGridProps {
 
 export function MonthGrid({ isDark, profile }: MonthGridProps) {
   const { t, lang } = useLang();
-  const now = new Date();
+  const haptics = useHaptics();
+
+  const now = tashkentTodayAnchor();
   const [year, setYear] = useState(now.getFullYear());
   const [month, setMonth] = useState(now.getMonth() + 1);
-  const [habits, setHabits] = useState<any[]>([]);
-  const [logs, setLogs] = useState<{ habit_id: string; log_date: string; completed: boolean }[]>([]);
-  const [notes, setNotes] = useState<{ note_date: string; content: string; mood: number | null }[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
   const today = toDateStr(now);
 
-  useEffect(() => {
-    load();
-  }, [profile.id, year, month]);
+  // Oy oralig'i: 1-kundan oxirgi kungacha (React Query keshi orqali).
+  const monthFrom = `${year}-${String(month).padStart(2, "0")}-01`;
+  const monthTo = `${year}-${String(month).padStart(2, "0")}-${String(new Date(year, month, 0).getDate()).padStart(2, "0")}`;
+  const habitsQ = useHabitsQuery(profile.id);
+  const logsQ = useLogsRangeQuery(profile.id, monthFrom, monthTo);
+  const notesQ = useMonthNotesQuery(profile.id, year, month);
 
-  async function load() {
-    setLoading(true);
-    setError("");
-    try {
-      const [habitsData, logsData, notesData] = await Promise.all([
-        getHabits(profile.id),
-        getMonthLogs(profile.id, year, month),
-        getMonthNotes(profile.id, year, month),
-      ]);
-      setHabits(habitsData || []);
-      setLogs(logsData || []);
-      setNotes(((notesData || []) as any[]).filter((n) => n.content && n.content.trim().length > 0));
-    } catch {
-      setError(t('err_loading'));
-    }
-    finally { setLoading(false); }
-  }
+  const habits: any[] = habitsQ.data || [];
+  const logs: { habit_id: string; log_date: string; completed: boolean }[] = logsQ.data || [];
+  const notes: { note_date: string; content: string; mood: number | null }[] = useMemo(
+    () => ((notesQ.data || []) as any[]).filter((n) => n.content && n.content.trim().length > 0),
+    [notesQ.data]
+  );
+  const loading = habitsQ.isPending || logsQ.isPending || notesQ.isPending;
+  const error = (habitsQ.isError && !habitsQ.data) || (logsQ.isError && !logsQ.data)
+    ? (t("err_loading") || "Ma'lumotlarni yuklashda xatolik yuz berdi")
+    : "";
 
-  const daysInMonth = new Date(year, month, 0).getDate();
-
-  // "habitId_date" -> completed (true = good outcome: Done/Avoided,
-  // false = bad outcome: Missed/Broken). Row absence = no data (pending).
-  // completed:true always means "good" for both habit types since
-  // toggleHabit/markHabitMissed (positive) and markNegativeHabit
-  // (negative) share the exact same completed-boolean semantics.
+  // Map "habitId_date" -> completed status
   const statusMap = useMemo(() => {
     const m = new Map<string, boolean>();
     for (const l of logs) m.set(`${l.habit_id}_${l.log_date}`, l.completed);
     return m;
   }, [logs]);
 
-  const getCellBackground = (status: boolean | undefined, future: boolean) => {
-    if (future) return "transparent";
-    if (status !== undefined) return getHabitStatusColor(status);
-    return isDark ? "rgba(255,255,255,0.07)" : "rgba(0,0,0,0.08)";
-  };
-
   function prevMonth() {
-    if (month === 1) { setYear(y => y - 1); setMonth(12); }
-    else setMonth(m => m - 1);
+    if (month === 1) {
+      setYear((y) => y - 1);
+      setMonth(12);
+    } else {
+      setMonth((m) => m - 1);
+    }
   }
+
   function nextMonth() {
     const canGoNext = year < now.getFullYear() || (year === now.getFullYear() && month < now.getMonth() + 1);
     if (!canGoNext) return;
-    if (month === 12) { setYear(y => y + 1); setMonth(1); }
-    else setMonth(m => m + 1);
+    if (month === 12) {
+      setYear((y) => y + 1);
+      setMonth(1);
+    } else {
+      setMonth((m) => m + 1);
+    }
   }
 
   const isCurrentMonth = year === now.getFullYear() && month === now.getMonth() + 1;
-  const isFutureDay = (day: number) => {
-    const d = `${year}-${String(month).padStart(2,'0')}-${String(day).padStart(2,'0')}`;
-    return d > today;
-  };
-  const isToday = (day: number) => {
-    return `${year}-${String(month).padStart(2,'0')}-${String(day).padStart(2,'0')}` === today;
-  };
 
-  // Completion % per day
-  const dayPercent = (day: number) => {
-    if (habits.length === 0) return 0;
-    const dateStr = `${year}-${String(month).padStart(2,'0')}-${String(day).padStart(2,'0')}`;
-    const done = habits.filter(h => statusMap.get(`${h.id}_${dateStr}`) === true).length;
-    return Math.round((done / habits.length) * 100);
-  };
+  // Last 7 days preview calculation for compact summary card
+  const last7Days = useMemo(() => {
+    const result = [];
+    for (let i = 6; i >= 0; i--) {
+      const d = new Date(now);
+      d.setDate(d.getDate() - i);
+      const dateStr = toDateStr(d);
+      const dayLabel = DAYS_SHORT[lang][d.getDay()];
+      const isFuture = dateStr > today;
+      const isToday = dateStr === today;
+
+      let percent = 0;
+      if (habits.length > 0) {
+        const done = habits.filter((h) => statusMap.get(`${h.id}_${dateStr}`) === true).length;
+        percent = Math.round((done / habits.length) * 100);
+      }
+
+      result.push({
+        dateStr,
+        dayLabel,
+        isFuture,
+        isToday,
+        percent,
+      });
+    }
+    return result;
+  }, [habits, statusMap, today, lang]);
 
   const sortedNotes = useMemo(
     () => [...notes].sort((a, b) => b.note_date.localeCompare(a.note_date)),
     [notes]
   );
 
-  const cardStyle: React.CSSProperties = {
-    background: isDark ? "rgba(22,27,34,0.85)" : "var(--card)",
-    border: `1px solid ${isDark ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.07)"}`,
-    borderRadius: 14,
-  };
-
   if (loading) {
     return (
       <div className="flex items-center justify-center h-48">
-        <Loader2 size={22} className="animate-spin" style={{ color: "var(--neon-green)" }} />
+        <Loader2 size={22} className="animate-spin text-emerald-400" />
       </div>
     );
   }
@@ -118,9 +124,12 @@ export function MonthGrid({ isDark, profile }: MonthGridProps) {
   if (error) {
     return (
       <div className="flex flex-col items-center justify-center h-48 gap-2">
-        <p className="text-sm" style={{ color: "var(--coral-red)" }}>⚠ {error}</p>
-        <button onClick={load} className="text-xs underline" style={{ color: "var(--muted-foreground)" }}>
-          {t('retry')}
+        <div className="flex items-center gap-2 text-rose-400 text-xs font-medium">
+          <AlertCircle className="w-4 h-4" />
+          <span>{error}</span>
+        </div>
+        <button type="button" onClick={() => { habitsQ.refetch(); logsQ.refetch(); notesQ.refetch(); }} className="text-xs text-slate-400 underline cursor-pointer">
+          Qayta urinish
         </button>
       </div>
     );
@@ -128,251 +137,145 @@ export function MonthGrid({ isDark, profile }: MonthGridProps) {
 
   return (
     <div className="flex flex-col gap-4">
-    <div style={cardStyle} className="p-5">
-      {/* Month nav */}
-      <div className="flex items-center justify-between mb-5">
-        <button
-          onClick={prevMonth}
-          className="p-1.5 rounded-lg"
-          style={{ background: isDark ? "rgba(255,255,255,0.06)" : "#F3F4F6" }}
-        >
-          <ChevronLeft size={16} style={{ color: "var(--foreground)" }} />
-        </button>
-        <div className="text-center">
-          <p className="text-sm font-semibold" style={{ color: "var(--foreground)" }}>
-            {MONTHS_FULL[lang][month - 1]} {year}
-          </p>
-          <p className="text-xs mt-0.5" style={{ color: "var(--muted-foreground)" }}>
-            {habits.length} {t('month_positive_habits')}
-          </p>
-        </div>
-        <button
-          onClick={nextMonth}
-          disabled={isCurrentMonth}
-          className="p-1.5 rounded-lg"
-          style={{
-            background: isDark ? "rgba(255,255,255,0.06)" : "#F3F4F6",
-            opacity: isCurrentMonth ? 0.3 : 1,
-          }}
-        >
-          <ChevronRight size={16} style={{ color: "var(--foreground)" }} />
-        </button>
-      </div>
+      {/* 1. Inline Compact Preview in "Oy" Tab */}
+      <div
+        onClick={() => {
+          haptics.impactLight();
+          setIsModalOpen(true);
+        }}
+        className="bg-slate-900/50 border border-slate-800/80 rounded-2xl p-4 mb-4 backdrop-blur-xl shadow-xl space-y-3.5 hover:border-slate-700/80 transition-all cursor-pointer relative overflow-hidden group"
+      >
+        {/* Background Ambient Glow */}
+        <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-500/5 rounded-full blur-2xl pointer-events-none" />
 
-      {habits.length === 0 ? (
-        <div className="flex flex-col items-center gap-2 py-8">
-          <div className="w-16 h-16 rounded-2xl flex items-center justify-center bg-white/5">
-             <HabitIcon emoji="Zap" size={32} noWrapper color="#4ADE80" />
+        {/* Header: "Oylik tahlil" on left, total active habits count on right in Geist Mono */}
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2.5">
+            <div className="p-2 rounded-xl bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 shrink-0">
+              <CalendarDays className="w-4 h-4 stroke-[2.2]" />
+            </div>
+            <h3 className="text-sm font-bold text-slate-100 tracking-wide">
+              Oylik tahlil
+            </h3>
           </div>
-          <p className="text-sm" style={{ color: "var(--muted-foreground)" }}>
-            {t('month_empty')}
-          </p>
-        </div>
-      ) : (
-        <div className="overflow-x-auto">
-          <table className="w-full border-collapse" style={{ minWidth: habits.length * 50 + 80 }}>
-            <thead>
-              <tr>
-                {/* Day header */}
-                <th
-                  className="text-left pb-2 pr-2"
-                  style={{ width: 44, fontSize: 10, color: "var(--muted-foreground)", fontFamily: "'Geist Mono', monospace" }}
-                >
-                  {t('month_day_col')}
-                </th>
-                {/* Habit headers */}
-                {habits.map((h) => (
-                  <th key={h.id} className="pb-2" style={{ width: 50, minWidth: 50 }}>
-                    <div className="flex flex-col items-center gap-0.5">
-                      <HabitIcon emoji={h.emoji} name={h.name} size={16} noWrapper />
-                      <span
-                        className="text-center leading-tight"
-                        style={{
-                          fontSize: 9,
-                          color: "var(--muted-foreground)",
-                          maxWidth: 48,
-                          overflow: "hidden",
-                          textOverflow: "ellipsis",
-                          whiteSpace: "nowrap",
-                          display: "block",
-                          fontFamily: "'Geist Mono', monospace",
-                        }}
-                        title={h.name}
-                      >
-                        {h.name}
-                      </span>
-                    </div>
-                  </th>
-                ))}
-                {/* % header */}
-                <th
-                  className="pb-2 pl-2 text-right"
-                  style={{ fontSize: 10, color: "var(--muted-foreground)", fontFamily: "'Geist Mono', monospace" }}
-                >
-                  %
-                </th>
-              </tr>
-            </thead>
-            <tbody>
-              {Array.from({ length: daysInMonth }, (_, i) => i + 1).map((day) => {
-                const dateStr = `${year}-${String(month).padStart(2,'0')}-${String(day).padStart(2,'0')}`;
-                const future = isFutureDay(day);
-                const todayRow = isToday(day);
-                const pct = dayPercent(day);
-                const dayOfWeek = new Date(dateStr).getDay();
-                const isWeekend = dayOfWeek === 0 || dayOfWeek === 6;
 
-                return (
-                  <tr
-                    key={day}
-                    style={{
-                      background: todayRow
-                        ? isDark ? "rgba(74,222,128,0.06)" : "rgba(74,222,128,0.05)"
-                        : "transparent",
-                    }}
-                  >
-                    {/* Day number */}
-                    <td className="py-0.5 pr-2">
-                      <div className="flex items-center gap-1">
-                        <span
-                          className="text-xs font-medium"
-                          style={{
-                            fontFamily: "'Geist Mono', monospace",
-                            color: todayRow ? "#4ADE80" : isWeekend ? (isDark ? "rgba(248,113,113,0.7)" : "#EF4444") : "var(--muted-foreground)",
-                            minWidth: 18,
-                          }}
-                        >
-                          {day}
-                        </span>
-                        <span
-                          style={{
-                            fontSize: 9,
-                            color: "var(--muted-foreground)",
-                            opacity: 0.5,
-                            fontFamily: "'Geist Mono', monospace",
-                          }}
-                        >
-                          {DAYS_SHORT[lang][dayOfWeek]}
-                        </span>
-                      </div>
-                    </td>
-
-                    {/* Habit cells — status is undefined (no row: pending),
-                        true (green: Done/Avoided) or false (red: Missed/Broken) */}
-                    {habits.map((h) => {
-                      const status = statusMap.get(`${h.id}_${dateStr}`);
-                      return (
-                        <td key={h.id} className="py-0.5" style={{ textAlign: "center" }}>
-                          <div
-                            className="w-6 h-6 rounded mx-auto"
-                            style={{
-                              background: getCellBackground(status, future),
-                              border: todayRow && status === undefined && !future
-                                ? "1px dashed rgba(74,222,128,0.4)"
-                                : status !== undefined
-                                ? "none"
-                                : future
-                                ? "none"
-                                : `1px solid ${isDark ? "rgba(255,255,255,0.04)" : "rgba(0,0,0,0.06)"}`,
-                            }}
-                          />
-                        </td>
-                      );
-                    })}
-
-                    {/* Percent */}
-                    <td className="py-0.5 pl-2 text-right">
-                      {!future && habits.length > 0 && (
-                        <span
-                          className="text-[10px] font-medium"
-                          style={{
-                            fontFamily: "'Geist Mono', monospace",
-                            color: pct === 100
-                              ? "#4ADE80"
-                              : pct >= 50
-                              ? isDark ? "rgba(255,255,255,0.5)" : "rgba(0,0,0,0.4)"
-                              : pct > 0
-                              ? isDark ? "rgba(248,113,113,0.6)" : "#EF4444"
-                              : isDark ? "rgba(255,255,255,0.15)" : "rgba(0,0,0,0.15)",
-                          }}
-                        >
-                          {pct > 0 ? `${pct}%` : "—"}
-                        </span>
-                      )}
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-
-          {/* Legend */}
-          <div className="flex items-center gap-x-4 gap-y-2 mt-4 pt-3 flex-wrap" style={{ borderTop: `1px solid ${isDark ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.06)"}` }}>
-            <div className="flex items-center gap-1.5">
-              <div className="w-4 h-4 rounded" style={{ background: "#4ADE80" }} />
-              <span className="text-[10px]" style={{ color: "var(--muted-foreground)" }}>{t('done')}</span>
-            </div>
-            <div className="flex items-center gap-1.5">
-              <div className="w-4 h-4 rounded" style={{ background: "#F87171" }} />
-              <span className="text-[10px]" style={{ color: "var(--muted-foreground)" }}>{t('month_broken')}</span>
-            </div>
-            <div className="flex items-center gap-1.5">
-              <div className="w-4 h-4 rounded" style={{ background: isDark ? "rgba(255,255,255,0.07)" : "rgba(0,0,0,0.08)" }} />
-              <span className="text-[10px]" style={{ color: "var(--muted-foreground)" }}>{t('month_not_done')}</span>
-            </div>
-            <div className="flex items-center gap-1.5">
-              <div className="w-4 h-4 rounded" style={{ background: "transparent", border: "1px dashed rgba(74,222,128,0.4)" }} />
-              <span className="text-[10px]" style={{ color: "var(--muted-foreground)" }}>{t('today')}</span>
-            </div>
+          <div className="font-['Geist_Mono',monospace] font-mono text-xs font-bold text-emerald-400 bg-emerald-950/40 border border-emerald-500/20 px-2.5 py-1 rounded-full uppercase tracking-wide">
+            {habits.length} TA ODAT
           </div>
         </div>
-      )}
-    </div>
 
-    {/* Monthly journal notes — scrollable, read-only summary of every
-        daily_notes entry with content in the selected month */}
-    <div style={cardStyle} className="p-5">
-      <div className="flex items-center gap-2 mb-4">
-        <NotebookText size={16} style={{ color: "#A78BFA" }} />
-        <div>
-          <p className="text-sm font-semibold" style={{ color: "var(--foreground)" }}>
-            {t('month_journal_title')}
-          </p>
-          <p className="text-xs mt-0.5" style={{ color: "var(--muted-foreground)" }}>
-            {sortedNotes.length} {t('month_journal_count')}
-          </p>
+        {/* Horizontal completion summary + "Oynani ochish" button featuring Lucide Maximize2 */}
+        <div className="flex items-center justify-between gap-3 pt-1 border-t border-slate-800/60">
+          <div className="text-xs text-slate-400 font-medium truncate">
+            {MONTHS_FULL[lang][month - 1]} {year} ko'rsatkichlari
+          </div>
+
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              haptics.impactLight();
+              setIsModalOpen(true);
+            }}
+            className="px-3 py-1.5 rounded-xl bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/30 text-emerald-400 font-bold text-xs flex items-center gap-1.5 transition-all active:scale-95 shrink-0 cursor-pointer"
+          >
+            <Maximize2 className="w-3.5 h-3.5 stroke-[2.2]" />
+            <span>Oynani ochish</span>
+          </button>
         </div>
-      </div>
 
-      {sortedNotes.length === 0 ? (
-        <p className="text-sm text-center py-6" style={{ color: "var(--muted-foreground)" }}>
-          {t('month_journal_empty')}
-        </p>
-      ) : (
-        <div className="flex flex-col gap-3 overflow-y-auto" style={{ maxHeight: 420 }}>
-          {sortedNotes.map((n) => {
-            const d = new Date(n.note_date + "T00:00:00");
-            return (
-              <div
-                key={n.note_date}
-                className="p-3.5 rounded-xl"
-                style={{ background: isDark ? "rgba(255,255,255,0.03)" : "#F9FAFB", border: `1px solid ${isDark ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.06)"}` }}
-              >
-                <div className="flex items-center justify-between mb-1.5">
-                  <span className="text-xs font-semibold" style={{ color: "var(--foreground)", fontFamily: "'Geist Mono', monospace" }}>
-                    {d.getDate()} {MONTHS_FULL[lang][d.getMonth()].slice(0, 3)} · {DAYS_FULL[lang][d.getDay()]}
+        {/* Mini 7-Day Completion Summary Row */}
+        {habits.length > 0 && (
+          <div className="grid grid-cols-7 gap-1.5 pt-1">
+            {last7Days.map((d) => {
+              const pct = d.percent;
+              return (
+                <div key={d.dateStr} className="flex flex-col items-center gap-1">
+                  <span className={`text-[10px] font-['Geist_Mono',monospace] font-mono ${d.isToday ? "text-emerald-400 font-bold" : "text-slate-400"}`}>
+                    {d.dayLabel}
                   </span>
-                  {n.mood != null && <HabitIcon emoji={MOOD_MAP[n.mood]} size={16} noWrapper />}
+                  <div
+                    className={`w-full h-7 rounded-lg flex items-center justify-center font-['Geist_Mono',monospace] font-mono text-[10px] font-bold transition-all ${
+                      d.isFuture
+                        ? "bg-slate-900/30 border border-slate-800/40 text-slate-600"
+                        : pct === 100
+                        ? "bg-emerald-500 text-slate-950 shadow-sm"
+                        : pct >= 50
+                        ? "bg-emerald-950/60 border border-emerald-500/40 text-emerald-300"
+                        : pct > 0
+                        ? "bg-rose-500/20 border border-rose-500/40 text-rose-300"
+                        : "bg-slate-800/40 border border-slate-800/70 text-slate-500"
+                    }`}
+                  >
+                    {!d.isFuture ? `${pct}%` : "—"}
+                  </div>
                 </div>
-                <p className="text-sm leading-relaxed whitespace-pre-wrap" style={{ color: "var(--muted-foreground)" }}>
-                  {n.content}
-                </p>
-              </div>
-            );
-          })}
+              );
+            })}
+          </div>
+        )}
+      </div>
+
+      {/* Full-Screen Monthly Matrix Modal */}
+      <FullScreenMonthlyMatrixModal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        year={year}
+        month={month}
+        onPrevMonth={prevMonth}
+        onNextMonth={nextMonth}
+        isCurrentMonth={isCurrentMonth}
+        habits={habits}
+        logs={logs}
+        today={today}
+      />
+
+      {/* Monthly Notes Summary Card */}
+      <div className="p-4 sm:p-5 rounded-2xl bg-slate-900/50 border border-slate-800/80 backdrop-blur-xl shadow-xl space-y-4">
+        <div className="flex items-center gap-2.5 pb-2 border-b border-slate-800/80">
+          <div className="p-2 rounded-xl bg-purple-500/10 text-purple-400 border border-purple-500/20 shrink-0">
+            <NotebookText className="w-4 h-4 stroke-[2.2]" />
+          </div>
+          <div>
+            <h4 className="text-sm font-bold text-slate-100 tracking-wide">
+              {t("month_journal_title") || "Oy davomidagi qaydlar"}
+            </h4>
+            <p className="text-[11px] font-['Geist_Mono',monospace] font-mono text-slate-400">
+              {sortedNotes.length} TA QAYD
+            </p>
+          </div>
         </div>
-      )}
-    </div>
+
+        {sortedNotes.length === 0 ? (
+          <p className="text-xs text-center py-6 text-slate-500 font-medium">
+            Bu oy uchun hech qanday qaydlar mavjud emas
+          </p>
+        ) : (
+          <div className="flex flex-col gap-2.5 max-h-96 overflow-y-auto pr-1">
+            {sortedNotes.map((n) => {
+              const d = new Date(n.note_date + "T00:00:00");
+              return (
+                <div
+                  key={n.note_date}
+                  className="p-3 rounded-xl bg-slate-950/60 border border-slate-800/80 space-y-1"
+                >
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-['Geist_Mono',monospace] font-mono font-bold text-emerald-400">
+                      {d.getDate()} {MONTHS_FULL[lang][d.getMonth()].slice(0, 3)} · {DAYS_FULL[lang][d.getDay()]}
+                    </span>
+                    {n.mood != null && (
+                      <HabitIcon emoji={MOOD_MAP[n.mood]} size={16} noWrapper />
+                    )}
+                  </div>
+                  <p className="text-xs text-slate-300 leading-relaxed whitespace-pre-wrap font-sans">
+                    {n.content}
+                  </p>
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </div>
     </div>
   );
 }

@@ -1,3 +1,12 @@
+-- ############################################################
+-- !!! ISHGA TUSHIRMANG / DO NOT RUN !!!
+-- Eski, xavfsiz bo'lmagan dastlabki sozlash skripti. Faqat tarix uchun saqlangan.
+-- Qayta ishga tushirilsa: barcha jadvallarga "allow all" RLS siyosatini,
+-- tekshiruvsiz increment_coins/increment_score/spend_coins va
+-- admin tekshiruvisiz toggle_user_ban funksiyalarini QAYTARADI —
+-- 003+ migratsiyalardagi butun xavfsizlik bekor bo'ladi.
+-- ############################################################
+--
 -- ============================================================
 -- Traccer - To'liq bazani sozlash (bir marta ishga tushiring)
 -- Supabase SQL Editor -> New Query -> paste -> Run

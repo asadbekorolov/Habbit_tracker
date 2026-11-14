@@ -5,6 +5,7 @@ import { HabitIcon, cleanHabitName } from "./HabitIcon";
 import { getHabitCategory, getCategoryTheme } from "../utils/categoryTheme";
 import type { Habit } from "../services/supabase";
 import { useLang } from "../store/LangContext";
+import { useScrollLock } from "../hooks/useScrollLock";
 
 interface QuickLogMinutesModalProps {
   isDark?: boolean;
@@ -35,11 +36,7 @@ export function QuickLogMinutesModal({
   const category = getHabitCategory(habit.name, habit.emoji);
   const theme = getCategoryTheme(category);
 
-  // Prevent background scrolling
-  useEffect(() => {
-    document.body.style.overflow = 'hidden';
-    return () => { document.body.style.overflow = 'unset'; };
-  }, []);
+  useScrollLock(true);
 
   const handleSave = async () => {
     setSaving(true);
@@ -60,14 +57,14 @@ export function QuickLogMinutesModal({
   const setMax = () => setCurrentValue(target);
 
   return (
-    <div role="dialog" aria-modal="true" className="fixed inset-0 z-[60] flex items-end sm:items-center justify-center p-0 sm:p-4">
+    <div role="dialog" aria-modal="true" className="fixed inset-0 z-[60] flex items-end sm:items-center justify-center p-0 sm:p-4 overscroll-contain touch-none">
       {/* Backdrop */}
       <motion.div
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
         onClick={onClose}
-        className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+        className="absolute inset-0 bg-black/75 backdrop-blur-sm"
       />
 
       {/* Sheet */}
@@ -76,7 +73,7 @@ export function QuickLogMinutesModal({
         animate={{ y: 0 }}
         exit={{ y: "100%" }}
         transition={{ type: "spring", damping: 25, stiffness: 200 }}
-        className="w-full sm:max-w-md bg-[#0D1117] border-t sm:border border-white/10 rounded-t-[2.5rem] sm:rounded-3xl p-6 sm:p-8 relative z-10"
+        className="w-full sm:max-w-md bg-[#0D1117] border-t sm:border border-white/10 rounded-t-[2.5rem] sm:rounded-3xl p-6 sm:p-8 relative z-10 max-h-[85vh] overflow-y-auto overscroll-contain touch-pan-y"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Handle for mobile */}

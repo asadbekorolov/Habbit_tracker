@@ -7,6 +7,7 @@ import {
   ChevronDown, ChevronUp, Bell, BellOff, Plus, Clock
 } from 'lucide-react';
 import { useLang } from '../store/LangContext';
+import { useScrollLock } from '../hooks/useScrollLock';
 import { CustomTimePickerModal } from './CustomTimePickerModal';
 
 const ICON_PALETTE = [
@@ -44,6 +45,7 @@ export const AddHabitModal: React.FC<AddHabitModalProps> = ({
   isOpen, onClose, onAdd, isDark, initialData
 }) => {
   const { t } = useLang();
+  useScrollLock(isOpen);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
 
@@ -81,6 +83,18 @@ export const AddHabitModal: React.FC<AddHabitModalProps> = ({
     }
   }, [initialData, isOpen]);
 
+  // Keyboard Escape listener for Android hardware back button
+  useEffect(() => {
+    if (!isOpen) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        onClose();
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [isOpen, onClose]);
+
   const handleAdd = async () => {
     if (!newName.trim()) return;
     setSaving(true);
@@ -115,8 +129,7 @@ export const AddHabitModal: React.FC<AddHabitModalProps> = ({
         <div
           role="dialog"
           aria-modal="true"
-          className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4"
-          style={{ background: "rgba(0,0,0,0.6)", backdropFilter: "blur(8px)" }}
+          className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/80 backdrop-blur-md overscroll-contain touch-none"
           onClick={onClose}
         >
           <motion.div
@@ -124,11 +137,7 @@ export const AddHabitModal: React.FC<AddHabitModalProps> = ({
             animate={{ y: 0 }}
             exit={{ y: "100%" }}
             transition={{ type: "spring", damping: 25, stiffness: 200 }}
-            style={{
-              background: isDark ? "#0D1117" : "#FFFFFF",
-              borderTop: isDark ? "1px solid rgba(255,255,255,0.1)" : "none"
-            }}
-            className="w-full sm:max-w-md max-h-[90vh] overflow-y-auto rounded-t-[2.5rem] sm:rounded-3xl p-6 sm:p-8"
+            className="w-full sm:max-w-md max-h-[85vh] overflow-y-auto overscroll-contain touch-pan-y rounded-t-3xl sm:rounded-3xl p-6 sm:p-8 bg-slate-900 border border-slate-800/90 text-white shadow-2xl space-y-6"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex items-center justify-between mb-6">

@@ -1,11 +1,21 @@
 {
-  "appId": "com.traccer.app",
+  "appId": "com.tracker.app",
   "appName": "Tracker",
   "webDir": "dist",
   "server": {
     "androidScheme": "https"
   },
   "plugins": {
+    "SplashScreen": {
+      "launchShowDuration": 2000,
+      "launchAutoHide": true,
+      "backgroundColor": "#090d16",
+      "androidSplashResourceName": "splash",
+      "androidScaleType": "CENTER_CROP",
+      "showSpinner": false,
+      "splashFullScreen": true,
+      "splashImmersive": true
+    },
     "LocalNotifications": {
       "smallIcon": "ic_stat_notification",
       "iconColor": "#10B981"
@@ -16,6 +26,14 @@
         "sound",
         "alert"
       ]
+    },
+    "GoogleAuth": {
+      "scopes": [
+        "profile",
+        "email"
+      ],
+      "serverClientId": "512488053553-tjcrlmg447iupisp9ka3l9u67ip6rhmo.apps.googleusercontent.com",
+      "forceCodeForRefreshToken": true
     }
   }
 }
