@@ -212,10 +212,10 @@ export function HealthPage({}: HealthPageProps) {
     try {
       await upsertHealthLog(profile.id, today, { [editingMetric]: finalVal });
       refreshWeekly();
-      toast.success("Ma'lumot saqlandi");
+      toast.success(t('health_value_saved'));
     } catch (e) {
       console.warn("Background health upsert error:", e);
-      toast.success("Ma'lumot saqlandi (offline)");
+      toast.success(t('health_value_saved_offline'));
     }
 
     setEditingMetric(null);
@@ -372,14 +372,14 @@ export function HealthPage({}: HealthPageProps) {
 
       setTouched(new Set());
       setSaved(true);
-      toast.success("Barcha ko'rsatkichlar saqlandi");
+      toast.success(t('health_all_saved'));
 
       refreshWeekly();
     } catch (dbErr) {
       console.warn("Supabase background sync skipped/failed:", dbErr);
       setTouched(new Set());
       setSaved(true);
-      toast.info("Ma'lumotlar saqlandi (offline)");
+      toast.info(t('health_value_saved_offline'));
     } finally {
       setSaving(false);
       setTimeout(() => setSaved(false), 2500);
@@ -474,9 +474,9 @@ export function HealthPage({}: HealthPageProps) {
       {/* Header Bar */}
       <div className="flex items-center justify-between px-1">
         <div>
-          <h2 className="text-xl font-bold tracking-tight text-white">Salomatlik Tahlili</h2>
+          <h2 className="text-xl font-bold tracking-tight text-white">{t('health_page_title')}</h2>
           <p className="text-xs font-medium text-slate-400 mt-0.5">
-            Bugungi jismoniy ko'rsatkichlar va biometriya
+            {t('health_page_sub')}
           </p>
         </div>
         <button
@@ -511,7 +511,7 @@ export function HealthPage({}: HealthPageProps) {
                 <Footprints className="w-5 h-5 stroke-[2.2]" />
               </div>
               <span className="text-xs font-bold text-slate-200 uppercase tracking-wider">
-                Qadamlar
+                {t('health_steps_title')}
               </span>
             </div>
 
@@ -525,7 +525,7 @@ export function HealthPage({}: HealthPageProps) {
               {stepsVal.toLocaleString("uz-UZ")}
             </span>
             <span className="text-xs font-['Geist_Mono',monospace] font-mono text-slate-400">
-              / 10,000 qadam
+              {t('health_steps_goal')}
             </span>
           </div>
 
@@ -549,7 +549,7 @@ export function HealthPage({}: HealthPageProps) {
                   <Droplets className="w-4 h-4 stroke-[2.2]" />
                 </div>
                 <span className="text-xs font-bold text-slate-200 uppercase tracking-wider">
-                  Suv balansi
+                  {t('health_water_balance')}
                 </span>
               </div>
             </div>
@@ -609,7 +609,7 @@ export function HealthPage({}: HealthPageProps) {
                   <Smartphone className="w-4 h-4 stroke-[2.2]" />
                 </div>
                 <span className="text-xs font-bold text-slate-200 uppercase tracking-wider">
-                  Ekran vaqti
+                  {t('health_screen_time')}
                 </span>
               </div>
             </div>
@@ -621,7 +621,7 @@ export function HealthPage({}: HealthPageProps) {
                 </span>
               </div>
               <p className="text-[11px] font-['Geist_Mono',monospace] font-mono text-slate-400 mt-0.5">
-                Maksimal limit: 4s 0d
+                {t('health_screen_limit')}
               </p>
               <div className="h-1.5 w-full rounded-full bg-slate-800 overflow-hidden mt-2">
                 <div
@@ -632,7 +632,7 @@ export function HealthPage({}: HealthPageProps) {
             </div>
 
             <p className="text-[10px] text-slate-500 font-medium pt-1">
-              Ilovadan foydalanish vaqtini nazorat qiling
+              {t('health_screen_hint')}
             </p>
           </div>
         </div>
@@ -650,7 +650,7 @@ export function HealthPage({}: HealthPageProps) {
         >
           <div className="flex items-center gap-2.5">
             <SlidersHorizontal className="w-4 h-4 text-emerald-400 stroke-[2.2]" />
-            <span>Qo'shimcha ko'rsatkichlar (Uyqu, Kaloriya, Yurak)</span>
+            <span>{t('health_more_metrics')}</span>
           </div>
           {showAdvanced ? (
             <ChevronUp className="w-4 h-4 text-slate-400 stroke-[2]" />
@@ -679,7 +679,7 @@ export function HealthPage({}: HealthPageProps) {
                 <div className="w-8 h-8 rounded-xl bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 flex items-center justify-center shrink-0">
                   <Moon className="w-4 h-4 stroke-[2.2]" />
                 </div>
-                <span className="text-xs font-bold text-slate-200">Chuqur Uyqu</span>
+                <span className="text-xs font-bold text-slate-200">{t('health_deep_sleep')}</span>
               </div>
               <div>
                 <span className="text-lg font-bold font-['Geist_Mono',monospace] font-mono text-white">
@@ -688,7 +688,7 @@ export function HealthPage({}: HealthPageProps) {
                     : "-- soat"}
                 </span>
                 <p className="text-[10px] font-['Geist_Mono',monospace] font-mono text-slate-400 mt-0.5">
-                  Maqsad: 8s 0d
+                  {t('health_sleep_goal')}
                 </p>
               </div>
             </div>
@@ -702,7 +702,7 @@ export function HealthPage({}: HealthPageProps) {
                 <div className="w-8 h-8 rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-400 flex items-center justify-center shrink-0">
                   <Flame className="w-4 h-4 stroke-[2.2]" />
                 </div>
-                <span className="text-xs font-bold text-slate-200">Kaloriyalar</span>
+                <span className="text-xs font-bold text-slate-200">{t('health_calories')}</span>
               </div>
               <div>
                 <span className="text-lg font-bold font-['Geist_Mono',monospace] font-mono text-white">
@@ -711,7 +711,7 @@ export function HealthPage({}: HealthPageProps) {
                     : "-- kkal"}
                 </span>
                 <p className="text-[10px] font-['Geist_Mono',monospace] font-mono text-slate-400 mt-0.5">
-                  Maqsad: 2,500 kkal
+                  {t('health_calories_goal')}
                 </p>
               </div>
             </div>
@@ -725,7 +725,7 @@ export function HealthPage({}: HealthPageProps) {
                 <div className="w-8 h-8 rounded-xl bg-rose-500/10 border border-rose-500/20 text-rose-400 flex items-center justify-center shrink-0">
                   <HeartPulse className="w-4 h-4 stroke-[2.2]" />
                 </div>
-                <span className="text-xs font-bold text-slate-200">Yurak Urishi</span>
+                <span className="text-xs font-bold text-slate-200">{t('health_heart_rate')}</span>
               </div>
               <div>
                 <span className="text-lg font-bold font-['Geist_Mono',monospace] font-mono text-white">
@@ -734,7 +734,7 @@ export function HealthPage({}: HealthPageProps) {
                     : "-- BPM"}
                 </span>
                 <p className="text-[10px] font-['Geist_Mono',monospace] font-mono text-slate-400 mt-0.5">
-                  Me'yor: 60 - 100 BPM
+                  {t('health_heart_norm')}
                 </p>
               </div>
             </div>
@@ -751,7 +751,7 @@ export function HealthPage({}: HealthPageProps) {
           className="w-full flex items-center justify-center gap-2 py-3.5 rounded-2xl bg-gradient-to-r from-emerald-500 to-teal-400 text-slate-950 font-bold text-xs shadow-lg shadow-emerald-500/20 transition-all cursor-pointer"
         >
           {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4 stroke-[2.2]" />}
-          <span>{saving ? "Saqlanmoqda..." : saved ? "Saqlandi!" : "O'zgarishlarni saqlash"}</span>
+          <span>{saving ? t('notes_saving') : saved ? t('health_saved_short') : t('health_save_changes')}</span>
         </motion.button>
       )}
 
@@ -816,9 +816,9 @@ export function HealthPage({}: HealthPageProps) {
       {autoFillHabits.length > 0 && (
         <div className="p-5 rounded-3xl bg-slate-900/60 border border-slate-800/80 backdrop-blur-xl flex flex-col gap-4 shadow-xl">
           <div>
-            <p className="text-xs font-bold text-white uppercase tracking-wider">Avtomatik Sinxronlanadigan Odatlar</p>
+            <p className="text-xs font-bold text-white uppercase tracking-wider">{t('health_auto_habits')}</p>
             <p className="text-[11px] mt-0.5 text-slate-400 font-medium">
-              Biometrik ma'lumotlar bilan bog'liq odatlar
+              {t('health_auto_habits_sub')}
             </p>
           </div>
           {autoFillHabits.map(({ habit, metric }) => {
@@ -864,7 +864,7 @@ export function HealthPage({}: HealthPageProps) {
                   {isAutoFilling ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : (
                     <>
                       <RefreshCw className={`w-3.5 h-3.5 ${isDone ? 'hidden' : ''}`} />
-                      {isDone ? <><Check className="w-3.5 h-3.5 stroke-[3] mr-0.5" /> Bajarildi</> : "Sinxronlash"}
+                      {isDone ? <><Check className="w-3.5 h-3.5 stroke-[3] mr-0.5" /> {t('done')}</> : "Sinxronlash"}
                     </>
                   )}
                 </button>
@@ -908,7 +908,7 @@ export function HealthPage({}: HealthPageProps) {
                   </div>
                   <div>
                     <h3 className="text-base font-bold text-white">{activeEditingMetricDef.label}</h3>
-                    <p className="text-xs text-slate-400 font-mono">Qiymatni o'zgartirish</p>
+                    <p className="text-xs text-slate-400 font-mono">{t('health_edit_value')}</p>
                   </div>
                 </div>
                 <button
@@ -927,7 +927,7 @@ export function HealthPage({}: HealthPageProps) {
                     <input
                       type="number"
                       value={tempValue === '' || tempValue === null ? '' : tempValue}
-                      placeholder={activeEditingMetricDef.key === 'heart_rate' ? "Masalan: 72" : "0"}
+                      placeholder={activeEditingMetricDef.key === 'heart_rate' ? t('health_example_ph') : "0"}
                       onChange={(e) => {
                         const inputVal = e.target.value;
                         setTempVal(inputVal === '' ? '' : parseFloat(inputVal));
@@ -951,7 +951,7 @@ export function HealthPage({}: HealthPageProps) {
                   />
                   <div className="flex justify-between text-[10px] font-bold text-slate-400 font-mono uppercase">
                     <span>0 {activeEditingMetricDef.unit}</span>
-                    <span>Max: {activeEditingMetricDef.max} {activeEditingMetricDef.unit}</span>
+                    <span>{t('health_max')} {activeEditingMetricDef.max} {activeEditingMetricDef.unit}</span>
                   </div>
                 </div>
 
@@ -973,12 +973,12 @@ export function HealthPage({}: HealthPageProps) {
                   ))}
                   {activeEditingMetricDef.key === 'sleep_hours' && [0.5, 1, 7.5].map(v => (
                     <button key={v} type="button" onClick={() => setTempVal(v === 7.5 ? 7.5 : Math.round(((typeof tempValue === 'number' ? tempValue : 0) + v) * 10) / 10)} className="px-3.5 py-1.5 rounded-xl bg-slate-800/60 border border-slate-700/60 text-xs font-mono font-bold text-slate-300 active:scale-95 transition-all cursor-pointer">
-                      {v === 7.5 ? "7.5 soat" : v === 1 ? "+1s" : "+30m"}
+                      {v === 7.5 ? t('health_sleep_ph') : v === 1 ? "+1s" : "+30m"}
                     </button>
                   ))}
                   {activeEditingMetricDef.key === 'calories' && [100, 250, 500].map(v => (
                     <button key={v} type="button" onClick={() => setTempVal(prev => (typeof prev === 'number' ? prev : 0) + v)} className="px-3.5 py-1.5 rounded-xl bg-slate-800/60 border border-slate-700/60 text-xs font-mono font-bold text-slate-300 active:scale-95 transition-all cursor-pointer">
-                      +{v} kkal
+                      +{v} {t('health_kcal')}
                     </button>
                   ))}
                 </div>
@@ -990,14 +990,14 @@ export function HealthPage({}: HealthPageProps) {
                     onClick={() => setEditingMetric(null)}
                     className="flex-1 py-3 rounded-2xl bg-slate-800 text-slate-300 font-semibold text-xs active:scale-95 transition-all cursor-pointer"
                   >
-                    Bekor qilish
+                    {t('cancel')}
                   </button>
                   <button
                     type="button"
                     onClick={saveEditModal}
                     className="flex-1 py-3 rounded-2xl bg-gradient-to-r from-emerald-500 to-teal-400 text-slate-950 font-bold text-xs shadow-lg shadow-emerald-500/20 active:scale-95 transition-all cursor-pointer"
                   >
-                    Saqlash
+                    {t('save')}
                   </button>
                 </div>
               </div>

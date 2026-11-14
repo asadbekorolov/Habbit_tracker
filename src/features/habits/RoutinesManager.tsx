@@ -16,6 +16,8 @@ import {
 import { RoutineModal } from "../../components/RoutineModal";
 import { useHaptics } from "../../hooks/useHaptics";
 import { useRoutines } from "../../hooks/useRoutines";
+import { useLang } from "../../store/LangContext";
+import { DAYS_SHORT } from "../../utils/i18n";
 
 interface RoutinesManagerProps {
   profile: Profile;
@@ -37,11 +39,13 @@ const ROUTINE_ICONS: Record<string, React.ElementType> = {
   Shield,
 };
 
-const DAY_LABELS = ["", "Du", "Se", "Chor", "Pay", "Ju", "Shan", "Yak"];
+// Kun raqami 1=Dushanba ... 7=Yakshanba; DAYS_SHORT esa 0=Yakshanba.
+const dayLabel = (lang: keyof typeof DAYS_SHORT, d: number) => DAYS_SHORT[lang][d % 7];
 
 export function RoutinesManager({ profile, userHabits }: RoutinesManagerProps) {
   const haptics = useHaptics();
   const queryClient = useQueryClient();
+  const { t, lang } = useLang();
 
   const { data: routinesData = [], isLoading: queryLoading } = useRoutines(profile.id);
   const routines = Array.isArray(routinesData) ? routinesData : [];
@@ -100,7 +104,7 @@ export function RoutinesManager({ profile, userHabits }: RoutinesManagerProps) {
 
     try {
       await deleteRoutine(routineId);
-      toast.success("Kun tartibi o'chirildi");
+      toast.success(t('routine_deleted'));
     } catch (err) {
       console.warn("Silent fallback in handleDeleteRoutine:", err);
     } finally {
@@ -149,12 +153,12 @@ export function RoutinesManager({ profile, userHabits }: RoutinesManagerProps) {
         queryClient.setQueryData<Routine[]>(['routines', profile.id], (old = []) =>
           old.map((r) => (r.id === updated.id ? updated : r))
         );
-        toast.success("Kun tartibi yangilandi!");
+        toast.success(t('routine_updated'));
       } else {
         const created = await createRoutine(profile.id, routineData, items);
         queryClient.setQueryData<Routine[]>(['routines', profile.id], (old = []) => [...old, created]);
         setExpandedRoutineIds((prev) => new Set(prev).add(created.id));
-        toast.success("Yangi kun tartibi yaratildi!");
+        toast.success(t('routine_created'));
       }
     } catch (err: any) {
       console.warn("Save routine warning:", err);
@@ -213,7 +217,7 @@ export function RoutinesManager({ profile, userHabits }: RoutinesManagerProps) {
     }
 
     if (isTemplateAdded(templateData.title)) {
-      toast.warning("Ushbu andoza allaqachon qo'shilgan");
+      toast.warning(t('routine_template_exists'));
       return;
     }
 
@@ -221,10 +225,10 @@ export function RoutinesManager({ profile, userHabits }: RoutinesManagerProps) {
       const created = await createRoutine(profile.id, templateData, itemsData);
       queryClient.setQueryData<Routine[]>(['routines', profile.id], (old = []) => [...old, created]);
       setExpandedRoutineIds((prev) => new Set(prev).add(created.id));
-      toast.success(`"${templateData.title}" tayyor andoza orqali yaratildi!`);
+      toast.success(t('routine_template_created').replace('{title}', templateData.title));
     } catch (err: any) {
       console.warn("Silent fallback - template creation warning:", err?.message || err);
-      toast.success(`"${templateData.title}" tayyor andoza yaratildi!`);
+      toast.success(t('routine_template_created').replace('{title}', templateData.title));
     } finally {
       queryClient.invalidateQueries({ queryKey: ['routines', profile.id] });
     }
@@ -237,10 +241,10 @@ export function RoutinesManager({ profile, userHabits }: RoutinesManagerProps) {
         <div>
           <h2 className="text-lg font-bold text-white flex items-center gap-2">
             <Clock className="w-5 h-5 text-emerald-400 stroke-[2.2]" />
-            Kun Tartibi
+            {t('routine_title')}
           </h2>
           <p className="text-xs text-slate-400">
-            Kun davomidagi takroriy rejalar va vazifalar ketma-ketligi
+            {t('routine_sub')}
           </p>
         </div>
 
@@ -250,7 +254,7 @@ export function RoutinesManager({ profile, userHabits }: RoutinesManagerProps) {
           className="py-2.5 px-4 rounded-2xl bg-emerald-500 hover:bg-emerald-600 active:scale-95 text-slate-950 font-bold text-xs shadow-lg shadow-emerald-500/20 flex items-center justify-center gap-2 transition-all cursor-pointer shrink-0"
         >
           <Plus className="w-4 h-4 stroke-[2.5]" />
-          Kun Tartibini Qo'shish
+          {t('routine_add')}
         </button>
       </div>
 
@@ -258,7 +262,7 @@ export function RoutinesManager({ profile, userHabits }: RoutinesManagerProps) {
       <div className="space-y-2">
         <span className="text-xs font-semibold uppercase tracking-wider text-slate-400 flex items-center gap-1.5">
           <Sparkles className="w-3.5 h-3.5 text-amber-400" />
-          Tezkor Tayyor Andoza Yaratish:
+          {t('routine_quick_templates')}
         </span>
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
           <button
@@ -280,7 +284,7 @@ export function RoutinesManager({ profile, userHabits }: RoutinesManagerProps) {
             </div>
             <div className="flex-1 min-w-0">
               <div className="flex items-center justify-between gap-1">
-                <p className="text-xs font-bold text-white truncate">Tonggi Tartib</p>
+                <p className="text-xs font-bold text-white truncate">{t('routine_tpl_morning')}</p>
                 {isMorningAdded && (
                   <span className="p-0.5 rounded-full bg-emerald-500/20 text-emerald-400 shrink-0">
                     <Check className="w-3.5 h-3.5 stroke-[3]" />
@@ -288,7 +292,7 @@ export function RoutinesManager({ profile, userHabits }: RoutinesManagerProps) {
                 )}
               </div>
               <p className={`text-[11px] font-['Geist_Mono',monospace] font-mono ${isMorningAdded ? "text-emerald-400/90 font-bold" : "text-amber-400/90"}`}>
-                {isMorningAdded ? "Qo'shilgan" : "06:30 - 08:00"}
+                {isMorningAdded ? t('routine_added') : "06:30 - 08:00"}
               </p>
             </div>
           </button>
@@ -312,7 +316,7 @@ export function RoutinesManager({ profile, userHabits }: RoutinesManagerProps) {
             </div>
             <div className="flex-1 min-w-0">
               <div className="flex items-center justify-between gap-1">
-                <p className="text-xs font-bold text-white truncate">Fokus / Ish Tartibi</p>
+                <p className="text-xs font-bold text-white truncate">{t('routine_tpl_focus')}</p>
                 {isFocusAdded && (
                   <span className="p-0.5 rounded-full bg-emerald-500/20 text-emerald-400 shrink-0">
                     <Check className="w-3.5 h-3.5 stroke-[3]" />
@@ -320,7 +324,7 @@ export function RoutinesManager({ profile, userHabits }: RoutinesManagerProps) {
                 )}
               </div>
               <p className={`text-[11px] font-['Geist_Mono',monospace] font-mono ${isFocusAdded ? "text-emerald-400/90 font-bold" : "text-blue-400/90"}`}>
-                {isFocusAdded ? "Qo'shilgan" : "09:00 - 18:00"}
+                {isFocusAdded ? t('routine_added') : "09:00 - 18:00"}
               </p>
             </div>
           </button>
@@ -344,7 +348,7 @@ export function RoutinesManager({ profile, userHabits }: RoutinesManagerProps) {
             </div>
             <div className="flex-1 min-w-0">
               <div className="flex items-center justify-between gap-1">
-                <p className="text-xs font-bold text-white truncate">Kechki Tartib</p>
+                <p className="text-xs font-bold text-white truncate">{t('routine_tpl_evening')}</p>
                 {isEveningAdded && (
                   <span className="p-0.5 rounded-full bg-emerald-500/20 text-emerald-400 shrink-0">
                     <Check className="w-3.5 h-3.5 stroke-[3]" />
@@ -352,7 +356,7 @@ export function RoutinesManager({ profile, userHabits }: RoutinesManagerProps) {
                 )}
               </div>
               <p className={`text-[11px] font-['Geist_Mono',monospace] font-mono ${isEveningAdded ? "text-emerald-400/90 font-bold" : "text-indigo-400/90"}`}>
-                {isEveningAdded ? "Qo'shilgan" : "21:30 - 23:00"}
+                {isEveningAdded ? t('routine_added') : "21:30 - 23:00"}
               </p>
             </div>
           </button>
@@ -369,9 +373,9 @@ export function RoutinesManager({ profile, userHabits }: RoutinesManagerProps) {
           <div className="w-12 h-12 rounded-2xl bg-emerald-500/10 text-emerald-400 flex items-center justify-center mx-auto border border-emerald-500/20">
             <Clock className="w-6 h-6 stroke-[2]" />
           </div>
-          <p className="text-sm font-semibold text-white">Hozircha kun tartiblari mavjud emas</p>
+          <p className="text-sm font-semibold text-white">{t('routine_empty')}</p>
           <p className="text-xs text-slate-400 max-w-sm mx-auto">
-            Yuqoridagi tayyor andozalardan birini tanlang yoki o'zingizning shaxsiy rejangizni yarating!
+            {t('routine_empty_hint')}
           </p>
         </div>
       ) : (
@@ -417,7 +421,7 @@ export function RoutinesManager({ profile, userHabits }: RoutinesManagerProps) {
                             key={d}
                             className="text-[10px] font-semibold px-1.5 py-0.2 rounded bg-slate-800 text-slate-300"
                           >
-                            {DAY_LABELS[d]}
+                            {dayLabel(lang, d)}
                           </span>
                         ))}
                       </div>
@@ -438,7 +442,7 @@ export function RoutinesManager({ profile, userHabits }: RoutinesManagerProps) {
                       type="button"
                       onClick={() => handleDeleteRoutine(routine.id)}
                       className="p-1.5 rounded-xl text-slate-400 hover:text-rose-400 hover:bg-rose-500/10 transition-colors cursor-pointer"
-                      title="O'chirish"
+                      title={t('delete')}
                     >
                       <Trash2 className="w-4 h-4" />
                     </button>
@@ -455,7 +459,7 @@ export function RoutinesManager({ profile, userHabits }: RoutinesManagerProps) {
                 {/* Progress bar */}
                 <div className="space-y-1">
                   <div className="flex justify-between items-center text-[11px] font-semibold text-slate-400">
-                    <span>Bugungi bajarilish</span>
+                    <span>{t('routine_today_progress')}</span>
                     <span className="text-emerald-400 font-['Geist_Mono',monospace] font-mono">
                       {completedCount}/{totalCount} ({progressPercent}%)
                     </span>

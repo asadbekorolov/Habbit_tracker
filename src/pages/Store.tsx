@@ -85,6 +85,10 @@ export const TITLES = [
   { id: "title_legend", name: "Besh Yulduzli Afsona", price: 350, color: "#F59E0B" },
 ];
 
+// Paket va unvon nomlari lug'atdan (id bo'yicha); topilmasa — asl nom.
+const PACK_NAME_KEYS = { pack_small: "store_pack_small", pack_gold: "store_pack_gold", pack_chest: "store_pack_chest" } as const;
+const TITLE_NAME_KEYS = { title_master: "store_title_master", title_legend: "store_title_legend" } as const;
+
 export function Store({ onProfileUpdate, onClose, isModal = false }: StoreProps) {
   const { t } = useLang();
   const { setProfile, updateCoins, refreshUserProfile } = useUser();
@@ -152,7 +156,7 @@ export function Store({ onProfileUpdate, onClose, isModal = false }: StoreProps)
   // Handle Top-Up checkout redirection (Opens Click / Payme payment URL safely)
   async function executeTopUp(pack: TopUpPackage, provider: 'click' | 'payme') {
     setTopUpProcessing(true);
-    toast.info("To'lov sahifasiga o'tilmoqda...", { duration: 3000 });
+    toast.info(t('store_redirecting_payment'), { duration: 3000 });
 
     try {
       const priceNumeric = pack.priceSom.replace(/\D/g, '');
@@ -171,7 +175,7 @@ export function Store({ onProfileUpdate, onClose, isModal = false }: StoreProps)
       setSelectedPack(null);
       setShowTopUpModal(false);
     } catch (e: any) {
-      toast.error(e?.message || "To'lov sahifasiga o'tishda xatolik yuz berdi.");
+      toast.error(e?.message || t('store_payment_redirect_error'));
     } finally {
       setTopUpProcessing(false);
     }
@@ -186,9 +190,9 @@ export function Store({ onProfileUpdate, onClose, isModal = false }: StoreProps)
       setActiveFrame(next);
       setProfile(updated);
       onProfileUpdate?.(updated);
-      toast.success(next ? "Ramka muvaffaqiyatli taqildi!" : "Ramka yechildi.");
+      toast.success(next ? t('store_frame_equipped') : t('store_frame_removed'));
     } catch (e: any) {
-      toast.error(e?.message || "Xatolik yuz berdi.");
+      toast.error(e?.message || t('ep_error'));
     } finally {
       setEquipping(null);
     }
@@ -203,9 +207,9 @@ export function Store({ onProfileUpdate, onClose, isModal = false }: StoreProps)
       setActiveTitle(next);
       setProfile(updated);
       onProfileUpdate?.(updated);
-      toast.success(next ? "Unvon muvaffaqiyatli taqildi!" : "Unvon yechildi.");
+      toast.success(next ? t('store_title_equipped') : t('store_title_removed'));
     } catch (e: any) {
-      toast.error(e?.message || "Xatolik yuz berdi.");
+      toast.error(e?.message || t('ep_error'));
     } finally {
       setEquipping(null);
     }
@@ -214,7 +218,7 @@ export function Store({ onProfileUpdate, onClose, isModal = false }: StoreProps)
   // Handle Generic Buy Action with Confirmation Dialog
   function triggerBuyWithConfirmation(item: ShopItem | any, buyFn: () => Promise<void>) {
     if (currentCoins < item.price) {
-      toast.error("Tangalar yetarli emas! Tanga to'ldirish tugmasini bosing.");
+      toast.error(t('store_not_enough_coins'));
       return;
     }
     setConfirmItem({
@@ -243,9 +247,9 @@ export function Store({ onProfileUpdate, onClose, isModal = false }: StoreProps)
         window.open(item.actionUrl, '_blank');
       }
 
-      toast.success(`"${item.name}" muvaffaqiyatli xarid qilindi!`);
+      toast.success(t('store_item_bought').replace('{name}', item.name));
     } catch (e: any) {
-      toast.error(e?.message || "Xarid qilishda xatolik yuz berdi.");
+      toast.error(e?.message || t('store_purchase_error'));
     } finally {
       setBuying(null);
     }
@@ -264,9 +268,9 @@ export function Store({ onProfileUpdate, onClose, isModal = false }: StoreProps)
       setProfile(updated);
       onProfileUpdate?.(updated);
 
-      toast.success("VIP Status (Yulduz) faollashtirildi!");
+      toast.success(t('store_vip_activated'));
     } catch (e: any) {
-      toast.error(e?.message || "Xatolik yuz berdi.");
+      toast.error(e?.message || t('ep_error'));
     } finally {
       setBuying(null);
     }
@@ -285,9 +289,9 @@ export function Store({ onProfileUpdate, onClose, isModal = false }: StoreProps)
       setProfile(updated);
       onProfileUpdate?.(updated);
 
-      toast.success("Yaltiroq ism effekti faollashtirildi!");
+      toast.success(t('store_glow_activated'));
     } catch (e: any) {
-      toast.error(e?.message || "Xatolik yuz berdi.");
+      toast.error(e?.message || t('ep_error'));
     } finally {
       setBuying(null);
     }
@@ -307,18 +311,18 @@ export function Store({ onProfileUpdate, onClose, isModal = false }: StoreProps)
         setActiveFrame(itemId);
         setProfile(updated);
         onProfileUpdate?.(updated);
-        toast.success("Ramka xarid qilindi va taqildi!");
+        toast.success(t('store_frame_bought'));
       } else if (isTitle) {
         const updated = (await getMyProfile()) || { ...profile, coins: newBalance, active_title: itemId };
         setActiveTitle(itemId);
         setProfile(updated);
         onProfileUpdate?.(updated);
-        toast.success("Unvon xarid qilindi va taqildi!");
+        toast.success(t('store_title_bought'));
       } else {
-        toast.success("Xarid qilindi!");
+        toast.success(t('store_bought'));
       }
     } catch (e: any) {
-      toast.error(e?.message || "Xatolik yuz berdi.");
+      toast.error(e?.message || t('ep_error'));
     } finally {
       setBuying(null);
     }
@@ -329,8 +333,8 @@ export function Store({ onProfileUpdate, onClose, isModal = false }: StoreProps)
     {
       id: "streak_repair",
       category: "buffs",
-      name: "Streak Qutqaruvchi (Tiklash)",
-      desc: "Uzilib qolgan oxirgi seriyangizni (streak) qayta tiklang va natijangizni saqlab qoling!",
+      name: t('store_item_restore_name'),
+      desc: t('store_item_restore_desc'),
       price: 250,
       icon: RotateCcw,
       color: "#10B981",
@@ -341,8 +345,8 @@ export function Store({ onProfileUpdate, onClose, isModal = false }: StoreProps)
     {
       id: "streak_freeze",
       category: "buffs",
-      name: "Streak Qalqoni (1 kun)",
-      desc: "1 kun davomida odat bajarilmasa ham seriyangiz va natijangiz buzilmaydi.",
+      name: t('store_item_shield1_name'),
+      desc: t('store_item_shield1_desc'),
       price: 10,
       icon: Shield,
       color: "#38BDF8",
@@ -353,8 +357,8 @@ export function Store({ onProfileUpdate, onClose, isModal = false }: StoreProps)
     {
       id: "shield_gold_3d",
       category: "buffs",
-      name: "Oltin Qalqon (3 kun)",
-      desc: "3 kunlik ketma-ket himoya va seriyangizni saqlash kafolati.",
+      name: t('store_item_shield3_name'),
+      desc: t('store_item_shield3_desc'),
       price: 25,
       icon: ShieldCheck,
       color: "#F59E0B",
@@ -365,8 +369,8 @@ export function Store({ onProfileUpdate, onClose, isModal = false }: StoreProps)
     {
       id: "xp_booster",
       category: "buffs",
-      name: "XP Booster (2x)",
-      desc: "Keyingi 24 soat davomida bajarilgan har bir odatdan 2 baravar ko'p XP to'plang!",
+      name: t('store_item_xp_name'),
+      desc: t('store_item_xp_desc'),
       price: 100,
       icon: Zap,
       color: "#A855F7",
@@ -377,8 +381,8 @@ export function Store({ onProfileUpdate, onClose, isModal = false }: StoreProps)
     {
       id: "star_badge",
       category: "buffs",
-      name: "VIP Status (Yulduz)",
-      desc: "Profil va reytingda oltin yulduz belgisi hamda 30 kunlik eksklyuziv VIP imtiyozlar.",
+      name: t('store_item_vip_name'),
+      desc: t('store_item_vip_desc'),
       price: 500,
       icon: Star,
       color: "#FBBF24",
@@ -392,8 +396,8 @@ export function Store({ onProfileUpdate, onClose, isModal = false }: StoreProps)
     {
       id: "pdf_focus_guide",
       category: "resources",
-      name: "Fokus & Vaqtni Boshqarish Qo'llanmasi (PDF)",
-      desc: "Proffessional vaqt boshqaruvi va doimiy fokusda bo'lish bo'yicha eksklyuziv qo'llanma.",
+      name: t('store_res_focus_name'),
+      desc: t('store_res_focus_desc'),
       price: 400,
       icon: BookOpen,
       color: "#818CF8",
@@ -406,7 +410,7 @@ export function Store({ onProfileUpdate, onClose, isModal = false }: StoreProps)
       id: "checklist_productivity",
       category: "resources",
       name: "Kunlik Samaradorlik Cheklisti",
-      desc: "Har kungi ishlarni tartibga solish va maksimal natijaga erishish uchun bosqichma-bosqich cheklist.",
+      desc: t('store_res_checklist_desc'),
       price: 150,
       icon: CheckSquare,
       color: "#34D399",
@@ -418,7 +422,7 @@ export function Store({ onProfileUpdate, onClose, isModal = false }: StoreProps)
       id: "telegram_vip_access",
       category: "resources",
       name: "Yopiq Telegram Jamiyatiga Kirish",
-      desc: "O'z ustida ishlaydigan kuchli hamjamiyat va ekspertlar bilan muloqot qiluvchi yopiq guruh.",
+      desc: t('store_res_community_desc'),
       price: 1000,
       icon: Send,
       color: "#38BDF8",
@@ -447,7 +451,7 @@ export function Store({ onProfileUpdate, onClose, isModal = false }: StoreProps)
               <p className="text-xs font-medium text-slate-400 uppercase tracking-wider">{t('profile_coin_shop')}</p>
               <div className="flex items-baseline gap-2 mt-0.5">
                 <span className="text-2xl font-black text-white font-mono">{currentCoins}</span>
-                <span className="text-xs font-bold text-amber-400">tanga</span>
+                <span className="text-xs font-bold text-amber-400">{t('store_coin_unit')}</span>
               </div>
             </div>
           </div>
@@ -459,7 +463,7 @@ export function Store({ onProfileUpdate, onClose, isModal = false }: StoreProps)
             className="px-4 py-2.5 rounded-2xl bg-gradient-to-r from-amber-400 via-amber-500 to-emerald-400 text-slate-950 font-black text-xs flex items-center gap-1.5 shadow-lg shadow-amber-500/20 hover:scale-105 active:scale-95 transition-all cursor-pointer"
           >
             <Plus size={16} strokeWidth={3} />
-            <span>Tanga olish</span>
+            <span>{t('store_get_coins')}</span>
           </button>
         </div>
       </div>
@@ -470,7 +474,7 @@ export function Store({ onProfileUpdate, onClose, isModal = false }: StoreProps)
           { id: "all", label: "Hammasi" },
           { id: "buffs", label: "Qalqonlar" },
           { id: "frames", label: "Ramkalar" },
-          { id: "resources", label: "Bilim & Resurslar" },
+          { id: "resources", label: t('store_tab_resources') },
         ].map((tab) => (
           <button
             key={tab.id}
@@ -492,7 +496,7 @@ export function Store({ onProfileUpdate, onClose, isModal = false }: StoreProps)
           <div>
             <div className="flex items-center gap-2 mb-3">
               <Zap className="w-4 h-4 text-emerald-400" />
-              <h3 className="text-xs font-bold text-slate-300 uppercase tracking-wider">Faol Bufflar va Qalqonlar</h3>
+              <h3 className="text-xs font-bold text-slate-300 uppercase tracking-wider">{t('store_active_buffs')}</h3>
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               {filteredBuffs.map((item) => {
@@ -536,7 +540,7 @@ export function Store({ onProfileUpdate, onClose, isModal = false }: StoreProps)
                       ) : (
                         <>
                           <ShoppingBag className="w-3.5 h-3.5" />
-                          <span>Sotib olish</span>
+                          <span>{t('shop_buy')}</span>
                         </>
                       )}
                     </button>
@@ -552,7 +556,7 @@ export function Store({ onProfileUpdate, onClose, isModal = false }: StoreProps)
           <div>
             <div className="flex items-center gap-2 mb-3">
               <Crown className="w-4 h-4 text-amber-400" />
-              <h3 className="text-xs font-bold text-slate-300 uppercase tracking-wider">Profil Ramkalari & Unvonlar</h3>
+              <h3 className="text-xs font-bold text-slate-300 uppercase tracking-wider">{t('store_frames_titles')}</h3>
             </div>
 
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-3.5 sm:gap-4 mb-6">
@@ -582,7 +586,7 @@ export function Store({ onProfileUpdate, onClose, isModal = false }: StoreProps)
                       <p className="text-xs font-bold text-white tracking-tight mt-3 text-center line-clamp-1">
                         {frame.name}
                       </p>
-                      <p className="text-[11px] text-slate-400 mt-0.5">30 kunlik</p>
+                      <p className="text-[11px] text-slate-400 mt-0.5">{t('store_30_days')}</p>
                     </div>
 
                     {/* Bottom Action Footer */}
@@ -603,10 +607,10 @@ export function Store({ onProfileUpdate, onClose, isModal = false }: StoreProps)
                           ) : isEquipped ? (
                             <>
                               <Check className="w-3.5 h-3.5" />
-                              <span>Taqilgan</span>
+                              <span>{t('store_equipped')}</span>
                             </>
                           ) : (
-                            <span>Taqish</span>
+                            <span>{t('store_equip')}</span>
                           )}
                         </button>
                       ) : (
@@ -621,7 +625,7 @@ export function Store({ onProfileUpdate, onClose, isModal = false }: StoreProps)
                           ) : (
                             <>
                               <Coins className="w-3.5 h-3.5 fill-slate-950" />
-                              <span>{frame.price} · Sotib olish</span>
+                              <span>{frame.price} · {t('shop_buy')}</span>
                             </>
                           )}
                         </button>
@@ -649,14 +653,14 @@ export function Store({ onProfileUpdate, onClose, isModal = false }: StoreProps)
                     <p className="text-xs font-bold text-white truncate" style={getUsernameGlowStyle()}>
                       {profile.display_name || "Yaltiroq Ism Effekti"}
                     </p>
-                    <p className="text-[11px] text-slate-400 truncate mt-0.5">Profil va reytingda yaltiroq ism dizayni</p>
+                    <p className="text-[11px] text-slate-400 truncate mt-0.5">{t('store_glow_desc')}</p>
                   </div>
                 </div>
 
                 <div className="shrink-0">
                   {ownedIds.has(USERNAME_GLOW_ID) ? (
                     <span className="h-9 px-3.5 rounded-xl text-xs font-bold bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 flex items-center gap-1.5 whitespace-nowrap">
-                      <Check className="w-3.5 h-3.5" /> Faol
+                      <Check className="w-3.5 h-3.5" /> {t('store_active')}
                     </span>
                   ) : (
                     <button
@@ -670,7 +674,7 @@ export function Store({ onProfileUpdate, onClose, isModal = false }: StoreProps)
                       ) : (
                         <>
                           <Coins className="w-3.5 h-3.5 fill-slate-950" />
-                          <span>{USERNAME_GLOW_PRICE} · Sotib olish</span>
+                          <span>{USERNAME_GLOW_PRICE} · {t('shop_buy')}</span>
                         </>
                       )}
                     </button>
@@ -694,8 +698,8 @@ export function Store({ onProfileUpdate, onClose, isModal = false }: StoreProps)
                         <Award className="w-5 h-5" />
                       </div>
                       <div className="min-w-0">
-                        <p className="text-xs font-bold text-white truncate">{tItem.name}</p>
-                        <p className="text-[11px] text-slate-400 truncate mt-0.5">Eksklyuziv unvon va maqom</p>
+                        <p className="text-xs font-bold text-white truncate">{tItem.id in TITLE_NAME_KEYS ? t(TITLE_NAME_KEYS[tItem.id as keyof typeof TITLE_NAME_KEYS]) : tItem.name}</p>
+                        <p className="text-[11px] text-slate-400 truncate mt-0.5">{t('store_title_desc')}</p>
                       </div>
                     </div>
 
@@ -716,10 +720,10 @@ export function Store({ onProfileUpdate, onClose, isModal = false }: StoreProps)
                           ) : isEquipped ? (
                             <>
                               <Check className="w-3.5 h-3.5" />
-                              <span>Taqilgan</span>
+                              <span>{t('store_equipped')}</span>
                             </>
                           ) : (
-                            <span>Taqish</span>
+                            <span>{t('store_equip')}</span>
                           )}
                         </button>
                       ) : (
@@ -734,7 +738,7 @@ export function Store({ onProfileUpdate, onClose, isModal = false }: StoreProps)
                           ) : (
                             <>
                               <Coins className="w-3.5 h-3.5 fill-slate-950" />
-                              <span>{tItem.price} · Sotib olish</span>
+                              <span>{tItem.price} · {t('shop_buy')}</span>
                             </>
                           )}
                         </button>
@@ -752,7 +756,7 @@ export function Store({ onProfileUpdate, onClose, isModal = false }: StoreProps)
           <div>
             <div className="flex items-center gap-2 mb-3">
               <BookOpen className="w-4 h-4 text-indigo-400" />
-              <h3 className="text-xs font-bold text-slate-300 uppercase tracking-wider">Bilim & Raqamli Resurslar</h3>
+              <h3 className="text-xs font-bold text-slate-300 uppercase tracking-wider">{t('store_digital_resources')}</h3>
             </div>
 
             <div className="grid grid-cols-1 gap-3">
@@ -783,11 +787,11 @@ export function Store({ onProfileUpdate, onClose, isModal = false }: StoreProps)
                           type="button"
                           onClick={() => {
                             if (item.actionUrl) window.open(item.actionUrl, '_blank');
-                            else toast.success("Raqamli mahsulot xarid qilingan!");
+                            else toast.success(t('store_digital_bought'));
                           }}
                           className="px-3.5 py-2 rounded-xl text-xs font-bold bg-emerald-500/20 text-emerald-400 border border-emerald-500/40 flex items-center gap-1.5"
                         >
-                          <Check className="w-4 h-4" /> Ochish
+                          <Check className="w-4 h-4" /> {t('store_open')}
                         </button>
                       ) : (
                         <button
@@ -845,8 +849,8 @@ export function Store({ onProfileUpdate, onClose, isModal = false }: StoreProps)
                   <Coins size={24} />
                 </div>
                 <div>
-                  <h3 className="text-lg font-extrabold text-white">Tanga Paketlari</h3>
-                  <p className="text-xs text-slate-400">Hisobingizni to'ldiring va eksklyuziv imkoniyatlarga ega bo'ling</p>
+                  <h3 className="text-lg font-extrabold text-white">{t('store_coin_packs')}</h3>
+                  <p className="text-xs text-slate-400">{t('store_coin_packs_sub')}</p>
                 </div>
               </div>
 
@@ -868,7 +872,7 @@ export function Store({ onProfileUpdate, onClose, isModal = false }: StoreProps)
                       {pack.popular && (
                         <span className="absolute -top-2.5 right-4 px-3 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-gradient-to-r from-amber-500 to-emerald-400 text-slate-950 shadow-md flex items-center gap-1">
                           <Flame size={12} className="fill-slate-950 text-slate-950 shrink-0" />
-                          <span>Ommabop</span>
+                          <span>{t('store_popular')}</span>
                         </span>
                       )}
 
@@ -878,16 +882,16 @@ export function Store({ onProfileUpdate, onClose, isModal = false }: StoreProps)
                         </div>
                         <div>
                           <div className="flex items-center gap-2 flex-wrap">
-                            <p className="text-base font-bold text-white">{pack.name}</p>
+                            <p className="text-base font-bold text-white">{pack.id in PACK_NAME_KEYS ? t(PACK_NAME_KEYS[pack.id as keyof typeof PACK_NAME_KEYS]) : pack.name}</p>
                             {pack.bonus > 0 && (
                               <span className="text-xs px-2.5 py-0.5 rounded-full font-bold bg-amber-500/15 text-amber-400 border border-amber-500/20">
-                                +{pack.bonus} BONUS
+                                +{pack.bonus} {t('store_bonus')}
                               </span>
                             )}
                           </div>
                           <div className="flex items-baseline gap-1.5 mt-1">
                             <span className="text-lg font-black text-amber-400 font-mono tracking-tight">{totalCoins.toLocaleString()}</span>
-                            <span className="text-xs font-semibold text-slate-400">tanga</span>
+                            <span className="text-xs font-semibold text-slate-400">{t('store_coin_unit')}</span>
                           </div>
                         </div>
                       </div>
@@ -909,7 +913,7 @@ export function Store({ onProfileUpdate, onClose, isModal = false }: StoreProps)
                           }`}
                         >
                           <ShoppingBag size={14} />
-                          <span>Sotib olish</span>
+                          <span>{t('shop_buy')}</span>
                         </button>
                       </div>
                     </div>
@@ -919,7 +923,7 @@ export function Store({ onProfileUpdate, onClose, isModal = false }: StoreProps)
 
               {selectedPack ? (
                 <div className="space-y-3">
-                  <p className="text-xs font-semibold text-slate-400">To'lov tizimini tanlang:</p>
+                  <p className="text-xs font-semibold text-slate-400">{t('store_choose_payment')}</p>
                   <div className="grid grid-cols-2 gap-3">
                     <button
                       type="button"
@@ -957,7 +961,7 @@ export function Store({ onProfileUpdate, onClose, isModal = false }: StoreProps)
                   </div>
                 </div>
               ) : (
-                <p className="text-xs text-center text-slate-400 py-1">To'lov qilish uchun yuqoridagi paketlardan birini tanlang</p>
+                <p className="text-xs text-center text-slate-400 py-1">{t('store_choose_pack_hint')}</p>
               )}
             </motion.div>
           </div>
@@ -984,9 +988,9 @@ export function Store({ onProfileUpdate, onClose, isModal = false }: StoreProps)
                 <AlertCircle className="w-6 h-6" />
               </div>
 
-              <h3 className="text-base font-bold text-white mb-2">Xaridni tasdiqlash</h3>
+              <h3 className="text-base font-bold text-white mb-2">{t('store_confirm_title')}</h3>
               <p className="text-xs text-slate-300 leading-relaxed mb-4">
-                Ushbu buyumni <span className="font-bold text-amber-400 font-mono">{confirmItem.item.price} tangaga</span> xarid qilishni tasdiqlaysizmi?
+                {t('store_confirm_before')} <span className="font-bold text-amber-400 font-mono">{confirmItem.item.price} {t('store_confirm_price_unit')}</span> {t('store_confirm_after')}
               </p>
 
               <div className="p-3 rounded-2xl bg-slate-800/80 border border-slate-700 mb-6 flex items-center gap-3 text-left">
@@ -995,7 +999,7 @@ export function Store({ onProfileUpdate, onClose, isModal = false }: StoreProps)
                 </div>
                 <div>
                   <p className="text-xs font-bold text-white">{confirmItem.item.name}</p>
-                  <p className="text-[10px] text-amber-400 font-mono font-bold">{confirmItem.item.price} tanga</p>
+                  <p className="text-[10px] text-amber-400 font-mono font-bold">{confirmItem.item.price} {t('store_coin_unit')}</p>
                 </div>
               </div>
 
@@ -1005,14 +1009,14 @@ export function Store({ onProfileUpdate, onClose, isModal = false }: StoreProps)
                   onClick={() => setConfirmItem(null)}
                   className="flex-1 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold text-xs transition-all"
                 >
-                  Bekor qilish
+                  {t('cancel')}
                 </button>
                 <button
                   type="button"
                   onClick={processConfirmedPurchase}
                   className="flex-1 py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black text-xs shadow-lg transition-all"
                 >
-                  Tasdiqlash
+                  {t('store_confirm_btn')}
                 </button>
               </div>
             </motion.div>

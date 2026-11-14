@@ -382,9 +382,9 @@ export function LoginPage({ onLogin }: LoginPageProps) {
           className="text-xs text-slate-400 mt-1.5 max-w-xs mx-auto font-medium leading-relaxed"
         >
           {tab === "forgot" ? t('auth_reset_hint') :
-           tab === "verify-email" ? `Biz ${pendingReg?.email} manziliga 6 xonali tasdiqlash kodini yubordik.` :
-           tab === "complete-google" ? "Ro'yxatdan o'tishni yakunlash uchun ma'lumotlarni kiriting" :
-           "Kichik odatlar orqali katta natijalarga erishing."}
+           tab === "verify-email" ? t('login_otp_sent').replace('{email}', pendingReg?.email ?? '') :
+           tab === "complete-google" ? t('login_complete_google_hint') :
+           t('login_tagline')}
         </motion.p>
       </div>
 
@@ -411,7 +411,7 @@ export function LoginPage({ onLogin }: LoginPageProps) {
                   transition={{ type: "spring", stiffness: 400, damping: 30 }}
                 />
               )}
-              <span>Kirish</span>
+              <span>{t('auth_tab_login')}</span>
             </button>
             <button
               type="button"
@@ -429,7 +429,7 @@ export function LoginPage({ onLogin }: LoginPageProps) {
                   transition={{ type: "spring", stiffness: 400, damping: 30 }}
                 />
               )}
-              <span>Ro'yxatdan o'tish</span>
+              <span>{t('auth_tab_register')}</span>
             </button>
           </div>
         )}
@@ -477,7 +477,7 @@ export function LoginPage({ onLogin }: LoginPageProps) {
                   )}
                   <span>
                     {tab === "register"
-                      ? "Google orqali ro'yxatdan o'tish"
+                      ? t('login_google_register')
                       : "Google orqali davom etish"}
                   </span>
                 </button>
@@ -485,7 +485,7 @@ export function LoginPage({ onLogin }: LoginPageProps) {
                 <div className="flex items-center my-5">
                   <div className="flex-1 h-[1px] bg-white/10" />
                   <span className="text-[10px] uppercase text-slate-500 font-extrabold tracking-[0.2em] px-3">
-                    yoki email bilan
+                    {t('login_or_email')}
                   </span>
                   <div className="flex-1 h-[1px] bg-white/10" />
                 </div>
@@ -518,7 +518,7 @@ export function LoginPage({ onLogin }: LoginPageProps) {
                     onClick={() => switchTab("forgot")}
                     className="text-xs text-emerald-400 font-semibold hover:underline transition-all"
                   >
-                    Parolni unutdingizmi?
+                    {t('auth_forgot_password')}
                   </button>
                 </div>
               </div>
@@ -529,7 +529,7 @@ export function LoginPage({ onLogin }: LoginPageProps) {
               <div className="flex flex-col">
                 <InputField
                   icon={UserIcon}
-                  label="To'liq ismingiz"
+                  label={t('login_full_name_ph')}
                   placeholder="Ism Sharif"
                   value={regName}
                   onChange={setRegName}
@@ -580,7 +580,7 @@ export function LoginPage({ onLogin }: LoginPageProps) {
                   onClick={() => switchTab("login")}
                   className="flex items-center gap-2 text-xs text-slate-400 mb-4 hover:text-white transition-colors w-fit"
                 >
-                  <ArrowLeft size={14} /> Ortga qaytish
+                  <ArrowLeft size={14} /> {t('login_go_back')}
                 </button>
                 <InputField
                   icon={Mail}
@@ -603,7 +603,7 @@ export function LoginPage({ onLogin }: LoginPageProps) {
             {tab === "verify-email" && (
               <div className="flex flex-col items-center">
                 <p className="text-xs text-slate-400 mb-4 text-center">
-                  Emailingizga yuborilgan 6 xonali kodni kiriting
+                  {t('login_enter_code')}
                 </p>
                 <input
                   type="text" inputMode="numeric" placeholder="••••••" maxLength={6}
@@ -615,7 +615,7 @@ export function LoginPage({ onLogin }: LoginPageProps) {
                   onClick={handleResendOtp}
                   className="text-xs font-semibold text-slate-400 hover:text-emerald-400 transition-colors disabled:opacity-50"
                 >
-                  {otpCountdown > 0 ? `Kodni qayta yuborish (${otpCountdown}s)` : "Kodni qayta yuborish"}
+                  {otpCountdown > 0 ? t('login_resend_code').replace('{s}', String(otpCountdown)) : "Kodni qayta yuborish"}
                 </button>
               </div>
             )}
@@ -632,13 +632,13 @@ export function LoginPage({ onLogin }: LoginPageProps) {
                   }}
                   className="flex items-center gap-2 text-xs text-slate-400 mb-4 hover:text-white transition-colors w-fit"
                 >
-                  <ArrowLeft size={14} /> Bekor qilish
+                  <ArrowLeft size={14} /> {t('cancel')}
                 </button>
 
                 <div className="mb-4 p-3.5 rounded-2xl bg-amber-500/10 border border-amber-500/20 text-amber-300 text-xs font-medium leading-relaxed flex items-start gap-2.5">
                   <Sparkles size={18} className="text-amber-400 shrink-0 mt-0.5" />
                   <span>
-                    Ushbu Google email bilan hali ro'yxatdan o'tilmagan. Profilingizni yakunlash uchun ism va username kiriting:
+                    {t('login_google_not_registered')}
                   </span>
                 </div>
 
@@ -651,14 +651,14 @@ export function LoginPage({ onLogin }: LoginPageProps) {
 
                 <InputField
                   icon={UserIcon}
-                  label="To'liq ismingiz"
+                  label={t('login_full_name_ph')}
                   placeholder="Ism Sharif"
                   value={googleRegName}
                   onChange={setGoogleRegName}
                 />
                 <InputField
                   icon={AtSign}
-                  label="Foydalanuvchi nomi (username)"
+                  label={t('login_username_ph')}
                   placeholder="username"
                   value={googleRegUsername}
                   onChange={(v: string) => setGoogleRegUsername(v.toLowerCase().replace(/[^a-z0-9_]/g, ""))}
@@ -704,9 +704,9 @@ export function LoginPage({ onLogin }: LoginPageProps) {
                 <>
                   <span>
                     {tab === "login" ? "Kirish" :
-                     tab === "register" ? "Ro'yxatdan o'tish" :
+                     tab === "register" ? t('auth_tab_register') :
                      tab === "forgot" ? "Havolani yuborish" :
-                     tab === "complete-google" ? "Ro'yxatdan o'tishni yakunlash" : "Tasdiqlash"}
+                     tab === "complete-google" ? t('login_finish_register') : "Tasdiqlash"}
                   </span>
                   <ArrowRight size={16} />
                 </>
@@ -722,16 +722,16 @@ export function LoginPage({ onLogin }: LoginPageProps) {
           <div className="text-xs text-slate-400 font-medium">
             {tab === "login" ? (
               <>
-                Hisobingiz yo'qmi?{" "}
+                {t('login_no_account')}{" "}
                 <button onClick={() => switchTab("register")} className="text-emerald-400 font-bold hover:underline ml-1">
-                  Ro'yxatdan o'ting
+                  {t('login_sign_up_link')}
                 </button>
               </>
             ) : (
               <>
-                Profilingiz bormi?{" "}
+                {t('login_have_account')}{" "}
                 <button onClick={() => switchTab("login")} className="text-emerald-400 font-bold hover:underline ml-1">
-                  Kirish
+                  {t('auth_tab_login')}
                 </button>
               </>
             )}
