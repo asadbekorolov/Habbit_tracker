@@ -1049,4 +1049,6 @@ export const en: Dict = {
   store_glow_name: "Glowing Name",
   health_sync_aria: "Sync",
   health_decrease_aria: "Decrease",
+  health_screen_not_entered: "Not set — tap to enter",
+  health_screen_manual_hint: "Check Digital Wellbeing in your phone settings and enter it manually",
 }

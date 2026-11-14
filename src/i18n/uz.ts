@@ -1047,6 +1047,8 @@ export const uz = {
   store_glow_name: "Yaltiroq Ism",
   health_sync_aria: "Sinxronlash",
   health_decrease_aria: "Kamaytirish",
+  health_screen_not_entered: "Kiritilmagan — bosib kiriting",
+  health_screen_manual_hint: "Telefon sozlamalaridagi 'Raqamli farovonlik' bo'limidan qarab, qo'lda kiriting",
 }
 
 export type Dict = typeof uz

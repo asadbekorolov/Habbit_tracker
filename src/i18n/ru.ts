@@ -1049,4 +1049,6 @@ export const ru: Dict = {
   store_glow_name: "Сияющее имя",
   health_sync_aria: "Синхронизировать",
   health_decrease_aria: "Уменьшить",
+  health_screen_not_entered: "Не указано — нажмите, чтобы ввести",
+  health_screen_manual_hint: "Посмотрите в «Цифровом благополучии» в настройках телефона и введите вручную",
 }

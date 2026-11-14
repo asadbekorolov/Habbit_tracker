@@ -49,10 +49,8 @@ class HealthSyncService {
   }
 
   async syncData(): Promise<HealthSyncData | null> {
-    if (!Capacitor.isNativePlatform()) {
-      // Mock data for web testing
-      return { steps: 8432, sleepHours: 7, sleepMinutes: 30 };
-    }
+    // Veb'da Health Connect yo'q — soxta raqam qaytarmaymiz.
+    if (!Capacitor.isNativePlatform()) return null;
 
     try {
       const isAuthorized = await this.checkPermissions();

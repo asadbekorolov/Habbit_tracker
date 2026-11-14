@@ -7,7 +7,7 @@ import {
 } from "lucide-react";
 import { Capacitor } from "@capacitor/core";
 import { healthSyncService } from "../../services/healthSyncService";
-import { screenTimeService } from "../../services/screenTimeService";
+
 import { getHealthLog, upsertHealthLog } from "../../services/db";
 import { habitSyncQueue } from "../../services/habitSyncQueue";
 import { useHabitsQuery, useDayLogsQuery, useHealthRangeQuery, queryKeys } from "../../hooks/queries";
@@ -283,13 +283,9 @@ export function HealthPage({}: HealthPageProps) {
     try {
       if (Capacitor.isNativePlatform() && !isManual) {
         try {
-          await Promise.all([
-            healthSyncService.syncAndSave(profile.id),
-            (async () => {
-              const st = await screenTimeService.getTodayScreenTime();
-              await upsertHealthLog(profile.id, today, { screen_time_hours: st.hours + st.minutes / 60 });
-            })()
-          ]);
+          // Faqat Health Connect (qadam va uyqu). Ekran vaqtini Android ilovaga
+          // bermaydi (UsageStats native ko'prigi yo'q) — u qo'lda kiritiladi.
+          await healthSyncService.syncAndSave(profile.id);
           setLastSynced(new Date());
         } catch (syncErr) {
           console.warn("Background health sync skipped:", syncErr);
@@ -616,9 +612,15 @@ export function HealthPage({}: HealthPageProps) {
 
             <div>
               <div className="flex items-baseline gap-1.5">
-                <span className="text-2xl font-bold font-['Geist_Mono',monospace] font-mono text-white tracking-tight">
-                  {formatHourMin(screenVal)}
-                </span>
+                {enteredKeys.has("screen_time_hours") ? (
+                  <span className="text-2xl font-bold font-['Geist_Mono',monospace] font-mono text-white tracking-tight">
+                    {formatHourMin(screenVal)}
+                  </span>
+                ) : (
+                  <span className="text-sm font-semibold text-slate-400">
+                    {t('health_screen_not_entered')}
+                  </span>
+                )}
               </div>
               <p className="text-[11px] font-['Geist_Mono',monospace] font-mono text-slate-400 mt-0.5">
                 {t('health_screen_limit')}
@@ -632,7 +634,7 @@ export function HealthPage({}: HealthPageProps) {
             </div>
 
             <p className="text-[10px] text-slate-500 font-medium pt-1">
-              {t('health_screen_hint')}
+              {t('health_screen_manual_hint')}
             </p>
           </div>
         </div>
