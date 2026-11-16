@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
-  Zap, Flame, Crown, Award, Sunrise, Activity, BookOpen,
+  Zap, Flame, Crown, Award, Footprints, CalendarCheck, Star,
   Lock, X, Check, Gift, Sparkles, Target, Coins
 } from "lucide-react";
 import { toast } from "sonner";
@@ -10,141 +10,31 @@ import { getBadgeClaims, claimBadgeReward } from "../services/db";
 import { useUser } from "../store/UserContext";
 import { useScrollLock } from "../hooks/useScrollLock";
 
-export type BadgeTier = "bronze" | "silver" | "gold" | "diamond" | "special" | "emerald" | "sapphire";
+import { evaluateBadges, type BadgeTier, type BadgeStats, type EvaluatedBadge } from "../utils/badges";
 
-export interface NativeBadge {
-  id: string;
-  title: string;
-  tier: BadgeTier;
-  tierLabel: string;
-  description: string;
-  icon: any;
-  color: string;
-  isUnlocked: boolean;
-  isClaimed?: boolean;
-  progress: { current: number; target: number };
-  howToEarn: string;
-  reward: { xp: number; coins: number };
+export type { BadgeTier };
+
+const BADGE_ICONS: Record<string, React.ElementType> = {
+  first_step: Zap,
+  morning_hero: Footprints,
+  health_ambassador: CalendarCheck,
+  consistency_7: Flame,
+  knowledge_miner: Star,
+  consistency_30: Crown,
+  consistency_100: Award,
+};
+
+export interface NativeBadge extends EvaluatedBadge {
+  icon: React.ElementType;
 }
 
 export type TieredBadge = NativeBadge;
 
-export interface UserStatsForBadges {
-  score: number;
-  coins?: number;
-  bestStreak: number;
-  totalCompleted: number;
-  activeDays?: number;
-  habitsCount?: number;
-  earlyBirdCount?: number;
-  hasStar?: boolean;
-}
+/** Nishon statistikasi — useBadgeStats() dan (barcha davr, server bilan bir xil). */
+export type UserStatsForBadges = BadgeStats;
 
 export function computeNativeBadges(stats: UserStatsForBadges, claimedBadgeIds: Set<string> = new Set()): NativeBadge[] {
-  const { score, bestStreak, totalCompleted, activeDays = 0, earlyBirdCount = 0 } = stats;
-
-  const BADGES_DEF: NativeBadge[] = [
-    {
-      id: "first_step",
-      title: "Birinchi Qadam",
-      tier: "bronze",
-      tierLabel: "BRONZA NISHON",
-      description: "Kamida 1 ta odatni muvaffaqiyatli bajardingiz!",
-      icon: Zap,
-      color: "#D97706",
-      isUnlocked: totalCompleted >= 1,
-      isClaimed: claimedBadgeIds.has("first_step"),
-      progress: { current: Math.min(totalCompleted, 1), target: 1 },
-      howToEarn: "Kamida 1 ta odatni bajaring",
-      reward: { xp: 20, coins: 5 },
-    },
-    {
-      id: "consistency_7",
-      title: "Intizom Mash'ali",
-      tier: "silver",
-      tierLabel: "KUMUSH NISHON",
-      description: "7 kunlik uzluksiz intizom va ketma-ketlik seriyasiga erishdingiz!",
-      icon: Flame,
-      color: "#94A3B8",
-      isUnlocked: bestStreak >= 7,
-      isClaimed: claimedBadgeIds.has("consistency_7"),
-      progress: { current: Math.min(bestStreak, 7), target: 7 },
-      howToEarn: "7 kunlik ketma-ketlik seriyasini to'plang",
-      reward: { xp: 50, coins: 15 },
-    },
-    {
-      id: "consistency_30",
-      title: "Temir Iroda",
-      tier: "gold",
-      tierLabel: "OLTIN NISHON",
-      description: "30 kun davomida bukilmas Temir Iroda va barqarorlik ko'rsatdingiz!",
-      icon: Crown,
-      color: "#F59E0B",
-      isUnlocked: bestStreak >= 30,
-      isClaimed: claimedBadgeIds.has("consistency_30"),
-      progress: { current: Math.min(bestStreak, 30), target: 30 },
-      howToEarn: "30 kunlik uzluksiz seriyaga erishing",
-      reward: { xp: 150, coins: 50 },
-    },
-    {
-      id: "consistency_100",
-      title: "Afsonaviy Barqarorlik",
-      tier: "diamond",
-      tierLabel: "OLMOS NISHON",
-      description: "100 kunlik afsonaviy seriya — intizom va natijaning eng yuqori cho'qqisi!",
-      icon: Award,
-      color: "#06B6D4",
-      isUnlocked: bestStreak >= 100,
-      isClaimed: claimedBadgeIds.has("consistency_100"),
-      progress: { current: Math.min(bestStreak, 100), target: 100 },
-      howToEarn: "100 kunlik ketma-ketlik seriyasini zabt eting",
-      reward: { xp: 500, coins: 200 },
-    },
-    {
-      id: "morning_hero",
-      title: "Tonggi Qahramon",
-      tier: "special",
-      tierLabel: "MAXSUS NISHON",
-      description: "Ertalab barvaqt uyg'onib, kuningizni mahsuldor va tetik boshladingiz!",
-      icon: Sunrise,
-      color: "#F43F5E",
-      isUnlocked: earlyBirdCount >= 5 || totalCompleted >= 5,
-      isClaimed: claimedBadgeIds.has("morning_hero"),
-      progress: { current: Math.min(earlyBirdCount || totalCompleted, 5), target: 5 },
-      howToEarn: "Ertalab soat 07:00 gacha 5 marta odat belgilang",
-      reward: { xp: 75, coins: 25 },
-    },
-    {
-      id: "health_ambassador",
-      title: "Salomatlik Elchisi",
-      tier: "emerald",
-      tierLabel: "ZUMRAD NISHON",
-      description: "10 000 qadam va salomatlik ko'rsatkichlarini 7 kun davomida to'liq saqladingiz!",
-      icon: Activity,
-      color: "#10B981",
-      isUnlocked: activeDays >= 7,
-      isClaimed: claimedBadgeIds.has("health_ambassador"),
-      progress: { current: Math.min(activeDays, 7), target: 7 },
-      howToEarn: "7 kun davomida salomatlik va suv balansini saqlang",
-      reward: { xp: 100, coins: 30 },
-    },
-    {
-      id: "knowledge_miner",
-      title: "Bilim Konchi",
-      tier: "sapphire",
-      tierLabel: "SAFIR NISHON",
-      description: "Kitob mutolaasi va chuqur bilim olish bo'yicha 50 soatlik marrani zabt etdingiz!",
-      icon: BookOpen,
-      color: "#3B82F6",
-      isUnlocked: score >= 500,
-      isClaimed: claimedBadgeIds.has("knowledge_miner"),
-      progress: { current: Math.min(score, 500), target: 500 },
-      howToEarn: "Mutolaa va intellektual odatlarda 500 ball to'plang",
-      reward: { xp: 200, coins: 60 },
-    },
-  ];
-
-  return BADGES_DEF;
+  return evaluateBadges(stats, claimedBadgeIds).map((b) => ({ ...b, icon: BADGE_ICONS[b.id] || Award }));
 }
 
 export const computeTieredBadges = computeNativeBadges;

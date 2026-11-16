@@ -11,8 +11,8 @@ import { HabitIcon } from "../../components/HabitIcon";
 import {
   getProfileById, getFollowCounts, isStarActive, cleanupExpiredFrame
 } from "../../services/db";
-import { useHabitsQuery, useHabitsMetaQuery, useLogsRangeQuery, useAllTimeLogsQuery, useMyRankQuery } from "../../hooks/queries";
-import { toDateStr, addDays } from "../../utils/date";
+import { useHabitsQuery, useMyRankQuery } from "../../hooks/queries";
+import { useBadgeStats } from "../../hooks/useBadges";
 import { CoinShopModal } from "./CoinShopModal";
 import { FeedbackModal } from "./components/FeedbackModal";
 import { GuideModal } from "./components/GuideModal";
@@ -23,7 +23,7 @@ import { getUsernameGlowStyle } from "../../utils/cosmetics";
 import type { Profile } from "../../services/supabase";
 import { UserBadge } from "../../components/UserBadge";
 import { AvatarFrame } from "../../components/AvatarFrame";
-import { School21BadgesModal, computeTieredBadges, getBadgeCardStyle } from "../../components/School21BadgesModal";
+import { School21BadgesModal, getBadgeCardStyle, computeNativeBadges } from "../../components/School21BadgesModal";
 import { motion, AnimatePresence } from "framer-motion";
 
 type Lang = "uz" | "ru" | "en";
@@ -51,20 +51,10 @@ export function ProfilePage({ onNavigate, lang, onProfileUpdate }: ProfilePagePr
     const profile = useProfile();
 
   // ─── Yagona kesh (React Query) ──────────────────────────────────────
-  const todayStr = toDateStr();
   const habitsQ = useHabitsQuery(profile.id);
-  const metaQ = useHabitsMetaQuery(profile.id);
-  const logs30Q = useLogsRangeQuery(profile.id, addDays(todayStr, -30), todayStr);
-  const allLogsQ = useAllTimeLogsQuery(profile.id);
   const rankQ = useMyRankQuery(profile.id, 'monthly');
   const habits: any[] = habitsQ.data || [];
-  const allLogs: any[] = allLogsQ.data || [];
   const rank = rankQ.data || 0;
-  // Ixcham loglarga odat turini qo'shamiz (o'chirilgan odatlar ham).
-  const logs30: any[] = useMemo(() => {
-    const typeById = new Map((metaQ.data || []).map((h) => [h.id, h.type]));
-    return (logs30Q.data || []).map((l) => ({ ...l, habits: { type: typeById.get(l.habit_id) } }));
-  }, [logs30Q.data, metaQ.data]);
   const [freshScore, setFreshScore] = useState<number | null>(null);
   const [freshCoins, setFreshCoins] = useState(profile.coins || 0);
   const [starExpiresAt, setStarExpiresAt] = useState<string | null>(profile.star_expires_at ?? null);
@@ -74,7 +64,7 @@ export function ProfilePage({ onNavigate, lang, onProfileUpdate }: ProfilePagePr
   const [showGuideModal, setShowGuideModal] = useState(false);
   const [showBiometricsModal, setShowBiometricsModal] = useState(false);
   // Kesh bo'lsa darhol ko'rsatamiz; birinchi marta — asosiy ma'lumot kelguncha.
-  const loading = habitsQ.isPending || logs30Q.isPending;
+  const loading = habitsQ.isPending;
 
   useEffect(() => {
     Promise.all([
@@ -94,39 +84,9 @@ export function ProfilePage({ onNavigate, lang, onProfileUpdate }: ProfilePagePr
 
   const score = freshScore !== null ? freshScore : (profile.score || 0);
   const lv = getLevel(score);
-  const totalCompleted = allLogs.filter((l: any) => l.habits?.type === "positive").length;
-
-  const bestStreak = useMemo(() => {
-    const byDate: Record<string, number> = {};
-    for (const l of logs30) {
-      if (l.completed && l.habits?.type === "positive") {
-        byDate[l.log_date] = (byDate[l.log_date] || 0) + 1;
-      }
-    }
-    const dates = Object.keys(byDate).filter((d) => byDate[d] > 0).sort();
-    if (!dates.length) return 0;
-    let best = 1, cur = 1;
-    for (let i = 1; i < dates.length; i++) {
-      const diff = Math.round((new Date(dates[i]).getTime() - new Date(dates[i - 1]).getTime()) / 86400000);
-      if (diff === 1) { cur++; if (cur > best) best = cur; } else cur = 1;
-    }
-    return best;
-  }, [logs30]);
-
-  const activeDays = useMemo(() => new Set(allLogs.map((l: any) => l.log_date)).size, [allLogs]);
-
-  const statsForBadges = useMemo(() => ({
-    score,
-    coins: freshCoins,
-    bestStreak,
-    totalCompleted,
-    activeDays,
-    habitsCount: habits.length,
-    hasStar: isStarActive({ has_star: true, star_expires_at: starExpiresAt }),
-  }), [score, freshCoins, bestStreak, totalCompleted, activeDays, habits.length, starExpiresAt]);
-
-  const tieredBadges = useMemo(() => computeTieredBadges(statsForBadges), [statsForBadges]);
-  const unlockedTieredCount = tieredBadges.filter(b => b.isUnlocked).length;
+  // Nishonlar — yagona manba (barcha davr loglari, server sharti bilan bir xil)
+  const { stats: statsForBadges, unlockedCount: unlockedTieredCount } = useBadgeStats(profile.id, score);
+  const tieredBadges = useMemo(() => computeNativeBadges(statsForBadges), [statsForBadges]);
 
   const memberSince = useMemo(() => {
     const d = new Date(profile.created_at);

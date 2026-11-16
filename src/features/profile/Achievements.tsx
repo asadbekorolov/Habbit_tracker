@@ -1,25 +1,13 @@
 import { useState, useEffect, useMemo } from "react";
 import { useLang } from "../../store/LangContext";
-import { Flame, Star, Zap, Loader2, Target, Crown, Sunrise, Ban, Award } from "lucide-react";
+import { Loader2, Award } from "lucide-react";
 import { HabitIcon } from "../../components/HabitIcon";
-import { getLast30DaysLogs, getProfileById, getAchievements, type Achievement } from "../../services/db";
+import { getProfileById } from "../../services/db";
 import type { Profile } from "../../services/supabase";
 import { getLevel } from "../../utils/levels";
-import { School21BadgesModal, computeTieredBadges } from "../../components/School21BadgesModal";
+import { School21BadgesModal, computeNativeBadges } from "../../components/School21BadgesModal";
+import { useBadgeStats } from "../../hooks/useBadges";
 import { useProfile } from "../../store/UserContext";
-
-// check_and_unlock_achievements (013_achievements_i18n_keys.sql) barqaror
-// achievement_key qaytaradi — matn (sarlavha/tavsif) butunlay client i18n
-// orqali (ach_<key>_title / ach_<key>_desc), ikon/rang esa faqat taqdim
-// etish uchun shu yerda saqlanadi (DB'dagi `icon` ustuni hozircha
-// ishlatilmaydi — bu Lucide komponent kerak, DB emoji emas).
-const SERVER_BADGE_META: Record<string, { icon: typeof Flame; color: string }> = {
-  iron_will: { icon: Flame, color: "#EF4444" },
-  early_bird: { icon: Sunrise, color: "#FBBF24" },
-  negative_killer: { icon: Ban, color: "#4ADE80" },
-};
-
-const SERVER_ACHIEVEMENT_KEYS = ["iron_will", "early_bird", "negative_killer"] as const;
 
 interface AchievementsProps {
 }
@@ -27,77 +15,25 @@ interface AchievementsProps {
 export function Achievements({}: AchievementsProps) {
   const profile = useProfile();
   const { t } = useLang();
-  const [logs, setLogs] = useState<any[]>([]);
   const [freshScore, setFreshScore] = useState<number | null>(null);
-  const [serverAchievements, setServerAchievements] = useState<Achievement[]>([]);
-  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    Promise.all([
-      getLast30DaysLogs(profile.id),
-      getProfileById(profile.id),
-      getAchievements(profile.id),
-    ]).then(([logsData, freshProfile, ach]) => {
-      setLogs(logsData || []);
-      setFreshScore(freshProfile.score ?? 0);
-      setServerAchievements(ach || []);
-    }).finally(() => setLoading(false));
+    getProfileById(profile.id)
+      .then((p) => setFreshScore(p?.score ?? 0))
+      .catch(() => {});
   }, [profile.id]);
-
-  const completionByDate = useMemo(() => {
-    const map: Record<string, number> = {};
-    for (const log of logs) {
-      if (log.completed && log.habits?.type === "positive") {
-        map[log.log_date] = (map[log.log_date] || 0) + 1;
-      }
-    }
-    return map;
-  }, [logs]);
-
-  const bestStreak = useMemo(() => {
-    const dates = Object.keys(completionByDate).filter(d => completionByDate[d] > 0).sort();
-    if (dates.length === 0) return 0;
-    let best = 1, cur = 1;
-    for (let i = 1; i < dates.length; i++) {
-      const diff = Math.round((new Date(dates[i]).getTime() - new Date(dates[i - 1]).getTime()) / 86400000);
-      if (diff === 1) { cur++; if (cur > best) best = cur; }
-      else cur = 1;
-    }
-    return best;
-  }, [completionByDate]);
 
   const [showSchool21Modal, setShowSchool21Modal] = useState(false);
 
   const score = freshScore !== null ? freshScore : (profile.score ?? 0);
-  const totalCompleted = Object.values(completionByDate).reduce((a, b) => a + b, 0);
-
-  const statsForBadges = useMemo(() => ({
-    score,
-    coins: profile.coins || 0,
-    bestStreak,
-    totalCompleted,
-    activeDays: Object.keys(completionByDate).length,
-    habitsCount: 10,
-    hasStar: false,
-  }), [score, profile.coins, bestStreak, totalCompleted, completionByDate]);
-
-  const tieredBadges = useMemo(() => computeTieredBadges(statsForBadges), [statsForBadges]);
-  const unlockedTieredCount = tieredBadges.filter(b => b.isUnlocked).length;
-
-  const BADGES = [
-    { id: "first_step", title: t('ach_badge_first_step_title'), desc: t('ach_badge_first_step_desc'), icon: Zap, color: "#FBBF24", unlocked: totalCompleted >= 1 },
-    { id: "consistency_7", title: t('ach_badge_consistency7_title'), desc: t('ach_badge_consistency7_desc'), icon: Flame, color: "#F97316", unlocked: bestStreak >= 7 },
-    { id: "consistency_30", title: t('ach_badge_consistency30_title'), desc: t('ach_badge_consistency30_desc'), icon: Flame, color: "#EF4444", unlocked: bestStreak >= 30 },
-    { id: "score_100", title: t('ach_badge_score100_title'), desc: t('ach_badge_score100_desc'), icon: Star, color: "#3B82F6", unlocked: score >= 100 },
-    { id: "score_500", title: t('ach_badge_score500_title'), desc: t('ach_badge_score500_desc'), icon: Crown, color: "#8B5CF6", unlocked: score >= 500 },
-    { id: "habit_100", title: t('ach_badge_habit100_title'), desc: t('ach_badge_habit100_desc'), icon: Target, color: "#EC4899", unlocked: totalCompleted >= 100 },
-  ];
+  // Nishonlar — yagona manba (Profil va "Barcha nishonlar" oynasi bilan bir xil)
+  const { stats: statsForBadges, unlockedCount: unlockedTieredCount, total: badgesTotal, isLoading: loading } = useBadgeStats(profile.id, score);
+  const tieredBadges = useMemo(() => computeNativeBadges(statsForBadges), [statsForBadges]);
 
   if (loading) {
     return <div className="flex justify-center items-center h-64"><Loader2 size={24} className="animate-spin" style={{ color: "var(--neon-green)" }} /></div>;
   }
 
-  const unlockedCount = BADGES.filter(b => b.unlocked).length;
   const lv = getLevel(score);
   const LEVEL_LABELS = ["", "level_1", "level_2", "level_3", "level_4", "level_5", "level_6", "level_7", "level_8", "level_9", "level_10"] as const;
 
@@ -113,7 +49,7 @@ export function Achievements({}: AchievementsProps) {
           className="text-xs px-3.5 py-1.5 rounded-full font-bold flex items-center gap-1.5 transition-all hover:scale-105 active:scale-95 shadow-sm"
           style={{ background: "rgba(74,222,128,0.15)", color: "var(--neon-green)", fontFamily: "'Geist Mono', monospace" }}
         >
-          <Award size={14} /> Nishonlar ({unlockedTieredCount}/{tieredBadges.length})
+          <Award size={14} /> Nishonlar ({unlockedTieredCount}/{badgesTotal})
         </button>
       </div>
 
@@ -198,47 +134,31 @@ export function Achievements({}: AchievementsProps) {
       </div>
 
       <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
-        {BADGES.map(badge => {
+        {tieredBadges.map(badge => {
           const Icon = badge.icon;
           return (
-            <div key={badge.id} className={`p-5 rounded-2xl flex flex-col items-center text-center transition-all ${badge.unlocked ? 'opacity-100' : 'opacity-40 grayscale hover:grayscale-0'}`} style={{ background: "rgba(22,27,34,0.85)", border: `1px solid rgba(255,255,255,0.06)` }}>
-              <div className="w-14 h-14 rounded-full flex items-center justify-center mb-3 transition-colors" style={{ background: badge.unlocked ? `${badge.color}25` : ('#30363D'), border: `2px solid ${badge.unlocked ? badge.color : 'transparent'}` }}>
-                <Icon size={24} style={{ color: badge.unlocked ? badge.color : ('#8B949E') }} />
+            <button
+              type="button"
+              key={badge.id}
+              onClick={() => setShowSchool21Modal(true)}
+              className={`p-5 rounded-2xl flex flex-col items-center text-center transition-all cursor-pointer ${badge.isUnlocked ? "opacity-100" : "opacity-40 grayscale hover:grayscale-0"}`}
+              style={{ background: "rgba(22,27,34,0.85)", border: "1px solid rgba(255,255,255,0.06)" }}
+            >
+              <div className="w-14 h-14 rounded-full flex items-center justify-center mb-3 transition-colors" style={{ background: badge.isUnlocked ? `${badge.color}25` : "#30363D", border: `2px solid ${badge.isUnlocked ? badge.color : "transparent"}` }}>
+                <Icon size={24} style={{ color: badge.isUnlocked ? badge.color : "#8B949E" }} />
               </div>
               <h3 className="text-sm font-bold mb-1 leading-tight" style={{ color: "var(--foreground)" }}>{badge.title}</h3>
-              <p className="text-[10px] leading-tight mt-1" style={{ color: "var(--muted-foreground)" }}>{badge.desc}</p>
-            </div>
+              <p className="text-[10px] leading-tight mt-1" style={{ color: "var(--muted-foreground)" }}>
+                {badge.isUnlocked ? badge.description : badge.howToEarn}
+              </p>
+              {!badge.isUnlocked && (
+                <p className="text-[10px] font-mono mt-1.5" style={{ color: "var(--muted-foreground)" }}>
+                  {badge.progress.current}/{badge.progress.target}
+                </p>
+              )}
+            </button>
           )
         })}
-      </div>
-
-      {/* Server-verified achievements (013_achievements_i18n_keys.sql) —
-          check_and_unlock_achievements RPC orqali, faqat haqiqiy log
-          tarixidan tasdiqlanadi (client threshold emas). Matn to'liq
-          i18n orqali — DB faqat achievement_key saqlaydi. */}
-      <div className="mt-8">
-        <div className="mb-4">
-          <h3 className="text-sm font-semibold" style={{ color: "var(--foreground)" }}>{t('ach_server_section_title')}</h3>
-          <p className="text-xs mt-0.5" style={{ color: "var(--muted-foreground)" }}>{t('ach_server_section_sub')}</p>
-        </div>
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
-          {SERVER_ACHIEVEMENT_KEYS.map((key) => {
-            const unlocked = serverAchievements.find((a) => a.achievement_key === key);
-            const meta = SERVER_BADGE_META[key];
-            const Icon = meta.icon;
-            const title = t(`ach_${key}_title` as any);
-            const desc = t(`ach_${key}_desc` as any);
-            return (
-              <div key={key} className={`p-5 rounded-2xl flex flex-col items-center text-center transition-all ${unlocked ? 'opacity-100' : 'opacity-40 grayscale hover:grayscale-0'}`} style={{ background: "rgba(22,27,34,0.85)", border: `1px solid rgba(255,255,255,0.06)` }}>
-                <div className="w-14 h-14 rounded-full flex items-center justify-center mb-3 transition-colors" style={{ background: unlocked ? `${meta.color}25` : ('#30363D'), border: `2px solid ${unlocked ? meta.color : 'transparent'}` }}>
-                  <Icon size={24} style={{ color: unlocked ? meta.color : ('#8B949E') }} />
-                </div>
-                <h3 className="text-sm font-bold mb-1 leading-tight" style={{ color: "var(--foreground)" }}>{title}</h3>
-                <p className="text-[10px] leading-tight mt-1" style={{ color: "var(--muted-foreground)" }}>{desc}</p>
-              </div>
-            );
-          })}
-        </div>
       </div>
 
       {/* School 21 Tiered Badges Modal */}
