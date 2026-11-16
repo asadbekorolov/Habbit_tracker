@@ -1131,6 +1131,20 @@ export const uz = {
   sec_settings: "Sozlamalar",
   hdr_coins_aria: "Tangalar: {n} — Do'konni ochish",
   hdr_level_aria: "Daraja {n} — Nishonlarni ochish",
+  tip_label: "Bilasizmi?",
+  tip_dismiss: "Maslahatni yopish",
+  tip_freeze_title: "Zanjirni muzlatish",
+  tip_freeze_body: "Kasal bo'lsangiz yoki safarda bo'lsangiz, odat kartasini bosib kecha yoki bugunni muzlating — zanjir uzilmaydi. Oyiga 2 ta bepul.",
+  tip_minutes_title: "Daqiqa va sonni yozing",
+  tip_minutes_body: "Maqsadi daqiqada yoki sonda bo'lgan odatda doiracha + ko'rinishida — bosib qancha qilganingizni kiriting, progress chizig'i to'ladi.",
+  tip_routine_title: "Kun tartibi",
+  tip_routine_body: "Kuningizni vaqt bloklariga bo'ling — Bosh sahifa hozir qaysi blok faolligini Toshkent vaqti bo'yicha ko'rsatadi.",
+  tip_routine_cta: "Kun tartibi tuzish",
+  tip_notes_title: "Kunlik eslatma va kayfiyat",
+  tip_notes_body: "Kundalikda bugungi kayfiyatingizni belgilang va bir-ikki jumla yozing — haftalik sarhisobda hammasi jamlanadi.",
+  tip_notes_cta: "Kundalikni ochish",
+  tip_reminder_title: "Eslatmalar",
+  tip_reminder_body: "Odat kartasini bosing va 'Eslatma'ni yoqing — belgilagan vaqtingizda telefon eslatadi.",
 }
 
 export type Dict = typeof uz

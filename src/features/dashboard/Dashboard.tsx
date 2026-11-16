@@ -10,6 +10,7 @@ import { useHabitDay } from "../../hooks/useHabitDay";
 import { useHabitMutations, type HabitFormData } from "../../hooks/useHabitMutations";
 import { DisciplineProgressBar } from "./components/DisciplineProgressBar";
 import { ActiveRoutinePill } from "./components/ActiveRoutinePill";
+import { TipCard } from "./components/TipCard";
 import { HeroCharacterStage } from "./components/HeroCharacterStage";
 import { HabitItem } from "../habits/components/HabitItem";
 import { QuickLogModal } from "../../components/QuickLogModal";
@@ -87,6 +88,8 @@ export function Dashboard({ onNavigate, onCompletedChange, onProfileUpdate }: Da
         <DisciplineProgressBar completedCount={completedCount} totalCount={totalCount} percentage={progressPercent} />
 
         <ActiveRoutinePill userId={profile.id} onNavigate={onNavigate} />
+
+        <TipCard userId={profile.id} onNavigate={onNavigate} />
 
         {/* Bugungi rivojlantiruvchi odatlar */}
         <section className="space-y-3 pt-1">
