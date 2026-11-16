@@ -614,7 +614,7 @@ export const ru: Dict = {
   level_10: "Титан",
 
   // ── Public Profile Modal ─────────────────────────────────────
-  pp_points: "Очков",
+  pp_points: "XP",
   pp_badge_100: "100+ выполнено",
   pp_badge_50: "50+ выполнено",
   pp_badge_10: "10+ выполнено",
@@ -784,13 +784,13 @@ export const ru: Dict = {
   ach_negative_killer_desc: "Избегайте вредной привычки 3 дня подряд",
   ach_subtitle: "Отслеживайте свои результаты и покоряйте новые рубежи",
   ach_current_level: "Текущий уровень",
-  ach_next_level: "Следующий: Lv.{n} ({name})",
+  ach_next_level: "Следующий: LVL {n} ({name})",
   ach_points_left: "очков осталось",
   ach_max_level: "Достигнут максимальный уровень!",
   ach_unlocked_suffix: "открыто",
 
   // ── ProfilePage extras ───────────────────────────────────────
-  profile_next_level_full: "{icon} Lv.{n} ({name}) — осталось {points} очков",
+  profile_next_level_full: "{icon} LVL {n} ({name}) — осталось {points} XP",
   profile_max_level_champion: "Максимальный уровень — Титан!",
   profile_lang_selected: "Выбранный язык",
   profile_change_btn: "Изменить",

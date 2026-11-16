@@ -45,7 +45,7 @@ export function SharePoster({ s }: { s: AnalyticsData }) {
               <h2 className="text-xl font-black truncate leading-snug">{profile.display_name}</h2>
               <p className="text-xs font-semibold text-slate-400 mb-1.5">@{profile.username}</p>
               <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-purple-500/15 border border-purple-500/30 text-purple-300 text-[10px] font-black uppercase tracking-wider">
-                Lv.{lv.level} · {lv.label}
+                LVL {lv.level} · {lv.label}
               </span>
             </div>
           </div>

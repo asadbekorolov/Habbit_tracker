@@ -3,6 +3,7 @@
 
 import { supabase } from '../supabase'
 import type { Routine, RoutineItem } from '../supabase'
+import { normalizeApostrophes } from '../../utils/text'
 import { tashkentTodayAnchor, toDateStr, isTashkentDateOpen } from '../../utils/date'
 import { fetchAllPages } from '../../utils/pagination'
 import { nativeNotificationService } from '../nativeNotificationService'
@@ -42,7 +43,7 @@ export async function addHabit(
   scheduledEnd?: string,
   description: string = ''
 ) {
-  const baseData: Record<string, unknown> = { user_id: userId, name, emoji, type };
+  const baseData: Record<string, unknown> = { user_id: userId, name: normalizeApostrophes(name), emoji, type };
   if (target_value > 1 || unit) {
     baseData.target_value = target_value;
     baseData.unit = unit;
@@ -66,7 +67,7 @@ export async function updateHabit(
 ) {
   const { data, error } = await supabase
     .from('habits')
-    .update(updates)
+    .update(updates.name !== undefined ? { ...updates, name: normalizeApostrophes(updates.name) } : updates)
     .eq('id', habitId)
     .select()
     .single()

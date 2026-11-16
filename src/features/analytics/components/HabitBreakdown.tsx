@@ -48,10 +48,6 @@ export function HabitBreakdown({ s }: { s: AnalyticsData }) {
             <p className="text-[10px] mt-1 text-rose-600 dark:text-rose-400 font-black" style={{ fontFamily: "'Geist Mono', monospace" }}>{habitStats[habitStats.length-1].pct}% muvaffaqiyat</p>
           </div>
         </div>
-
-        <p className="text-[11px] mt-0.5" style={{ color: "var(--muted-foreground)" }}>
-          {t('analytics_per_habit_sub')}
-        </p>
       </div>
 
       <div className="flex flex-col gap-3">

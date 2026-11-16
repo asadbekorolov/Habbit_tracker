@@ -75,7 +75,7 @@ export function Achievements({}: AchievementsProps) {
                 {t('ach_current_level')}
               </p>
               <p className="text-xl font-bold leading-none" style={{ color: lv.color }}>
-                Lv.{lv.level} — {t(LEVEL_LABELS[lv.level] as any)}
+                LVL {lv.level} — {t(LEVEL_LABELS[lv.level] as any)}
               </p>
               <p className="text-xs mt-1" style={{ color: "var(--muted-foreground)", fontFamily: "'Geist Mono', monospace" }}>
                 {score} {t('pp_points')}

@@ -7,6 +7,8 @@ import {
 import { useHaptics } from "../../../hooks/useHaptics";
 import { useLang } from "../../../store/LangContext";
 import type { Habit } from "../../../services/supabase";
+import { normalizeApostrophes } from "../../../utils/text";
+import { cleanHabitName } from "../../../components/HabitIcon";
 
 const ICON_MAP: Record<string, React.ElementType> = {
   BookOpen, Dumbbell, Activity, Code, Sparkles, Brain, Droplets,
@@ -15,7 +17,7 @@ const ICON_MAP: Record<string, React.ElementType> = {
 
 export function resolveHabitIcon(iconName?: string, habitName?: string): React.ElementType {
   // O‘/oʻ/o’ kabi turli apostroflar bir xil ko'rinishga keltiriladi
-  const name = (habitName || "").toLowerCase().replace(/[‘’ʻʼ`]/g, "'");
+  const name = normalizeApostrophes(habitName || "").toLowerCase();
   // Bu ikkisi uchun umumiy "Sparkles" belgisi saqlangan bo'lsa ham mos belgi
   if (name.includes("oila") || name.includes("family") || name.includes("do'st")) return Users;
   if (name.includes("o'ziga qarash") || name.includes("parvarish") || name.includes("self")) return UserCheck;
@@ -90,7 +92,7 @@ export function HabitItem({ habit, isDone, onToggle }: HabitItemProps) {
             isDone ? "text-emerald-300 font-semibold" : "text-slate-100"
           }`}
         >
-          {habit.name}
+          {cleanHabitName(habit.name)}
         </h3>
         <div className="flex items-center gap-1.5 mt-0.5 text-xs font-['Geist_Mono',monospace] font-mono text-emerald-400/90">
           <Flame className="w-3.5 h-3.5 text-emerald-400 shrink-0 stroke-[2.2]" />

@@ -614,7 +614,7 @@ export const en: Dict = {
   level_10: "Titan",
 
   // ── Public Profile Modal ─────────────────────────────────────
-  pp_points: "Points",
+  pp_points: "XP",
   pp_badge_100: "100+ completed",
   pp_badge_50: "50+ completed",
   pp_badge_10: "10+ completed",
@@ -784,13 +784,13 @@ export const en: Dict = {
   ach_negative_killer_desc: "Avoid a bad habit 3 days in a row",
   ach_subtitle: "Track your results and conquer new milestones",
   ach_current_level: "Current level",
-  ach_next_level: "Next: Lv.{n} ({name})",
+  ach_next_level: "Next: LVL {n} ({name})",
   ach_points_left: "points left",
   ach_max_level: "Maximum level reached!",
   ach_unlocked_suffix: "unlocked",
 
   // ── ProfilePage extras ───────────────────────────────────────
-  profile_next_level_full: "{icon} Lv.{n} ({name}) — {points} points left",
+  profile_next_level_full: "{icon} LVL {n} ({name}) — {points} XP left",
   profile_max_level_champion: "Maximum level — Titan!",
   profile_lang_selected: "Selected language",
   profile_change_btn: "Change",

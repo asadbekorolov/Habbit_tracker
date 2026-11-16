@@ -128,7 +128,7 @@ export function ProfilePage({ onNavigate, lang, onProfileUpdate }: ProfilePagePr
         <div className="absolute top-0 right-0 w-40 h-40 bg-primary/5 rounded-full -mr-20 -mt-20 blur-3xl pointer-events-none" />
 
         <div className="flex items-center justify-between mb-2 relative z-10">
-          <span className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Profil & Character</span>
+          <span className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Shaxsiy profil</span>
           <MiniPipAvatar profile={profile} onProfileUpdate={onProfileUpdate} />
         </div>
 
@@ -159,7 +159,7 @@ export function ProfilePage({ onNavigate, lang, onProfileUpdate }: ProfilePagePr
           {/* Dedicated Character/Avatar Showcase Stats */}
           <div className="flex items-center justify-center gap-2 flex-wrap">
             <div className="px-3.5 py-1.5 rounded-2xl bg-xp/10 border border-xp/20 text-xp text-xs font-bold flex items-center gap-2 shadow-sm">
-              <Zap size={15} className="fill-xp" /> Lv.{lv.level} · {lv.label}
+              <Zap size={15} className="fill-xp" /> LVL {lv.level} · {lv.label}
             </div>
             {rank > 0 && (
               <div className="px-3.5 py-1.5 rounded-2xl bg-blue-500/10 border border-blue-500/20 text-blue-500 text-xs font-bold flex items-center gap-2 shadow-sm">
@@ -205,7 +205,7 @@ export function ProfilePage({ onNavigate, lang, onProfileUpdate }: ProfilePagePr
             </div>
             <div>
               <h3 className="text-sm font-black uppercase tracking-wider text-white group-hover:text-emerald-400 transition-colors">
-                Shaxsiy parametrlar (Bo'y, Vazn, Yosh)
+                Shaxsiy parametrlar
               </h3>
               <p className="text-[11px] text-slate-400 font-medium">
                 {heightCm} sm • {weightKg} kg {age !== null ? `• ${age} yosh` : ''} (BMI: {bmi})
@@ -234,7 +234,7 @@ export function ProfilePage({ onNavigate, lang, onProfileUpdate }: ProfilePagePr
           </div>
           <div className="p-3 rounded-2xl bg-slate-900/60 border border-slate-800/80 text-center">
             <span className="text-[10px] font-['Geist_Mono',monospace] font-mono uppercase text-slate-400 block mb-0.5">
-              {age !== null ? `${age} yosh` : "BMI"}
+              BMI
             </span>
             <p className="text-sm font-bold font-['Geist_Mono',monospace] font-mono text-emerald-400">{bmi}</p>
           </div>

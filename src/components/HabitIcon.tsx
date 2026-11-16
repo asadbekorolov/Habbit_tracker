@@ -13,6 +13,7 @@ import {
   Cigarette, Beer
 } from 'lucide-react';
 import { getHabitCategory, getCategoryTheme } from '../utils/categoryTheme';
+import { normalizeApostrophes } from '../utils/text';
 
 interface HabitIconProps {
   emoji: string;
@@ -182,5 +183,7 @@ export function cleanHabitName(name: string): string {
   cleaned = cleaned.replace(/^(Sun|BookOpen|Dumbbell|Utensils|Moon|Coffee|Sparkles|Droplets|Footprints|Apple|Brain|Music|Sunrise|Heart|Target|Zap|Monitor|ShieldAlert|PenTool|Smartphone|Gamepad2|CheckSquare|Activity|Timer|Clock|Shield|Flame|Trophy)\s+/i, '');
   // 3. Typo fixes
   cleaned = cleaned.replace(/Universititet/gi, "Universitet");
+  // 4. O‘/oʻ/o’ kabi apostroflar ilovadagi standart ' ga keltiriladi
+  cleaned = normalizeApostrophes(cleaned);
   return cleaned.trim();
 }

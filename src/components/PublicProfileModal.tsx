@@ -235,7 +235,7 @@ export function PublicProfileModal({ viewingId, myProfile, onClose }: PublicProf
               <div className="flex items-center gap-2 mt-2 flex-wrap">
                 <span className="flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-bold"
                   style={{ background: `${lv.color}18`, color: lv.color, border: `1px solid ${lv.color}33` }}>
-                  {lv.icon} Lv.{lv.level} {t(LEVEL_LABELS[lv.level] as any)}
+                  {lv.icon} LVL {lv.level} {t(LEVEL_LABELS[lv.level] as any)}
                 </span>
                 <span className="flex items-center gap-1 text-sm font-bold" style={{ color: "#FBBF24" }}>
                   <Star size={13} fill="currentColor" />
