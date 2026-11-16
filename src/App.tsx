@@ -7,7 +7,7 @@ import {
   LayoutGrid, ClipboardList, ListChecks, Users, BarChart3, User as UserIcon,
   Heart, MoreHorizontal, Trophy, ShieldAlert, X as CloseIcon,
   Wallet, Settings, Sun, Moon, Activity as ActivityIcon, Globe, TrendingUp, Bell as BellIcon, Loader2, CheckCircle2, Flame, Zap,
-  Coins, Plus, Home, CheckSquare, BookOpen
+  Coins, Plus, Home, CheckSquare, BookOpen, ChevronRight
 } from "lucide-react";
 import { HabitIcon } from "./components/HabitIcon";
 import { soundService } from "./services/soundService";
@@ -483,10 +483,12 @@ export default function App() {
                   <button
                     type="button"
                     onClick={() => setActiveTab("store")}
-                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-amber-500/10 border border-amber-500/20 text-amber-600 dark:text-amber-400 hover:bg-amber-500/20 transition-all active:scale-95 cursor-pointer"
+                    aria-label={langVal.t("hdr_coins_aria").replace("{n}", String(profile.coins || 0))}
+                    className="flex items-center gap-1.5 pl-3 pr-2 py-1.5 rounded-full bg-amber-500/10 border border-amber-500/20 text-amber-600 dark:text-amber-400 hover:bg-amber-500/20 transition-all active:scale-95 cursor-pointer"
                   >
                     <Coins size={14} className="fill-amber-500/20" />
                     <span className="text-xs font-black tracking-tight">{profile.coins || 0}</span>
+                    <ChevronRight size={12} className="opacity-60 -ml-0.5" />
                   </button>
 
                   {/* Level badge pill */}
@@ -495,13 +497,15 @@ export default function App() {
                     return (
                       <button
                         onClick={() => setActiveTab("achievements")}
-                        className="flex items-center gap-1.5 pl-1.5 pr-3 py-1.5 rounded-full bg-primary/10 border border-primary/20 transition-all hover:bg-primary/20"
+                        aria-label={langVal.t("hdr_level_aria").replace("{n}", String(lv.level))}
+                        className="flex items-center gap-1.5 pl-1.5 pr-2 py-1.5 rounded-full bg-primary/10 border border-primary/20 transition-all hover:bg-primary/20"
                         style={{ color: lv.color }}
                       >
                         <div className="w-5 h-5 rounded-full flex items-center justify-center bg-white/10 overflow-hidden">
                           <HabitIcon emoji={lv.icon} size={10} noWrapper />
                         </div>
                         <span className="text-[10px] font-black tracking-tighter">LVL {lv.level}</span>
+                        <ChevronRight size={12} className="opacity-60 -ml-0.5" />
                       </button>
                     );
                   })()}

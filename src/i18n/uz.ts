@@ -1119,6 +1119,18 @@ export const uz = {
   plus_new_habit: "Yangi odat",
   plus_manage: "Odatlarimni boshqarish",
   plus_routine: "Kun tartibi tuzish",
+  sec_all_title: "Barcha bo'limlar",
+  sec_habits: "Odatlarim",
+  sec_routine: "Kun tartibi",
+  sec_groups: "Guruhlar",
+  sec_feed: "Lenta",
+  sec_health: "Salomatlik",
+  sec_leaderboard: "Reyting",
+  sec_store: "Do'kon",
+  sec_badges: "Nishonlar",
+  sec_settings: "Sozlamalar",
+  hdr_coins_aria: "Tangalar: {n} — Do'konni ochish",
+  hdr_level_aria: "Daraja {n} — Nishonlarni ochish",
 }
 
 export type Dict = typeof uz

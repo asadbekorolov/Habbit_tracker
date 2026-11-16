@@ -5,7 +5,7 @@ import {
   Settings, Coins, Zap, Trophy, Loader2, Award,
   Crown, ChevronRight, Star, Flame, Target, Sparkles, X, CheckCircle2, ShoppingBag,
   Lock, Check, MessageSquarePlus, Send, ExternalLink, BookOpen, HelpCircle, Activity, Edit3,
-  Users, Rss, HeartPulse
+  Users, Rss, HeartPulse, ListChecks, Clock
 } from "lucide-react";
 import { HabitIcon } from "../../components/HabitIcon";
 import {
@@ -166,32 +166,40 @@ export function ProfilePage({ onNavigate, lang, onProfileUpdate }: ProfilePagePr
                 <Trophy size={15} /> #{rank} Reyting
               </div>
             )}
-            <div className="px-3.5 py-1.5 rounded-2xl bg-amber-500/10 border border-amber-500/20 text-amber-400 text-xs font-bold flex items-center gap-2 shadow-sm">
-              <Award size={15} className="text-amber-400" /> Nishonlar: {unlockedTieredCount}/{tieredBadges.length} ta
-            </div>
+            <button type="button" onClick={() => setShowAllBadgesModal(true)} className="px-3.5 py-1.5 rounded-2xl bg-amber-500/10 border border-amber-500/20 text-amber-400 text-xs font-bold flex items-center gap-2 shadow-sm cursor-pointer active:scale-95">
+              <Award size={15} className="text-amber-400" /> {t("sec_badges")}: {unlockedTieredCount}/{tieredBadges.length} <ChevronRight size={14} />
+            </button>
           </div>
         </div>
       </div>
 
-      {/* Tezkor o'tishlar: dock'da yo'q bo'limlar (Guruhlar, Lenta, Salomatlik, Reyting) */}
-      <nav aria-label="Bo'limlar" className="grid grid-cols-4 gap-2 -mt-2">
-        {([
-          { id: "groups", label: "Guruhlar", icon: Users },
-          { id: "feed", label: "Lenta", icon: Rss },
-          { id: "health", label: "Salomatlik", icon: HeartPulse },
-          { id: "leaderboard", label: "Reyting", icon: Trophy },
-        ] as const).map(({ id, label, icon: Icon }) => (
-          <button
-            key={id}
-            type="button"
-            onClick={() => onNavigate(id)}
-            className="flex flex-col items-center justify-center gap-1.5 py-3 rounded-2xl bg-slate-900/50 border border-slate-800/80 backdrop-blur-xl text-slate-300 hover:text-emerald-400 hover:border-emerald-500/30 active:scale-95 transition-all cursor-pointer"
-          >
-            <Icon size={18} className="text-emerald-400" />
-            <span className="text-[11px] font-semibold leading-none">{label}</span>
-          </button>
-        ))}
-      </nav>
+      {/* Barcha bo'limlar: dock'da yo'q hamma sahifalar bitta joyda */}
+      <section aria-label={t("sec_all_title")} className="-mt-2 space-y-2">
+        <h3 className="text-xs font-bold uppercase tracking-widest text-slate-400 px-1">{t("sec_all_title")}</h3>
+        <nav className="grid grid-cols-3 gap-2">
+          {([
+            { id: "habits", label: t("sec_habits"), icon: ListChecks },
+            { id: "habits?section=routines", label: t("sec_routine"), icon: Clock },
+            { id: "groups", label: t("sec_groups"), icon: Users },
+            { id: "feed", label: t("sec_feed"), icon: Rss },
+            { id: "health", label: t("sec_health"), icon: HeartPulse },
+            { id: "leaderboard", label: t("sec_leaderboard"), icon: Trophy },
+            { id: "store", label: t("sec_store"), icon: ShoppingBag },
+            { id: "achievements", label: t("sec_badges"), icon: Award },
+            { id: "settings", label: t("sec_settings"), icon: Settings },
+          ]).map(({ id, label, icon: Icon }) => (
+            <button
+              key={id}
+              type="button"
+              onClick={() => onNavigate(id)}
+              className="flex flex-col items-center justify-center gap-1.5 py-3.5 rounded-2xl bg-slate-900/50 border border-slate-800/80 backdrop-blur-xl text-slate-300 hover:text-emerald-400 hover:border-emerald-500/30 active:scale-95 transition-all cursor-pointer"
+            >
+              <Icon size={19} className="text-emerald-400" />
+              <span className="text-[11px] font-semibold leading-none text-center">{label}</span>
+            </button>
+          ))}
+        </nav>
+      </section>
 
       {/* Anthropometrics / Biometrics Card */}
       <div
@@ -239,130 +247,6 @@ export function ProfilePage({ onNavigate, lang, onProfileUpdate }: ProfilePagePr
             <p className="text-sm font-bold font-['Geist_Mono',monospace] font-mono text-emerald-400">{bmi}</p>
           </div>
         </div>
-      </div>
-
-      {/* Redesigned Clean Shop CTA Card */}
-      <motion.div
-        whileTap={{ scale: 0.98 }}
-        onClick={() => {
-          setShowShop(true);
-          onNavigate('store');
-        }}
-        className="w-full my-1 p-4 rounded-2xl bg-slate-900/80 dark:bg-slate-900/80 bg-white/80 backdrop-blur-md border border-amber-500/20 hover:border-amber-500/30 shadow-md cursor-pointer transition-all flex items-center justify-between gap-3 group"
-      >
-        <div className="flex items-center gap-3">
-          <div className="p-2.5 rounded-xl bg-amber-500/10 text-amber-400 border border-amber-500/20">
-            <ShoppingBag size={18} />
-          </div>
-          <div>
-            <h3 className="text-sm font-bold text-white group-hover:text-amber-400 transition-colors">
-              Odatlar Do'koni
-            </h3>
-            <p className="text-xs text-slate-400">Noyob ramkalar va bonuslar</p>
-          </div>
-        </div>
-
-        <div className="flex items-center gap-2">
-          <div className="flex items-center gap-1 text-amber-400 font-bold font-mono text-xs bg-amber-500/10 px-2.5 py-1 rounded-full border border-amber-500/20">
-            <Coins size={12} />
-            <span>{freshCoins || profile.coins || 0}</span>
-          </div>
-          <ChevronRight size={16} className="text-slate-400 group-hover:text-amber-400 transition-colors" />
-        </div>
-      </motion.div>
-
-      <div className="flex items-center justify-between mb-1 px-1">
-        <h3 className="text-sm font-black uppercase tracking-widest text-muted-foreground">Nishonlar</h3>
-        <button onClick={() => onNavigate("settings")} className="p-2 rounded-xl bg-secondary text-muted-foreground hover:text-primary transition-all">
-          <Settings size={18} />
-        </button>
-      </div>
-
-      {/* Badges Section */}
-      <div className="premium-card p-5">
-         <div className="flex items-center justify-between mb-4">
-            <div className="flex items-center gap-2.5">
-               <div className="p-2 rounded-xl bg-amber-500/10 text-amber-400 border border-amber-500/20">
-                 <Award size={20} className="text-amber-400" />
-               </div>
-               <div>
-                 <h3 className="text-sm font-black uppercase tracking-wider text-white">Mening Nishonlarim</h3>
-                 <p className="text-[11px] text-slate-400 font-medium">Erishilgan marralar va nishonlar to'plami</p>
-               </div>
-            </div>
-            <button
-              onClick={() => setShowAllBadgesModal(true)}
-              className="text-xs font-bold text-amber-400 flex items-center gap-1 hover:underline bg-amber-500/10 px-3 py-1.5 rounded-xl border border-amber-500/20 transition-all hover:bg-amber-500/20"
-            >
-              Nishonlar ({unlockedTieredCount}/{tieredBadges.length} ta) <ChevronRight size={14} />
-            </button>
-         </div>
-
-         <div className="space-y-3">
-           {tieredBadges.slice(0, 4).map((badge) => {
-             const Icon = badge.icon;
-             const cardStyle = getBadgeCardStyle(badge.tier, badge.isUnlocked);
-
-             return (
-               <motion.div
-                 key={badge.id}
-                 whileHover={{ scale: 1.01 }}
-                 whileTap={{ scale: 0.98 }}
-                 onClick={() => setShowAllBadgesModal(true)}
-                 className={`p-3.5 rounded-2xl border flex items-center justify-between gap-3 cursor-pointer transition-all ${cardStyle}`}
-               >
-                 <div className="flex items-start gap-3.5 min-w-0 flex-1">
-                   <div
-                     className="w-11 h-11 rounded-2xl flex items-center justify-center shrink-0 shadow-sm relative"
-                     style={{
-                       background: badge.isUnlocked ? `${badge.color}25` : "rgba(255,255,255,0.05)",
-                       border: `2px solid ${badge.isUnlocked ? badge.color : "rgba(255,255,255,0.1)"}`,
-                     }}
-                   >
-                     {badge.isUnlocked ? (
-                       <Icon size={22} style={{ color: badge.color }} />
-                     ) : (
-                       <Lock size={16} className="text-slate-500" />
-                     )}
-                   </div>
-
-                   <div className="min-w-0 flex-1">
-                     <div className="flex items-center justify-between gap-2 mb-1">
-                       <span className="text-[9px] font-black uppercase text-amber-400">
-                         {badge.tierLabel}
-                       </span>
-                       {badge.isUnlocked ? (
-                         <span className="text-[10px] font-bold text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-full border border-emerald-500/20 flex items-center gap-1">
-                           <Check size={11} /> Bajarildi
-                         </span>
-                       ) : (
-                         <span className="text-[10px] font-mono font-bold text-slate-400">
-                           {badge.progress.current}/{badge.progress.target}
-                         </span>
-                       )}
-                     </div>
-
-                     <h4 className="text-xs font-bold text-white truncate">{badge.title}</h4>
-                     <p className="text-[11px] text-slate-400 line-clamp-1 mt-0.5">
-                       {badge.isUnlocked ? badge.description : badge.howToEarn}
-                     </p>
-
-                     {!badge.isUnlocked && (
-                       <div className="mt-2">
-                         <div className="w-full bg-slate-800 h-1.5 rounded-full overflow-hidden border border-slate-700/50">
-                           <div
-                             className="bg-emerald-500 h-full rounded-full transition-all"
-                             style={{ width: `${Math.min(100, Math.round((badge.progress.current / badge.progress.target) * 100))}%` }}
-                           />
-                         </div>
-                       </div>
-                     )}
-                   </div>
-                 </div>
-               </motion.div>
-             );
-           })}
-         </div>
       </div>
 
       {/* Account Info */}
