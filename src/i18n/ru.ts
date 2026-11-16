@@ -423,9 +423,9 @@ export const ru: Dict = {
   notif_reject: "Отклонить",
   notif_accepted: "✓ Принято",
   notif_now: "Сейчас",
-  notif_min: "мин назад",
-  notif_hour: "ч назад",
-  notif_day: "дн назад",
+  notif_min: " мин назад",
+  notif_hour: " ч назад",
+  notif_day: " дн назад",
 
   // ── Auth ─────────────────────────────────────────────────────
   auth_tagline: "Отслеживайте свою жизнь в цифрах",

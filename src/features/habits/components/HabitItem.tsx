@@ -2,7 +2,7 @@ import React from "react";
 import { motion } from "framer-motion";
 import {
   Check, Flame, BookOpen, Dumbbell, Code, Sparkles, Brain,
-  Droplets, Zap, Coffee, Moon, Sun, Target, PenTool, Music, Activity
+  Droplets, Zap, Coffee, Moon, Sun, Target, PenTool, Music, Activity, Users, UserCheck
 } from "lucide-react";
 import { useHaptics } from "../../../hooks/useHaptics";
 import { useLang } from "../../../store/LangContext";
@@ -14,11 +14,17 @@ const ICON_MAP: Record<string, React.ElementType> = {
 };
 
 export function resolveHabitIcon(iconName?: string, habitName?: string): React.ElementType {
+  // O‘/oʻ/o’ kabi turli apostroflar bir xil ko'rinishga keltiriladi
+  const name = (habitName || "").toLowerCase().replace(/[‘’ʻʼ`]/g, "'");
+  // Bu ikkisi uchun umumiy "Sparkles" belgisi saqlangan bo'lsa ham mos belgi
+  if (name.includes("oila") || name.includes("family") || name.includes("do'st")) return Users;
+  if (name.includes("o'ziga qarash") || name.includes("parvarish") || name.includes("self")) return UserCheck;
+
   if (iconName && ICON_MAP[iconName]) {
     return ICON_MAP[iconName];
   }
-  const name = (habitName || "").toLowerCase();
   const key = (iconName || "").toLowerCase();
+  if (name.includes("erta tur")) return Sun;
 
   if (key.includes("book") || name.includes("kitob") || name.includes("o'qish") || name.includes("mutolaa")) return BookOpen;
   if (key.includes("dumbbell") || key.includes("activity") || name.includes("sport") || name.includes("mashq") || name.includes("gym") || name.includes("yugurish")) return Dumbbell;

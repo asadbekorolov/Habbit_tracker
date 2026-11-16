@@ -449,7 +449,7 @@ ${habitDataSummary}
 
       const day = d.getDate();
       const mon = uzMonths[d.getMonth()];
-      return { date: `${mon} ${day}`, score, ds, done, rate: Math.round(rate * 100) };
+      return { date: `${day}-${mon.toLowerCase()}`, score, ds, done, rate: Math.round(rate * 100) };
     });
   }, [heatmapByDate, totalHabits]);
 

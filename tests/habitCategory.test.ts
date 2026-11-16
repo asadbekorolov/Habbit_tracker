@@ -23,3 +23,9 @@ test('"kitob" ichidagi "it" endi dasturlash deb olinmaydi', () => {
   assert.equal(getHabitCategory('IT kurs', ''), 'code');
   assert.equal(getHabitCategory("Sport bilan shug'ullanish", ''), 'workout');
 });
+
+test("Turli apostrofli nomlar ham to'g'ri aniqlanadi (O‘ziga, oʻrganish)", () => {
+  assert.equal(getHabitDomain('O‘ziga qarash', ''), 'Ruhiyat');
+  assert.equal(getHabitDomain('Til oʻrganish', ''), 'Rivojlanish');
+  assert.equal(getHabitDomain('Oila bilan vaqt o‘tkazish', ''), 'Ruhiyat');
+});

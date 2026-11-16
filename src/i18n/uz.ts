@@ -421,9 +421,9 @@ export const uz = {
   notif_reject: "Rad",
   notif_accepted: "✓ Qabul qilindi",
   notif_now: "Hozir",
-  notif_min: "d oldin",
-  notif_hour: "s oldin",
-  notif_day: "k oldin",
+  notif_min: " daqiqa oldin",
+  notif_hour: " soat oldin",
+  notif_day: " kun oldin",
 
   // ── Auth ─────────────────────────────────────────────────────
   auth_tagline: "Hayotingizni raqamlarda kuzating",

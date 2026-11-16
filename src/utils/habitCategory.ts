@@ -8,7 +8,8 @@ export type CategoryType =
   | 'default';
 
 export const getHabitCategory = (name: string, emoji: string): CategoryType => {
-  const n = name.toLowerCase();
+  // O‘/oʻ/o’ kabi turli apostroflar bir xil ko'rinishga keltiriladi
+  const n = (name || '').toLowerCase().replace(/[‘’ʻʼ`]/g, "'");
   const e = emoji;
 
   if (n.includes('suv') || n.includes('water') || n.includes('hydration') || e === '\u{1F4A7}') return 'water';
