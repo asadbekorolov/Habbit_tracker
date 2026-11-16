@@ -1118,4 +1118,7 @@ export const ru: Dict = {
   hd_schedule: "Расписание",
   hd_schedule_daily: "Каждый день",
   hd_target: "Цель: {n} {unit}",
+  plus_new_habit: "Новая привычка",
+  plus_manage: "Управлять привычками",
+  plus_routine: "Составить распорядок",
 }

@@ -1116,6 +1116,9 @@ export const uz = {
   hd_schedule: "Takrorlanish jadvali",
   hd_schedule_daily: "Har kuni",
   hd_target: "Maqsad: {n} {unit}",
+  plus_new_habit: "Yangi odat",
+  plus_manage: "Odatlarimni boshqarish",
+  plus_routine: "Kun tartibi tuzish",
 }
 
 export type Dict = typeof uz

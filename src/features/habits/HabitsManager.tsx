@@ -9,7 +9,7 @@ import {
   AlertTriangle
 } from "lucide-react";
 import { RoutinesManager } from "./RoutinesManager";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { addHabit, deleteHabit, updateHabit } from "../../services/db";
 import { supabase } from "../../services/supabase";
 import { tashkentTodayAnchor, toDateStr } from "../../utils/date";
@@ -86,7 +86,13 @@ export function HabitsManager({}: HabitsManagerProps) {
   const { data: habitsData, isLoading: queryLoading } = useHabitsQuery(profile.id);
   const addHabitMutation = useAddHabit();
 
-  const [activeTab, setActiveTab] = useState<'habits' | 'routines'>('habits');
+  // /habits?section=routines — "Kun tartibi tuzish" havolalari to'g'ridan-to'g'ri shu bo'limni ochadi
+  const [searchParams] = useSearchParams();
+  const sectionParam = searchParams.get('section');
+  const [activeTab, setActiveTab] = useState<'habits' | 'routines'>(sectionParam === 'routines' ? 'routines' : 'habits');
+  useEffect(() => {
+    if (sectionParam === 'routines') setActiveTab('routines');
+  }, [sectionParam]);
   const [habits, setHabits] = useState<Habit[]>([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);

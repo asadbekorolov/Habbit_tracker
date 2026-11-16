@@ -1118,4 +1118,7 @@ export const en: Dict = {
   hd_schedule: "Schedule",
   hd_schedule_daily: "Every day",
   hd_target: "Goal: {n} {unit}",
+  plus_new_habit: "New habit",
+  plus_manage: "Manage my habits",
+  plus_routine: "Build a daily routine",
 }

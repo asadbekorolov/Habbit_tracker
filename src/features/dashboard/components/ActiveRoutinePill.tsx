@@ -49,7 +49,7 @@ export function ActiveRoutinePill({ userId, onNavigate }: ActiveRoutinePillProps
     return (
       <button
         type="button"
-        onClick={() => onNavigate?.("habits")}
+        onClick={() => onNavigate?.("habits?section=routines")}
         className="w-full flex items-center justify-between gap-3 rounded-2xl bg-slate-900/50 border border-dashed border-slate-700/80 p-3.5 text-left cursor-pointer active:scale-[0.99] transition-all"
       >
         <span className="flex items-center gap-2.5 min-w-0">
@@ -147,7 +147,7 @@ export function ActiveRoutinePill({ userId, onNavigate }: ActiveRoutinePillProps
             {onNavigate && (
               <button
                 type="button"
-                onClick={() => onNavigate("habits")}
+                onClick={() => onNavigate("habits?section=routines")}
                 className="w-full text-center text-[11px] font-semibold text-emerald-400/90 pt-1 cursor-pointer"
               >
                 Kun tartibini tahrirlash

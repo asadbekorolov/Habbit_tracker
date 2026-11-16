@@ -1,6 +1,6 @@
 import { useState, useEffect, lazy, Suspense } from "react";
 import { AnimatePresence, motion } from "framer-motion";
-import { Plus, ShieldAlert, ChevronDown, ClipboardList } from "lucide-react";
+import { Plus, PlusCircle, SlidersHorizontal, Clock, ShieldAlert, ChevronDown, ClipboardList } from "lucide-react";
 import { getTashkentToday } from "../../utils/date";
 import { isMeasurable } from "../../utils/habitMetrics";
 import type { Habit, Profile } from "../../services/supabase";
@@ -38,6 +38,7 @@ export function Dashboard({ onNavigate, onCompletedChange, onProfileUpdate }: Da
   const [valueHabit, setValueHabit] = useState<Habit | null>(null);
   const [negativeOpen, setNegativeOpen] = useState(true);
   const [detailHabit, setDetailHabit] = useState<Habit | null>(null);
+  const [plusMenuOpen, setPlusMenuOpen] = useState(false);
 
   const positive = day.positive;
   const completedCount = positive.filter((h) => day.entryOf(h.id).status === "done").length;
@@ -95,14 +96,57 @@ export function Dashboard({ onNavigate, onCompletedChange, onProfileUpdate }: Da
               <span className="font-mono text-xs font-bold text-emerald-400 bg-emerald-950/50 border border-emerald-500/30 px-2.5 py-0.5 rounded-full">
                 {t("dash_tasks_count").replace("{n}", String(totalCount))}
               </span>
-              <button
-                type="button"
-                onClick={() => setIsAddModalOpen(true)}
-                aria-label={t("dash_add_habit_aria")}
-                className="p-1.5 rounded-xl bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/30 text-emerald-400 active:scale-95 transition-all cursor-pointer"
-              >
-                <Plus className="w-4 h-4 stroke-[2.5]" />
-              </button>
+              <div className="relative">
+                <button
+                  type="button"
+                  onClick={() => setPlusMenuOpen((v) => !v)}
+                  aria-label={t("dash_add_habit_aria")}
+                  aria-haspopup="menu"
+                  aria-expanded={plusMenuOpen}
+                  className={`p-1.5 rounded-xl border active:scale-95 transition-all cursor-pointer ${plusMenuOpen ? "bg-emerald-500 text-slate-950 border-emerald-400" : "bg-emerald-500/10 hover:bg-emerald-500/20 border-emerald-500/30 text-emerald-400"}`}
+                >
+                  <Plus className={`w-4 h-4 stroke-[2.5] transition-transform ${plusMenuOpen ? "rotate-45" : ""}`} />
+                </button>
+                <AnimatePresence>
+                  {plusMenuOpen && (
+                    <>
+                      {/* Tashqariga bosish yoki Android "Orqaga" — menyuni yopadi */}
+                      <button
+                        type="button"
+                        aria-label={t("close")}
+                        data-modal-close-trigger
+                        onClick={() => setPlusMenuOpen(false)}
+                        className="fixed inset-0 z-40 cursor-default"
+                      />
+                      <motion.div
+                        role="menu"
+                        initial={{ opacity: 0, y: -6, scale: 0.96 }}
+                        animate={{ opacity: 1, y: 0, scale: 1 }}
+                        exit={{ opacity: 0, y: -6, scale: 0.96 }}
+                        transition={{ duration: 0.15 }}
+                        className="absolute right-0 top-full mt-2 z-50 w-60 rounded-2xl border border-slate-700/80 bg-slate-900/95 backdrop-blur-xl shadow-2xl shadow-black/50 p-1.5"
+                      >
+                        {[
+                          { icon: PlusCircle, label: t("plus_new_habit"), run: () => setIsAddModalOpen(true) },
+                          { icon: SlidersHorizontal, label: t("plus_manage"), run: () => onNavigate?.("habits") },
+                          { icon: Clock, label: t("plus_routine"), run: () => onNavigate?.("habits?section=routines") },
+                        ].map(({ icon: Icon, label, run }) => (
+                          <button
+                            key={label}
+                            type="button"
+                            role="menuitem"
+                            onClick={() => { setPlusMenuOpen(false); run(); }}
+                            className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-left text-sm text-slate-200 hover:bg-slate-800/80 active:bg-slate-800 cursor-pointer"
+                          >
+                            <Icon className="w-4 h-4 text-emerald-400 shrink-0" />
+                            {label}
+                          </button>
+                        ))}
+                      </motion.div>
+                    </>
+                  )}
+                </AnimatePresence>
+              </div>
             </div>
           </div>
 
