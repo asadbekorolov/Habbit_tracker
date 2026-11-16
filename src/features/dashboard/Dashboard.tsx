@@ -131,7 +131,7 @@ export function Dashboard({
         />
 
         {/* 3. Active Routine Pill (Collapsible Capsule) */}
-        <ActiveRoutinePill />
+        <ActiveRoutinePill userId={profile.id} onNavigate={onNavigate} />
 
         {/* 4. Streamlined Habit Rows (Bugungi vazifalar) */}
         <section className="space-y-3 pt-1">

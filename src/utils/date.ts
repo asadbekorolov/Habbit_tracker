@@ -31,6 +31,17 @@ export function getTashkentHour(now: Date = new Date()): number {
   return new Date(now.getTime() + TASHKENT_OFFSET_MS).getUTCHours();
 }
 
+/** Toshkent bo'yicha hozirgi vaqt, "HH:MM". */
+export function getTashkentTimeHM(now: Date = new Date()): string {
+  return new Date(now.getTime() + TASHKENT_OFFSET_MS).toISOString().slice(11, 16);
+}
+
+/** Toshkent bo'yicha hafta kuni, ISO: 1 = dushanba … 7 = yakshanba. */
+export function getTashkentIsoWeekday(now: Date = new Date()): number {
+  const d = new Date(now.getTime() + TASHKENT_OFFSET_MS).getUTCDay();
+  return d === 0 ? 7 : d;
+}
+
 /** Sana satriga n kun qo'shadi (manfiy bo'lishi mumkin). Vaqt zonasidan mustaqil. */
 export function addDays(dateStr: string, n: number): string {
   const [y, m, d] = dateStr.split('-').map(Number);
