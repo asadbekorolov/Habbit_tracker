@@ -1,19 +1,21 @@
-import React, { useState, useEffect, useMemo, lazy, Suspense } from "react";
-import { Plus } from "lucide-react";
-import { soundService } from "../../services/soundService";
-import { toDateStr, addDays } from "../../utils/date";
-import { computeStreaks } from "../../utils/streaks";
-import { habitSyncQueue } from "../../services/habitSyncQueue";
-import { useHabitsQuery, useDayLogsQuery, useLogsRangeQuery, useFreezeInfoQuery } from "../../hooks/queries";
-import { useAddHabit } from "../../hooks/useAddHabit";
+import { useState, useEffect, lazy, Suspense } from "react";
+import { AnimatePresence, motion } from "framer-motion";
+import { Plus, ShieldAlert, ChevronDown, ClipboardList } from "lucide-react";
+import { getTashkentToday } from "../../utils/date";
+import { isMeasurable } from "../../utils/habitMetrics";
 import type { Habit, Profile } from "../../services/supabase";
 import { useProfile } from "../../store/UserContext";
-// Modal faqat "+" bosilganda kerak — asosiy bundle'dan chiqarilgan.
-const AddHabitModal = lazy(() => import("../../components/AddHabitModal").then((m) => ({ default: m.AddHabitModal })));
+import { useLang } from "../../store/LangContext";
+import { useHabitDay } from "../../hooks/useHabitDay";
+import { useHabitMutations, type HabitFormData } from "../../hooks/useHabitMutations";
 import { DisciplineProgressBar } from "./components/DisciplineProgressBar";
 import { ActiveRoutinePill } from "./components/ActiveRoutinePill";
 import { HeroCharacterStage } from "./components/HeroCharacterStage";
 import { HabitItem } from "../habits/components/HabitItem";
+import { QuickLogModal } from "../../components/QuickLogModal";
+import { EmptyState } from "../../components/EmptyState";
+// Modallar faqat kerak bo'lganda yuklanadi — asosiy bundle'dan chiqarilgan.
+const AddHabitModal = lazy(() => import("../../components/AddHabitModal").then((m) => ({ default: m.AddHabitModal })));
 
 export interface DashboardProps {
   completedToday?: number;
@@ -24,98 +26,54 @@ export interface DashboardProps {
   onProfileUpdate?: (p: Profile) => void;
 }
 
-export function Dashboard({
-  onNavigate,
-  onCompletedChange,
-  onProfileUpdate
-}: DashboardProps) {
+export function Dashboard({ onNavigate, onCompletedChange, onProfileUpdate }: DashboardProps) {
   const profile = useProfile();
-  const today = toDateStr();
-  const { data: habitsData } = useHabitsQuery(profile.id);
-  // Kunlik loglar keshi navbatdagi (hali yuborilmagan) belgilarni ham o'z
-  // ichiga oladi va har bosishda darhol yangilanadi — alohida holat kerak emas.
-  const { data: todayLogs } = useDayLogsQuery(profile.id, today);
-  const addHabitMutation = useAddHabit();
+  const { t } = useLang();
+  const today = getTashkentToday();
+  const day = useHabitDay(profile.id, today);
+  const { create } = useHabitMutations(profile.id);
 
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [valueHabit, setValueHabit] = useState<Habit | null>(null);
+  const [negativeOpen, setNegativeOpen] = useState(true);
 
-  const habits: Habit[] = useMemo(
-    () => (habitsData || []).filter((h: Habit) => h.type !== "negative"),
-    [habitsData]
-  );
-
-  const doneIds: Set<string> = useMemo(() => {
-    const set = new Set<string>();
-    for (const log of todayLogs || []) if (log.completed) set.add(log.habit_id);
-    return set;
-  }, [todayLogs]);
-
-  // Haqiqiy zanjir: so'nggi 30 kunlik loglar + bugungi belgilar + muzlatilgan
-  // kunlar (HabitsLog bilan bir xil hisob va bir xil kesh kaliti).
-  const { data: history } = useLogsRangeQuery(profile.id, addDays(today, -30), today);
-  const { data: freezeInfo } = useFreezeInfoQuery(profile.id);
-  const streaks = useMemo(
-    () => computeStreaks({ history: history || [], completedToday: doneIds, today, freezeDates: freezeInfo?.dates }),
-    [history, doneIds, today, freezeInfo?.dates]
-  );
+  const positive = day.positive;
+  const completedCount = positive.filter((h) => day.entryOf(h.id).status === "done").length;
+  const totalCount = positive.length;
+  const progressPercent = totalCount > 0 ? Math.round((completedCount / totalCount) * 100) : 0;
+  const nextPendingHabit = positive.find((h) => day.entryOf(h.id).status !== "done");
 
   useEffect(() => {
-    if (!habitsData || !todayLogs) return;
-    const visible = new Set(habits.map((h) => h.id));
-    onCompletedChange?.([...doneIds].filter((id) => visible.has(id)).length, habits.length);
-  }, [habitsData, todayLogs, habits, doneIds]);
+    if (day.isLoading) return;
+    onCompletedChange?.(completedCount, totalCount);
+  }, [day.isLoading, completedCount, totalCount]);
 
-  // Handle instant 0ms optimistic UI toggle
-  const handleToggleHabit = (habitId: string) => {
-    const isCurrentlyDone = doneIds.has(habitId);
-    if (!isCurrentlyDone) soundService.play("task_complete");
-
-    // Navbat kunlik loglar keshini darhol yangilaydi (optimistik); server
-    // rad etsa — kesh serverdan qayta yuklanadi.
-    const isCompleted = !isCurrentlyDone;
-    habitSyncQueue.enqueue({
-      habitId,
-      userId: profile.id,
-      completed: isCompleted,
-      value: isCompleted ? 1 : 0,
-      date: today,
-    });
+  // Doiracha: oddiy odat — darhol; o'lchanadigan (bajarilmagan) — qiymat oynasi
+  const handleCheck = (habit: Habit) => {
+    if (isMeasurable(habit) && day.entryOf(habit.id).status !== "done") {
+      if (day.locked) return day.toggleDone(habit);
+      setValueHabit(habit);
+    } else {
+      day.toggleDone(habit);
+    }
   };
 
-  const handleAddNewHabit = async (habitData: any) => {
-    {
-      try {
-        await addHabitMutation.mutateAsync({
-          userId: profile.id,
-          name: habitData.name,
-          emoji: habitData.emoji || "Sparkles",
-          type: habitData.type || "positive",
-          target_value: habitData.target_value,
-          unit: habitData.unit,
-          scheduledStart: habitData.scheduledStart,
-          scheduledEnd: habitData.scheduledEnd,
-          description: habitData.description,
-        });
-      } catch (e) {
-        console.error("Failed to add habit to DB:", e);
-      }
+  const handleAddNewHabit = async (habitData: HabitFormData) => {
+    try {
+      await create({ ...habitData, emoji: habitData.emoji || "Sparkles", type: habitData.type || "positive" });
+    } catch (e) {
+      console.error("Failed to add habit to DB:", e);
     }
     setIsAddModalOpen(false);
   };
 
-  const completedCount = doneIds.size;
-  const totalCount = habits.length;
-  const progressPercent = totalCount > 0 ? Math.round((completedCount / totalCount) * 100) : 0;
-  const nextPendingHabit = habits.find((h) => !doneIds.has(h.id));
+  const keptNegative = day.negative.filter((h) => day.entryOf(h.id).status === "done").length;
 
   return (
-    <div className="min-h-screen bg-[#090d16] text-slate-100 font-sans selection:bg-emerald-500/30 selection:text-emerald-300 relative pb-28">
-      {/* Background ambient glow */}
+    <div className="min-h-screen bg-[#090d16] text-slate-100 font-sans selection:bg-emerald-500/30 selection:text-emerald-300 relative">
       <div className="fixed top-0 left-1/2 -translate-x-1/2 w-full max-w-md h-80 bg-emerald-500/5 blur-[120px] pointer-events-none z-0" />
 
-      {/* Main Container with Safe Bottom Spacing pb-28 */}
-      <main className="relative z-10 max-w-md mx-auto px-4 pt-2 space-y-4 pb-28">
-        {/* 1. Anthropometric Hero Character Stage */}
+      <main className="relative z-10 max-w-md mx-auto px-4 pt-2 space-y-4">
         <HeroCharacterStage
           profile={profile}
           activeHabitName={nextPendingHabit?.name}
@@ -123,30 +81,22 @@ export function Dashboard({
           onProfileUpdate={onProfileUpdate}
         />
 
-        {/* 2. Discipline Indicator (Bugungi intizom) */}
-        <DisciplineProgressBar
-          completedCount={completedCount}
-          totalCount={totalCount}
-          percentage={progressPercent}
-        />
+        <DisciplineProgressBar completedCount={completedCount} totalCount={totalCount} percentage={progressPercent} />
 
-        {/* 3. Active Routine Pill (Collapsible Capsule) */}
         <ActiveRoutinePill userId={profile.id} onNavigate={onNavigate} />
 
-        {/* 4. Streamlined Habit Rows (Bugungi vazifalar) */}
+        {/* Bugungi rivojlantiruvchi odatlar */}
         <section className="space-y-3 pt-1">
           <div className="flex items-center justify-between px-1">
-            <h2 className="text-sm font-semibold text-slate-200 tracking-wide">
-              Bugungi vazifalar
-            </h2>
+            <h2 className="text-sm font-semibold text-slate-200 tracking-wide">{t("dash_today_tasks")}</h2>
             <div className="flex items-center gap-2">
-              <span className="font-['Geist_Mono',monospace] font-mono text-xs font-bold text-emerald-400 bg-emerald-950/50 border border-emerald-500/30 px-2.5 py-0.5 rounded-full">
-                {totalCount} ta vazifa
+              <span className="font-mono text-xs font-bold text-emerald-400 bg-emerald-950/50 border border-emerald-500/30 px-2.5 py-0.5 rounded-full">
+                {t("dash_tasks_count").replace("{n}", String(totalCount))}
               </span>
               <button
                 type="button"
                 onClick={() => setIsAddModalOpen(true)}
-                aria-label="Odat qo'shish"
+                aria-label={t("dash_add_habit_aria")}
                 className="p-1.5 rounded-xl bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/30 text-emerald-400 active:scale-95 transition-all cursor-pointer"
               >
                 <Plus className="w-4 h-4 stroke-[2.5]" />
@@ -154,27 +104,83 @@ export function Dashboard({
             </div>
           </div>
 
-          <div className="space-y-2.5">
-            {habits.map((habit) => (
-              <HabitItem
-                key={habit.id}
-                habit={{ ...habit, streak_count: streaks[habit.id] ?? 0 }}
-                isDone={doneIds.has(habit.id)}
-                onToggle={handleToggleHabit}
-              />
-            ))}
-          </div>
+          {!day.isLoading && positive.length === 0 && day.negative.length === 0 ? (
+            <EmptyState title={t("dash_no_habits")} subtitle={t("dash_no_habits_sub")} icon={ClipboardList} />
+          ) : (
+            <div className="space-y-2.5">
+              {positive.map((habit) => (
+                <HabitItem
+                  key={habit.id}
+                  habit={habit}
+                  entry={day.entryOf(habit.id)}
+                  streak={day.streaks[habit.id] ?? 0}
+                  onCheck={handleCheck}
+                />
+              ))}
+            </div>
+          )}
         </section>
+
+        {/* Zararli odatlar — yig'iladigan bo'lim */}
+        {day.negative.length > 0 && (
+          <section className="rounded-2xl border border-rose-500/20 bg-rose-950/10">
+            <button
+              type="button"
+              onClick={() => setNegativeOpen((v) => !v)}
+              aria-expanded={negativeOpen}
+              className="w-full flex items-center justify-between gap-2 p-3.5 cursor-pointer"
+            >
+              <span className="flex items-center gap-2">
+                <ShieldAlert className="w-4 h-4 text-rose-400" />
+                <span className="text-sm font-semibold text-slate-200">{t("dash_negative_section")}</span>
+                <span className="font-mono text-[11px] text-rose-300 bg-rose-500/10 border border-rose-500/20 px-2 py-0.5 rounded-full">
+                  {keptNegative}/{day.negative.length}
+                </span>
+              </span>
+              <ChevronDown className={`w-4 h-4 text-slate-400 transition-transform ${negativeOpen ? "rotate-180" : ""}`} />
+            </button>
+            <AnimatePresence initial={false}>
+              {negativeOpen && (
+                <motion.div
+                  initial={{ height: 0, opacity: 0 }}
+                  animate={{ height: "auto", opacity: 1 }}
+                  exit={{ height: 0, opacity: 0 }}
+                  className="overflow-hidden"
+                >
+                  <div className="px-3 pb-3 space-y-2.5">
+                    <p className="text-[11px] text-slate-400 px-1">{t("dash_negative_hint")}</p>
+                    {day.negative.map((habit) => (
+                      <HabitItem
+                        key={habit.id}
+                        habit={habit}
+                        entry={day.entryOf(habit.id)}
+                        streak={day.streaks[habit.id] ?? 0}
+                        onCheck={(h) => day.toggleDone(h)}
+                        onFail={(h) => day.toggleFail(h)}
+                      />
+                    ))}
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </section>
+        )}
       </main>
 
-      {/* Quick Add Habit Modal */}
+      <AnimatePresence>
+        {valueHabit && (
+          <QuickLogModal
+            habit={valueHabit}
+            initialValue={day.entryOf(valueHabit.id).value}
+            onSave={async (v) => { day.setValue(valueHabit, v); }}
+            onClose={() => setValueHabit(null)}
+          />
+        )}
+      </AnimatePresence>
+
       {isAddModalOpen && (
         <Suspense fallback={null}>
-          <AddHabitModal
-            isOpen={isAddModalOpen}
-            onClose={() => setIsAddModalOpen(false)}
-            onAdd={handleAddNewHabit}
-          />
+          <AddHabitModal isOpen={isAddModalOpen} onClose={() => setIsAddModalOpen(false)} onAdd={handleAddNewHabit} />
         </Suspense>
       )}
     </div>

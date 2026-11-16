@@ -24,7 +24,7 @@ interface HabitIconProps {
   noWrapper?: boolean;
 }
 
-const EMOJI_MAP: Record<string, React.ElementType> = {
+export const EMOJI_MAP: Record<string, React.ElementType> = {
   // Water
   '\u{1F4A7}': Droplets,
   '\u{1F964}': Droplets,
