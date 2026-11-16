@@ -7,7 +7,7 @@ import { Share } from "@capacitor/share";
 import { Filesystem, Directory } from "@capacitor/filesystem";
 import { toPng } from "html-to-image";
 import { useNavigate } from "react-router-dom";
-import { getHabitCategory } from "../../utils/categoryTheme";
+import { getHabitDomain, HABIT_DOMAINS, type HabitDomain } from "../../utils/habitCategory";
 import { getCoachNote, upsertCoachNote, isHabitLogSuccess } from "../../services/db";
 import { useHabitsMetaQuery, useLogsRangeQuery, useHealthRangeQuery, useMonthNotesQuery } from "../../hooks/queries";
 import { supabase } from "../../services/supabase";
@@ -453,22 +453,23 @@ ${habitDataSummary}
     });
   }, [heatmapByDate, totalHabits]);
 
-  // Category Balance
+  // Yo'nalishlar balansi: tanlangan davrda har yo'nalishda necha marta odat
+  // bajarilgani va bu qancha alohida odatdan kelgani.
   const categoryBalance = useMemo(() => {
-    const categories: Record<string, number> = {
-      'Rivojlanish': 0,
-      'Sog\'lik': 0,
-      'Ruhiyat': 0,
-      'Mehnat': 0
-    };
-    logs.forEach(log => {
-      if (isHabitLogSuccess(log)) {
-        const cat = getHabitCategory(log.habits.name, log.habits.emoji || "");
-        if (categories[cat] !== undefined) categories[cat]++;
-        else categories['Rivojlanish']++; // Default
-      }
-    });
-    return categories;
+    const acc = Object.fromEntries(
+      HABIT_DOMAINS.map((d) => [d, { done: 0, habits: new Set<string>() }])
+    ) as Record<HabitDomain, { done: number; habits: Set<string> }>;
+    for (const log of logs) {
+      if (!isHabitLogSuccess(log)) continue;
+      const domain = getHabitDomain(log.habits.name, log.habits.emoji || "");
+      acc[domain].done++;
+      acc[domain].habits.add(log.habit_id);
+    }
+    return HABIT_DOMAINS.map((domain) => ({
+      domain,
+      done: acc[domain].done,
+      habitCount: acc[domain].habits.size,
+    }));
   }, [logs]);
 
   // Jami Sarflangan Vaqt & Qadamlar
