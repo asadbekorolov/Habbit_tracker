@@ -54,9 +54,9 @@ export interface HabitItemProps {
   habit: Habit;
   entry: HabitDayEntry;
   streak: number;
-  /** Doiracha (✓): oddiy odatda belgilash, o'lchanadiganda — qiymat oynasi (ota komponent hal qiladi) */
+  /** Doiracha (belgilash tugmasi): oddiy odatda belgilash, o'lchanadiganda — qiymat oynasi (ota komponent hal qiladi) */
   onCheck: (habit: Habit) => void;
-  /** ✗ tugmasi (berilsa ko'rinadi; salbiy odatda — "buzildi") */
+  /** X tugmasi (berilsa ko'rinadi; salbiy odatda — "buzildi") */
   onFail?: (habit: Habit) => void;
   /** Kartaning o'zi bosilganda — odat tafsilotlari */
   onOpen?: (habit: Habit) => void;
