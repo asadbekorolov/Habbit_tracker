@@ -555,6 +555,16 @@ export default function App() {
             </main>
           </div>
 
+          {/* Dock ostidagi bo'shliqni yopuvchi qatlam: skroll paytida kontent
+              dock atrofidan ko'rinib qolmasligi uchun */}
+          {!isKeyboardVisible && (
+            <div
+              aria-hidden="true"
+              className="fixed bottom-0 inset-x-0 z-30 md:hidden pointer-events-none bg-gradient-to-t from-[#090d16] via-[#090d16]/95 to-transparent"
+              style={{ height: "calc(7rem + env(safe-area-inset-bottom))" }}
+            />
+          )}
+
           {/* Mobile floating bottom navigation (Icon-Only Minimalist Dock) - Dynamically hidden when virtual keyboard opens */}
           {!isKeyboardVisible && (
             <nav

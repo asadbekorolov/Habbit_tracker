@@ -453,7 +453,7 @@ export function Store({ onProfileUpdate, onClose, isModal = false }: StoreProps)
   const showFramesSection = activeTab === "all" || activeTab === "frames";
 
   return (
-    <div className={`w-full ${isModal ? "" : "max-w-2xl mx-auto pb-24"}`}>
+    <div className={`w-full ${isModal ? "" : "max-w-2xl mx-auto pb-32"}`}>
       {/* Top Header Card */}
       <div className="relative overflow-hidden rounded-3xl p-6 bg-gradient-to-br from-slate-900 via-slate-800 to-indigo-950 border border-slate-700/60 shadow-2xl mb-6">
         <div className="absolute -right-6 -bottom-6 w-36 h-36 bg-amber-500/10 rounded-full blur-2xl pointer-events-none" />
