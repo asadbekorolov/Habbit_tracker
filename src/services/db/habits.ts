@@ -374,6 +374,17 @@ export async function getStreakFreezes(userId: string): Promise<string[]> {
   return (data || []).map((r: any) => r.freeze_date)
 }
 
+/**
+ * Zanjirni muzlatish (050: use_streak_freeze) — faqat bugun yoki kecha;
+ * limit: oyiga FREE_FREEZES_PER_MONTH + shu oy do'kondan sotib olinganlar.
+ * Xato kodlari: date_not_allowed, already_frozen, no_freezes_left.
+ */
+export async function applyStreakFreeze(date: string): Promise<{ remaining: number }> {
+  const { data, error } = await supabase.rpc('use_streak_freeze', { p_date: date })
+  if (error) throw error
+  return { remaining: Number((data as any)?.remaining ?? 0) }
+}
+
 export async function getMonthlyFreezeCount(userId: string): Promise<number> {
   const now = tashkentTodayAnchor()
   const monthStart = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-01`

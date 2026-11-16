@@ -25,6 +25,25 @@ export interface HabitDayEntry {
 
 const EMPTY: HabitDayEntry = { status: 'none', value: 0 };
 
+/**
+ * Istalgan (ochiq) kun uchun belgini navbatga qo'yadi — kunlik kesh darhol
+ * yangilanadi. Kun ochiqligini chaqiruvchi tekshiradi.
+ */
+export function markHabitOnDate(uid: string, habit: Habit, date: string, status: HabitDayStatus, value: number) {
+  habitSyncQueue.enqueue({
+    habitId: habit.id,
+    userId: uid,
+    completed: status === 'done',
+    value: status === 'none' ? 0 : value,
+    isDelete: status === 'none',
+    isNegative: habit.type === 'negative',
+    date,
+  });
+}
+
+/** "Bajarildi" qiymati: o'lchanadigan odatda — maqsad, aks holda 1. */
+export const doneValue = (habit: Habit) => (isMeasurable(habit) ? habit.target_value || 1 : 1);
+
 export function useHabitDay(uid: string, date: string) {
   const { t } = useLang();
   const today = getTashkentToday();
@@ -69,15 +88,7 @@ export function useHabitDay(uid: string, date: string) {
       return false;
     }
     if (status === 'done' && entryOf(habit.id).status !== 'done') soundService.play('task_complete');
-    habitSyncQueue.enqueue({
-      habitId: habit.id,
-      userId: uid,
-      completed: status === 'done',
-      value: status === 'none' ? 0 : value,
-      isDelete: status === 'none',
-      isNegative: habit.type === 'negative',
-      date,
-    });
+    markHabitOnDate(uid, habit, date, status, value);
     return true;
   }
 
@@ -85,7 +96,7 @@ export function useHabitDay(uid: string, date: string) {
   function toggleDone(habit: Habit) {
     const cur = entryOf(habit.id);
     if (cur.status === 'done') return enqueue(habit, 'none', 0);
-    return enqueue(habit, 'done', isMeasurable(habit) ? habit.target_value || 1 : 1);
+    return enqueue(habit, 'done', doneValue(habit));
   }
 
   /** Bajarilmadi <-> belgilanmagan (salbiy odatda: "buzildi"). */

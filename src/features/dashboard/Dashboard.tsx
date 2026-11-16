@@ -15,6 +15,7 @@ import { HabitItem } from "../habits/components/HabitItem";
 import { QuickLogModal } from "../../components/QuickLogModal";
 import { EmptyState } from "../../components/EmptyState";
 // Modallar faqat kerak bo'lganda yuklanadi — asosiy bundle'dan chiqarilgan.
+const HabitDetailModal = lazy(() => import("../habits/HabitDetailModal").then((m) => ({ default: m.HabitDetailModal })));
 const AddHabitModal = lazy(() => import("../../components/AddHabitModal").then((m) => ({ default: m.AddHabitModal })));
 
 export interface DashboardProps {
@@ -36,6 +37,7 @@ export function Dashboard({ onNavigate, onCompletedChange, onProfileUpdate }: Da
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [valueHabit, setValueHabit] = useState<Habit | null>(null);
   const [negativeOpen, setNegativeOpen] = useState(true);
+  const [detailHabit, setDetailHabit] = useState<Habit | null>(null);
 
   const positive = day.positive;
   const completedCount = positive.filter((h) => day.entryOf(h.id).status === "done").length;
@@ -115,6 +117,7 @@ export function Dashboard({ onNavigate, onCompletedChange, onProfileUpdate }: Da
                   entry={day.entryOf(habit.id)}
                   streak={day.streaks[habit.id] ?? 0}
                   onCheck={handleCheck}
+                  onOpen={setDetailHabit}
                 />
               ))}
             </div>
@@ -157,6 +160,7 @@ export function Dashboard({ onNavigate, onCompletedChange, onProfileUpdate }: Da
                         streak={day.streaks[habit.id] ?? 0}
                         onCheck={(h) => day.toggleDone(h)}
                         onFail={(h) => day.toggleFail(h)}
+                        onOpen={setDetailHabit}
                       />
                     ))}
                   </div>
@@ -177,6 +181,12 @@ export function Dashboard({ onNavigate, onCompletedChange, onProfileUpdate }: Da
           />
         )}
       </AnimatePresence>
+
+      {detailHabit && (
+        <Suspense fallback={null}>
+          <HabitDetailModal habit={detailHabit} userId={profile.id} onClose={() => setDetailHabit(null)} />
+        </Suspense>
+      )}
 
       {isAddModalOpen && (
         <Suspense fallback={null}>

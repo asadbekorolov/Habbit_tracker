@@ -25,6 +25,7 @@ import { getHabitCategory, getCategoryTheme } from "../../utils/categoryTheme";
 import { notificationService } from "../../services/notificationService";
 import { Bell, BellOff } from "lucide-react";
 import { AddHabitModal } from "../../components/AddHabitModal";
+import { HabitDetailModal } from "./HabitDetailModal";
 import { useProfile } from "../../store/UserContext";
 
 interface HabitsManagerProps {
@@ -76,70 +77,6 @@ const GOAL_PACKS: { id: string; emoji: string; labelKey: string; descKey: string
   },
 ];
 
-function calculateSingleHabitStats(habit: Habit, logs: { log_date: string; completed: boolean }[]) {
-  const completedDaysSet = new Set<string>();
-  for (const log of logs) {
-    if (log.completed) completedDaysSet.add(log.log_date);
-  }
-
-  const today = toDateStr();
-  const now = tashkentTodayAnchor();
-
-  // Current streak
-  let streak = 0;
-  const startOffset = completedDaysSet.has(today) ? 0 : 1;
-  for (let i = startOffset; i < 365; i++) {
-    const d = new Date(now);
-    d.setDate(d.getDate() - i);
-    const ds = toDateStr(d);
-    if (completedDaysSet.has(ds)) streak++;
-    else break;
-  }
-
-  // Best streak
-  const sortedDates = Array.from(completedDaysSet).sort();
-  let bestStreak = sortedDates.length > 0 ? 1 : 0;
-  let cur = 1;
-  for (let i = 1; i < sortedDates.length; i++) {
-    const diff = Math.round((new Date(sortedDates[i]).getTime() - new Date(sortedDates[i - 1]).getTime()) / 86400000);
-    if (diff === 1) {
-      cur++;
-      if (cur > bestStreak) bestStreak = cur;
-    } else {
-      cur = 1;
-    }
-  }
-
-  // 30-day history grid
-  const days30: { dateStr: string; label: string; weekday: string; completed: boolean }[] = [];
-  const UZ_MONTHS = ["Yan","Fev","Mar","Apr","May","Iyn","Iyl","Avg","Sen","Okt","Noy","Dek"];
-  const UZ_DAYS = ["Ya","Du","Se","Ch","Pa","Ju","Sh"];
-
-  let completed30Count = 0;
-  for (let i = 29; i >= 0; i--) {
-    const d = new Date(now);
-    d.setDate(d.getDate() - i);
-    const ds = toDateStr(d);
-    const isDone = completedDaysSet.has(ds);
-    if (isDone) completed30Count++;
-    days30.push({
-      dateStr: ds,
-      label: `${d.getDate()} ${UZ_MONTHS[d.getMonth()]}`,
-      weekday: UZ_DAYS[d.getDay()],
-      completed: isDone,
-    });
-  }
-
-  const completionPct = Math.round((completed30Count / 30) * 100);
-
-  return {
-    totalCompleted: completedDaysSet.size,
-    streak,
-    bestStreak: Math.max(bestStreak, streak),
-    completionPct,
-    days30,
-  };
-}
 
 export function HabitsManager({}: HabitsManagerProps) {
   const profile = useProfile();
@@ -157,8 +94,6 @@ export function HabitsManager({}: HabitsManagerProps) {
 
   // Individual Habit Analytics Modal State
   const [analyticsHabit, setAnalyticsHabit] = useState<Habit | null>(null);
-  const [habitLogs, setHabitLogs] = useState<any[]>([]);
-  const [logsLoading, setLogsLoading] = useState(false);
 
   const [showGoalPack, setShowGoalPack] = useState(false);
   const [selectedGoal, setSelectedGoal] = useState<string | null>(null);
@@ -193,35 +128,6 @@ export function HabitsManager({}: HabitsManagerProps) {
       return () => clearTimeout(timer);
     }
   }, [loading]);
-
-  useEffect(() => {
-    if (!analyticsHabit) {
-      setHabitLogs([]);
-      return;
-    }
-    setLogsLoading(true);
-    const fromDate = tashkentTodayAnchor();
-    fromDate.setDate(fromDate.getDate() - 30);
-    const startDate = toDateStr(fromDate);
-
-    Promise.resolve(
-      supabase
-        .from('habit_logs')
-        .select('log_date, completed, value')
-        .eq('habit_id', analyticsHabit.id)
-        .gte('log_date', startDate)
-    )
-      .then(({ data }) => {
-        setHabitLogs(data || []);
-      })
-      .catch(() => {})
-      .finally(() => setLogsLoading(false));
-  }, [analyticsHabit]);
-
-  const analyticsStats = useMemo(() => {
-    if (!analyticsHabit) return null;
-    return calculateSingleHabitStats(analyticsHabit, habitLogs);
-  }, [analyticsHabit, habitLogs]);
 
   async function handleBulkAdd() {
     const goal = GOAL_PACKS.find((g) => g.id === selectedGoal);
@@ -435,198 +341,9 @@ export function HabitsManager({}: HabitsManagerProps) {
         initialData={editingId ? habits.find(h => h.id === editingId) : undefined}
       />
 
-      {/* Individual Habit Analytics Modal */}
+      {/* Odat tafsilotlari (Bosh sahifa va Kundalik bilan bir xil oyna) */}
       {analyticsHabit && (
-        <div
-          role="dialog"
-          aria-modal="true"
-          className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4"
-          style={{ background: "rgba(0,0,0,0.65)", backdropFilter: "blur(6px)" }}
-          onClick={() => setAnalyticsHabit(null)}
-        >
-          <motion.div
-            initial={{ y: "100%", opacity: 0 }}
-            animate={{ y: 0, opacity: 1 }}
-            exit={{ y: "100%", opacity: 0 }}
-            transition={{ type: "spring", damping: 25, stiffness: 200 }}
-            className="w-full sm:max-w-md rounded-t-3xl sm:rounded-3xl overflow-hidden p-6"
-            style={{
-              background: "#0D1117",
-              border: `1px solid rgba(255,255,255,0.1)`,
-              maxHeight: "90vh",
-              overflowY: "auto",
-            }}
-            onClick={(e) => e.stopPropagation()}
-          >
-            {/* Modal Header */}
-            <div className="flex items-center justify-between mb-6 pb-4 border-b border-slate-200 dark:border-white/10">
-              <div className="flex items-center gap-3">
-                <HabitIcon emoji={analyticsHabit.emoji} name={analyticsHabit.name} size={24} />
-                <div>
-                  <h3 className="text-base font-bold text-slate-900 dark:text-white leading-tight">
-                    {cleanHabitName(analyticsHabit.name)}
-                  </h3>
-                  <div className="flex items-center gap-2 mt-1">
-                    <span className={`text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full ${
-                      analyticsHabit.type === 'positive'
-                        ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20'
-                        : 'bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/20'
-                    }`}>
-                      {analyticsHabit.type === 'positive' ? 'Ijobiy · Rivojlantiruvchi' : 'Salbiy · Cheklov'}
-                    </span>
-                  </div>
-                </div>
-              </div>
-
-              <button
-                type="button"
-                onClick={() => setAnalyticsHabit(null)}
-                data-modal-close-trigger
-                aria-label="Close"
-                className="p-2 rounded-full hover:bg-slate-100 dark:hover:bg-white/10 transition-colors"
-              >
-                <X size={18} className="text-slate-400" />
-              </button>
-            </div>
-
-            {logsLoading || !analyticsStats ? (
-              <div className="flex items-center justify-center py-12">
-                <Loader2 size={24} className="animate-spin text-emerald-400" />
-              </div>
-            ) : (
-              <div className="space-y-6">
-                {/* 2x2 Stats Grid */}
-                <div className="grid grid-cols-2 gap-3">
-                  {/* Jami Bajarilgan */}
-                  <div className="p-4 rounded-2xl bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10">
-                    <div className="flex items-center gap-2 mb-2 text-emerald-500">
-                      <CheckCircle2 size={16} />
-                      <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">Jami Bajarilgan</span>
-                    </div>
-                    <p className="text-2xl font-black text-slate-900 dark:text-white font-mono">
-                      {analyticsStats.totalCompleted} <span className="text-xs font-normal text-slate-400">kun</span>
-                    </p>
-                  </div>
-
-                  {/* Joriy Streak */}
-                  <div className="p-4 rounded-2xl bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10">
-                    <div className="flex items-center gap-2 mb-2 text-orange-500">
-                      <Flame size={16} className="fill-orange-500" />
-                      <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">Joriy Seriya</span>
-                    </div>
-                    <p className="text-2xl font-black text-slate-900 dark:text-white font-mono">
-                      {analyticsStats.streak} <span className="text-xs font-normal text-slate-400">kun</span>
-                    </p>
-                  </div>
-
-                  {/* Record Streak */}
-                  <div className="p-4 rounded-2xl bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10">
-                    <div className="flex items-center gap-2 mb-2 text-amber-500">
-                      <Trophy size={16} />
-                      <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">Eng Yaxshi Rekord</span>
-                    </div>
-                    <p className="text-2xl font-black text-slate-900 dark:text-white font-mono">
-                      {analyticsStats.bestStreak} <span className="text-xs font-normal text-slate-400">kun</span>
-                    </p>
-                  </div>
-
-                  {/* Completion Pct */}
-                  <div className="p-4 rounded-2xl bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10">
-                    <div className="flex items-center gap-2 mb-2 text-cyan-500">
-                      <TrendingUp size={16} />
-                      <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">Oylik Intizom</span>
-                    </div>
-                    <p className="text-2xl font-black text-slate-900 dark:text-white font-mono">
-                      {analyticsStats.completionPct}%
-                    </p>
-                  </div>
-                </div>
-
-                {/* 30-Day Mini Heatmap / History Grid */}
-                <div className="p-4 rounded-2xl bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10">
-                  <div className="flex items-center justify-between mb-3">
-                    <span className="text-xs font-bold text-slate-900 dark:text-white">
-                      30 Kunlik Tarix va Natijalar
-                    </span>
-                    <span className="text-xs font-mono text-emerald-500 font-bold">
-                      {analyticsStats.completionPct}%
-                    </span>
-                  </div>
-
-                  <div className="grid grid-cols-10 gap-2">
-                    {analyticsStats.days30.map((d, idx) => (
-                      <motion.div
-                        key={idx}
-                        whileTap={{ scale: 0.9 }}
-                        onClick={() => toast(`${d.label} (${d.weekday}): ${d.completed ? 'Bajarildi ✓' : 'Bajarilmadi'}`)}
-                        className={`aspect-square rounded-xl flex flex-col items-center justify-center cursor-pointer transition-all ${
-                          d.completed
-                            ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/40 shadow-sm'
-                            : 'bg-slate-200/50 dark:bg-white/5 text-slate-400 border border-transparent'
-                        }`}
-                      >
-                        {d.completed ? (
-                          <Check size={12} strokeWidth={3} className="text-emerald-400" />
-                        ) : (
-                          <span className="text-[9px] font-bold">{d.weekday}</span>
-                        )}
-                      </motion.div>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Habit Configuration Summary */}
-                <div className="p-4 rounded-2xl bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 space-y-2">
-                  <p className="text-xs font-bold text-slate-900 dark:text-white">Odat Parametrlari</p>
-                  {analyticsHabit.target_value && (
-                    <div className="flex justify-between text-xs text-slate-500 dark:text-slate-400">
-                      <span>Maqsad:</span>
-                      <span className="font-semibold text-slate-900 dark:text-white">
-                        {analyticsHabit.target_value} {analyticsHabit.unit || 'daqiqa'}
-                      </span>
-                    </div>
-                  )}
-                  {analyticsHabit.scheduled_start && (
-                    <div className="flex justify-between text-xs text-slate-500 dark:text-slate-400">
-                      <span>Vaqt oralig'i:</span>
-                      <span className="font-semibold text-slate-900 dark:text-white font-mono">
-                        {analyticsHabit.scheduled_start.slice(0, 5)} {analyticsHabit.scheduled_end ? `— ${analyticsHabit.scheduled_end.slice(0, 5)}` : ''}
-                      </span>
-                    </div>
-                  )}
-                  {analyticsHabit.description && (
-                    <div className="pt-2 border-t border-slate-200 dark:border-white/5 text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
-                      {analyticsHabit.description}
-                    </div>
-                  )}
-                </div>
-
-                {/* Edit & Close Actions */}
-                <div className="flex gap-3 pt-2">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      const h = analyticsHabit;
-                      setAnalyticsHabit(null);
-                      startEditing(h);
-                    }}
-                    className="flex-1 py-3 rounded-2xl bg-emerald-500 hover:bg-emerald-400 text-black font-bold text-xs flex items-center justify-center gap-2 active:scale-95 transition-all shadow-md shadow-emerald-500/20"
-                  >
-                    <Pencil size={14} />
-                    <span>Tahrirlash</span>
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setAnalyticsHabit(null)}
-                    className="py-3 px-5 rounded-2xl bg-slate-100 dark:bg-white/10 text-slate-600 dark:text-slate-300 font-semibold text-xs active:scale-95 transition-all"
-                  >
-                    Yopish
-                  </button>
-                </div>
-              </div>
-            )}
-          </motion.div>
-        </div>
+        <HabitDetailModal habit={analyticsHabit} userId={profile.id} onClose={() => setAnalyticsHabit(null)} />
       )}
 
       {/* Goal Pack Modal */}

@@ -1,7 +1,8 @@
 // Kundalik — tarix va yozuvlar: oy matritsasi (kun bosilsa o'sha kunning
 // odatlari), kunlik eslatma va kayfiyat, haftalik sarhisob, oylik tahlil.
 // Bugungi odatlar ro'yxati faqat Bosh sahifada (takror yo'q).
-import { useState } from "react";
+import { useState, lazy, Suspense } from "react";
+import type { Habit } from "../services/supabase";
 import { MonthGrid } from "../features/dashboard/MonthGrid";
 import { DailyNotes } from "../features/dashboard/DailyNotes";
 import { WeeklyReflection } from "../features/dashboard/WeeklyReflection";
@@ -10,6 +11,8 @@ import { DayHabitsSheet } from "../features/journal/DayHabitsSheet";
 import { useLang } from "../store/LangContext";
 import { MiniPipAvatar } from "../components/MiniPipAvatar";
 import { useProfile } from "../store/UserContext";
+
+const HabitDetailModal = lazy(() => import("../features/habits/HabitDetailModal").then((m) => ({ default: m.HabitDetailModal })));
 
 interface JournalPageProps {
   onCompletedChange?: (completed: number, total: number) => void;
@@ -21,6 +24,7 @@ export function JournalPage(_props: JournalPageProps) {
   const profile = useProfile();
   const { t } = useLang();
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
+  const [detailHabit, setDetailHabit] = useState<Habit | null>(null);
 
   return (
     <div className="max-w-2xl pb-32 space-y-4">
@@ -44,7 +48,13 @@ export function JournalPage(_props: JournalPageProps) {
       </section>
 
       {selectedDate && (
-        <DayHabitsSheet profile={profile} date={selectedDate} onClose={() => setSelectedDate(null)} />
+        <DayHabitsSheet profile={profile} date={selectedDate} onClose={() => setSelectedDate(null)} onOpenHabit={setDetailHabit} />
+      )}
+
+      {detailHabit && (
+        <Suspense fallback={null}>
+          <HabitDetailModal habit={detailHabit} userId={profile.id} onClose={() => setDetailHabit(null)} />
+        </Suspense>
       )}
     </div>
   );
