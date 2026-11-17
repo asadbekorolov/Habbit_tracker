@@ -43,3 +43,18 @@ test('oylik natija: yaratilgan kundan bugungacha, muzlatilgan kun hisobga olinma
   assert.deepEqual(r, { pct: 60, done: 3, eligible: 5 });
   assert.deepEqual(monthResult(2026, 10, '2026-11-10', null, new Set(), new Set()).eligible, 31);
 });
+
+test("hafta kunlari: rejalashtirilmagan kun — 'off', foiz va rekordga xalaqit bermaydi", () => {
+  // Odat: Du, Ch, Ju. 2026-11-16 — dushanba
+  const MWF = [1, 3, 5];
+  const cells = buildMonthCalendar(2026, 11, '2026-11-20', new Set(['2026-11-16']), new Set(), new Set(), MWF);
+  const byDay = (d: number) => cells.find((c) => c?.day === d)!;
+  assert.equal(byDay(16).status, 'done');
+  assert.equal(byDay(17).status, 'off');   // seshanba
+  assert.equal(byDay(18).status, 'empty'); // chorshanba, bajarilmagan
+  // 16..20: rejalashtirilgan kunlar 16, 18, 20 -> 1/3
+  assert.deepEqual(monthResult(2026, 11, '2026-11-20', '2026-11-16', new Set(['2026-11-16']), new Set(), MWF), { pct: 33, done: 1, eligible: 3 });
+  // Du 16, Ch 18, Ju 20 — oradagi kunlar uzmaydi
+  assert.equal(longestStreak(['2026-11-16', '2026-11-18', '2026-11-20'], [], MWF), 3);
+  assert.equal(longestStreak(['2026-11-16', '2026-11-18', '2026-11-20']), 1);
+});

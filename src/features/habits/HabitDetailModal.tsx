@@ -3,11 +3,11 @@
 // 3 ta KPI, oylik bajarilish matritsasi (ochiq kunni shu yerda o'zgartirish),
 // bugungi ijro, zanjirni muzlatish, eslatma, takrorlanish jadvali.
 import { lazy, Suspense, useMemo, useState } from "react";
-import { useQueryClient } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import {
   Edit3, Trash2, Flame, Trophy, CalendarCheck, ChevronLeft, ChevronRight, Check, X,
-  Minus, Plus, Shield, ShieldCheck, Bell, Clock, Repeat,
+  Minus, Plus, Shield, ShieldCheck, Bell, Clock, Repeat, Timer, Sunrise, Sun, Moon,
 } from "lucide-react";
 import { Modal } from "../../components/Modal";
 import { resolveHabitIcon, habitToneClass } from "./components/HabitItem";
@@ -15,13 +15,15 @@ import { cleanHabitName } from "../../components/HabitIcon";
 import { useHabitDay, markHabitOnDate, doneValue } from "../../hooks/useHabitDay";
 import { useAllTimeLogsQuery, useFreezeInfoQuery, useLogsRangeQuery } from "../../hooks/queries";
 import { useHabitMutations, getHabitReminder, setHabitReminder, type HabitFormData } from "../../hooks/useHabitMutations";
-import { applyStreakFreeze, FREE_FREEZES_PER_MONTH } from "../../services/db";
+import { applyStreakFreeze, FREE_FREEZES_PER_MONTH, getHabitCompletionTimes } from "../../services/db";
+import { analyzeCompletionTimes, MIN_TIMED, type DayPart } from "../../utils/habitTiming";
+import { detectPreset, normalizeDays } from "../../utils/weekdays";
 import { addDays, getTashkentToday, isTashkentDateOpen } from "../../utils/date";
 import { getHabitDomain, type HabitDomain } from "../../utils/habitCategory";
 import {
   buildMonthCalendar, isMeasurable, longestStreak, monthResult, progressPct, valueStep, type DayStatus,
 } from "../../utils/habitMetrics";
-import { MONTHS_FULL, DAYS_SHORT } from "../../utils/i18n";
+import { MONTHS_FULL, DAYS_SHORT, DAYS_FULL } from "../../utils/i18n";
 import { useLang } from "../../store/LangContext";
 import { useHaptics } from "../../hooks/useHaptics";
 import type { Habit } from "../../services/supabase";
@@ -42,6 +44,7 @@ const CELL_CLS: Record<DayStatus, string> = {
   fail: "bg-rose-500/80 text-white border border-rose-400/60",
   freeze: "bg-sky-500/25 border border-sky-400/50 text-sky-300",
   empty: "bg-slate-800/40 border border-slate-800 text-slate-400",
+  off: "bg-slate-900/40 border border-dashed border-slate-800 text-slate-600",
   future: "bg-slate-900/30 border border-slate-800/40 text-slate-600",
 };
 
@@ -107,16 +110,29 @@ export function HabitDetailModal({ habit, userId, onClose }: HabitDetailModalPro
     return { doneSet: done, failSet: fail };
   }, [monthLogsQ.data, live.id, isCurrentMonth, today, todayEntry, overrides, measurable]);
 
-  const cells = buildMonthCalendar(ym.y, ym.m, today, doneSet, failSet, frozen);
-  const month = monthResult(ym.y, ym.m, today, createdDay, doneSet, frozen);
+  // Hafta kunlari (052): rejalashtirilmagan kunlar matritsada xira, foizga kirmaydi
+  const schedule = live.days_of_week;
+  const cells = buildMonthCalendar(ym.y, ym.m, today, doneSet, failSet, frozen, schedule);
+  const month = monthResult(ym.y, ym.m, today, createdDay, doneSet, frozen, schedule);
 
   // ── KPI ─────────────────────────────────────────────────────────
   const currentStreak = day.streaks[live.id] ?? 0;
   const recordStreak = useMemo(() => {
     const dates = (allTimeQ.data || []).filter((l: any) => l.habit_id === live.id).map((l: any) => l.log_date as string);
     if (todayEntry.status === "done") dates.push(today);
-    return Math.max(longestStreak(dates, frozen), currentStreak);
-  }, [allTimeQ.data, live.id, todayEntry.status, today, frozen, currentStreak]);
+    return Math.max(longestStreak(dates, frozen, schedule), currentStreak);
+  }, [allTimeQ.data, live.id, todayEntry.status, today, frozen, currentStreak, schedule]);
+
+  // ── "Ko'pincha soat nechada" (053: completed_at) ─────────────────
+  const timingQ = useQuery({
+    queryKey: ["habitTiming", userId, live.id, todayEntry.status],
+    queryFn: () => getHabitCompletionTimes(userId, live.id),
+    staleTime: 5 * 60_000,
+    meta: { persist: false },
+  });
+  const timing = useMemo(() => analyzeCompletionTimes(timingQ.data || []), [timingQ.data]);
+  const days = normalizeDays(schedule);
+  const daysPreset = detectPreset(days);
 
   // ── Kalendar kuni bosilganda ─────────────────────────────────────
   const onDayPress = (date: string, status: DayStatus) => {
@@ -288,7 +304,67 @@ export function HabitDetailModal({ habit, userId, onClose }: HabitDetailModalPro
             <Legend cls="bg-emerald-500" label={t("hd_legend_done")} />
             <Legend cls="bg-rose-500/80" label={t("hd_legend_fail")} />
             <Legend cls="bg-sky-500/40 border border-sky-400/50" label={t("hd_legend_freeze")} />
+            <Legend cls="bg-slate-900 border border-dashed border-slate-700" label={t("hd_legend_off")} />
           </div>
+        </section>
+
+        {/* Ko'pincha soat nechada bajariladi */}
+        <section className="rounded-2xl border border-slate-800 bg-slate-950/40 p-3 space-y-2.5">
+          <h3 className="text-xs font-bold text-slate-200 flex items-center gap-2">
+            <Timer className="w-4 h-4 text-cyan-400" /> {t("hd_timing_title")}
+          </h3>
+          {timingQ.isPending ? (
+            <div className="h-16 rounded-xl bg-slate-800/40 animate-pulse" />
+          ) : timing.total === 0 ? (
+            <p className="text-[11px] text-slate-400">{t("hd_timing_no_days")}</p>
+          ) : (
+            <>
+              {timing.peakWindow ? (
+                <div className="grid grid-cols-2 gap-2">
+                  <div className="rounded-xl bg-cyan-500/10 border border-cyan-500/25 p-2.5">
+                    <p className="text-[10px] text-cyan-300/80">{t("hd_timing_peak")}</p>
+                    <p className="font-mono text-sm font-bold text-white mt-0.5">{timing.peakWindow}</p>
+                    <p className="text-[10px] text-slate-400 mt-0.5">{t("hd_timing_typical").replace("{time}", timing.typicalTime || "")}</p>
+                  </div>
+                  <div className="rounded-xl bg-emerald-500/10 border border-emerald-500/25 p-2.5">
+                    <p className="text-[10px] text-emerald-300/80">{t("hd_timing_best_day")}</p>
+                    <p className="text-sm font-bold text-white mt-0.5">
+                      {timing.bestWeekdays.map((d) => DAYS_FULL[lang][d % 7]).join(", ") || "—"}
+                    </p>
+                  </div>
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  <p className="text-[11px] text-slate-400">
+                    {t("hd_timing_need_more").replace("{n}", String(MIN_TIMED)).replace("{have}", String(timing.timed))}
+                  </p>
+                  {timing.bestWeekdays.length > 0 && (
+                    <p className="text-[11px] text-slate-300">
+                      {t("hd_timing_best_day")}: <span className="font-semibold text-white">{timing.bestWeekdays.map((d) => DAYS_FULL[lang][d % 7]).join(", ")}</span>
+                    </p>
+                  )}
+                </div>
+              )}
+              {timing.peakWindow && (
+                <div className="space-y-1.5">
+                  {([
+                    ["morning", Sunrise, "bg-amber-400"],
+                    ["afternoon", Sun, "bg-orange-400"],
+                    ["evening", Moon, "bg-violet-400"],
+                  ] as [DayPart, React.ElementType, string][]).map(([part, PartIcon, bar]) => (
+                    <div key={part} className="flex items-center gap-2 text-[11px]">
+                      <PartIcon className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                      <span className="w-20 text-slate-300">{t(`hd_part_${part}` as "hd_part_morning")}</span>
+                      <div className="flex-1 h-1.5 rounded-full bg-slate-800 overflow-hidden">
+                        <div className={`h-full rounded-full ${bar}`} style={{ width: `${timing.dayParts[part]}%` }} />
+                      </div>
+                      <span className="w-9 text-right font-mono text-slate-400">{timing.dayParts[part]}%</span>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </>
+          )}
         </section>
 
         {/* Bugungi ijro */}
@@ -400,14 +476,22 @@ export function HabitDetailModal({ habit, userId, onClose }: HabitDetailModalPro
             <h3 className="text-xs font-bold text-slate-200 flex items-center gap-2">
               <Repeat className="w-4 h-4 text-slate-400" /> {t("hd_schedule")}
             </h3>
-            <span className="text-[11px] text-emerald-400">{t("hd_schedule_daily")}</span>
+            <span className="text-[11px] text-emerald-400">
+              {daysPreset === "every" ? t("days_every") : daysPreset === "work" ? t("days_work") : daysPreset === "weekend" ? t("days_weekend") : `${days.length} / 7`}
+            </span>
           </div>
           <div className="grid grid-cols-7 gap-1.5">
-            {MON_FIRST.map((d) => (
-              <span key={d} className="py-1.5 rounded-lg text-center text-[11px] font-mono font-bold bg-emerald-500/15 border border-emerald-500/30 text-emerald-300">
-                {DAYS_SHORT[lang][d]}
-              </span>
-            ))}
+            {MON_FIRST.map((d) => {
+              const on = days.includes(d === 0 ? 7 : d);
+              return (
+                <span
+                  key={d}
+                  className={`py-1.5 rounded-lg text-center text-[11px] font-mono font-bold border ${on ? "bg-emerald-500/15 border-emerald-500/30 text-emerald-300" : "bg-slate-900/40 border-dashed border-slate-800 text-slate-600"}`}
+                >
+                  {DAYS_SHORT[lang][d]}
+                </span>
+              );
+            })}
           </div>
           {measurable && (
             <p className="text-[11px] text-slate-400">

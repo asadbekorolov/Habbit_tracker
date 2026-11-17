@@ -1,6 +1,7 @@
 // Bitta odat bo'yicha hisob-kitoblar — React'siz sof modul (node testlari).
 // Sanalar har doim "YYYY-MM-DD" (Toshkent kuni), vaqt zonasidan mustaqil.
 import { addDays, diffDays } from './date.ts';
+import { isScheduledOn, type WeekSchedule } from './streaks.ts';
 
 /** Server mukofoti (_set_habit_status, 047): ijobiy +5 XP / +1 tanga, salbiy +15 XP / +10 tanga. */
 export const HABIT_REWARD = {
@@ -29,24 +30,32 @@ export function valueStep(target: number): number {
   return target >= 30 ? 5 : 1;
 }
 
-/** Eng uzun uzluksiz ketma-ketlik (muzlatilgan kunlar ham zanjirni uzmaydi). */
-export function longestStreak(doneDates: Iterable<string>, freezeDates: Iterable<string> = []): number {
+/**
+ * Eng uzun ketma-ketlik. Muzlatilgan kunlar zanjirni uzmaydi; rejalashtirilmagan
+ * kunlar (schedule) o'tkazib yuboriladi — aqlli zanjir bilan bir xil qoida.
+ */
+export function longestStreak(
+  doneDates: Iterable<string>,
+  freezeDates: Iterable<string> = [],
+  schedule?: WeekSchedule,
+): number {
   const done = new Set(doneDates);
-  const all = new Set([...done, ...freezeDates]);
-  const sorted = [...all].sort();
+  if (done.size === 0) return 0;
+  const freeze = new Set(freezeDates);
+  const sorted = [...done].sort();
+  const last = sorted[sorted.length - 1];
   let best = 0;
   let cur = 0;
-  let prev: string | null = null;
-  for (const d of sorted) {
-    cur = prev && diffDays(prev, d) === 1 ? cur + 1 : 1;
-    // Faqat muzlatilgan kunlardan iborat zanjir hisoblanmaydi
-    if (done.has(d) && cur > best) best = cur;
-    prev = d;
+  for (let d = sorted[0]; d <= last; d = addDays(d, 1)) {
+    if (done.has(d)) { cur++; if (cur > best) best = cur; continue; }
+    if (!isScheduledOn(schedule, d)) continue;
+    if (freeze.has(d)) { cur++; continue; }
+    cur = 0;
   }
   return best;
 }
 
-export type DayStatus = 'done' | 'fail' | 'freeze' | 'empty' | 'future';
+export type DayStatus = 'done' | 'fail' | 'freeze' | 'empty' | 'off' | 'future';
 
 export interface CalendarCell {
   date: string;
@@ -66,6 +75,7 @@ export function buildMonthCalendar(
   done: ReadonlySet<string>,
   failed: ReadonlySet<string>,
   frozen: ReadonlySet<string>,
+  schedule?: WeekSchedule,
 ): (CalendarCell | null)[] {
   const first = `${year}-${String(month).padStart(2, '0')}-01`;
   const daysInMonth = new Date(Date.UTC(year, month, 0)).getUTCDate();
@@ -78,6 +88,7 @@ export function buildMonthCalendar(
     if (date > today) status = 'future';
     else if (done.has(date)) status = 'done';
     else if (failed.has(date)) status = 'fail';
+    else if (!isScheduledOn(schedule, date)) status = 'off';
     else if (frozen.has(date)) status = 'freeze';
     else status = 'empty';
     cells.push({ date, day: i + 1, status, isToday: date === today });
@@ -96,6 +107,7 @@ export function monthResult(
   createdDay: string | null,
   done: ReadonlySet<string>,
   frozen: ReadonlySet<string>,
+  schedule?: WeekSchedule,
 ): { pct: number; done: number; eligible: number } {
   const first = `${year}-${String(month).padStart(2, '0')}-01`;
   const last = addDays(`${month === 12 ? year + 1 : year}-${String(month === 12 ? 1 : month + 1).padStart(2, '0')}-01`, -1);
@@ -104,6 +116,7 @@ export function monthResult(
   let eligible = 0;
   let doneCount = 0;
   for (let d = start; d <= end; d = addDays(d, 1)) {
+    if (!isScheduledOn(schedule, d)) continue; // rejalashtirilmagan kun hisobga olinmaydi
     if (done.has(d)) { doneCount++; eligible++; }
     else if (!frozen.has(d)) eligible++;
   }

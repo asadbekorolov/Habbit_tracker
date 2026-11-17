@@ -1082,7 +1082,7 @@ export const uz = {
   hd_type_negative: "Salbiy",
   hd_edit: "Tahrirlash",
   hd_delete: "O'chirish",
-  hd_delete_confirm: "Odat va uning butun tarixi o'chiriladi. Ishonchingiz komilmi?",
+  hd_delete_confirm: "Odat ro'yxatlardan olinadi (arxivlanadi). Bajarilish tarixi, XP va nishonlar saqlanadi. Davom etasizmi?",
   hd_delete_yes: "Ha, o'chirish",
   hd_cancel: "Bekor qilish",
   hd_deleted: "Odat o'chirildi",
@@ -1160,6 +1160,16 @@ export const uz = {
   days_weekend: "Dam olish kunlari",
   dash_not_scheduled: "Bugun rejalashtirilmagan",
   dash_not_scheduled_hint: "Bu odatlar bugungi intizom foiziga ta'sir qilmaydi",
+  hd_timing_title: "Ko'pincha qachon bajariladi",
+  hd_timing_peak: "Eng faol oraliq",
+  hd_timing_typical: "Asosan {time} atrofida",
+  hd_timing_best_day: "Eng barqaror kun",
+  hd_timing_need_more: "Vaqt tahlili uchun kamida {n} ta bajarilish kerak (hozir {have})",
+  hd_timing_no_days: "Hali bajarilmagan",
+  hd_part_morning: "Tong",
+  hd_part_afternoon: "Kunduz",
+  hd_part_evening: "Kechqurun",
+  hd_legend_off: "Rejada yo'q",
 }
 
 export type Dict = typeof uz

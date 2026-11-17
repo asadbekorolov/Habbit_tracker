@@ -242,6 +242,32 @@ export async function getMonthLogs(userId: string, year: number, month: number) 
   return data
 }
 
+/**
+ * Bitta odatning bajarilgan kunlari va vaqtlari (053: completed_at) — "soat nechada"
+ * tahlili uchun, so'nggi 365 ta. 053 hali qo'llanmagan bo'lsa — vaqtsiz.
+ */
+export async function getHabitCompletionTimes(userId: string, habitId: string): Promise<{ log_date: string; at: string | null }[]> {
+  const withTime = await supabase
+    .from('habit_logs')
+    .select('log_date, completed_at')
+    .eq('user_id', userId)
+    .eq('habit_id', habitId)
+    .eq('completed', true)
+    .order('log_date', { ascending: false })
+    .limit(365)
+  if (!withTime.error) return (withTime.data || []).map((r: any) => ({ log_date: r.log_date, at: r.completed_at ?? null }))
+  const { data, error } = await supabase
+    .from('habit_logs')
+    .select('log_date')
+    .eq('user_id', userId)
+    .eq('habit_id', habitId)
+    .eq('completed', true)
+    .order('log_date', { ascending: false })
+    .limit(365)
+  if (error) throw error
+  return (data || []).map((r: any) => ({ log_date: r.log_date, at: null }))
+}
+
 export async function getAllTimeLogs(userId: string) {
   return fetchAllPages<any>((from, to) =>
     supabase
