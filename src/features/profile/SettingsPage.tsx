@@ -1,14 +1,23 @@
-import { useState, useEffect } from "react";
+// Sozlamalar — mantiqiy bo'limlarga ajratilgan squircle kartalar:
+// Hisob va maxfiylik, Til va interfeys, Bildirishnomalar va vaqt,
+// Ma'lumotlar va kesh, Hisobdan chiqish.
+import { useEffect, useState, useSyncExternalStore } from "react";
 import { toast } from "sonner";
-import { Loader2, LogOut, Eye, EyeOff, Bell, BellOff, UserPen, Moon, Sun, ChevronDown, ChevronUp, Save, Globe, Shield, ClipboardList, KeyRound, Rocket } from "lucide-react";
+import { useQueryClient } from "@tanstack/react-query";
+import {
+  ArrowLeft, User, Shield, Globe, Vibrate, Bell, Clock, RefreshCw, Database, LogOut,
+  ChevronRight, UserPen, Ruler, KeyRound, Eye, EyeOff, Loader2, Save, Send, WifiOff, CheckCircle2,
+} from "lucide-react";
 import { Capacitor } from "@capacitor/core";
 import { LocalNotifications } from "@capacitor/local-notifications";
-import { updateUserPassword } from "../../services/db";
+import { updateUserPassword, updateUserProfile } from "../../services/db";
 import type { Profile } from "../../services/supabase";
 import { useLang } from "../../store/LangContext";
+import { useUser } from "../../store/UserContext";
 import { notificationService } from "../../services/notificationService";
-import { Monitor } from "lucide-react";
-import { useProfile } from "../../store/UserContext";
+import { habitSyncQueue } from "../../services/habitSyncQueue";
+import { useNavBack } from "../../hooks/useNavBack";
+import { listHabitReminders } from "../../utils/reminders";
 
 type Lang = "uz" | "ru" | "en";
 
@@ -20,294 +29,386 @@ interface SettingsPageProps {
   onLangChange: (l: Lang) => void;
 }
 
-export function SettingsPage({ onLogout, onNavigate, lang, onLangChange }: SettingsPageProps) {
-  const profile = useProfile();
+const LANGS: { id: Lang; label: string }[] = [
+  { id: "uz", label: "O'zbek" },
+  { id: "ru", label: "Русский" },
+  { id: "en", label: "English" },
+];
+
+function Switch({ on, onToggle, label, disabled }: { on: boolean; onToggle: () => void; label: string; disabled?: boolean }) {
+  return (
+    <button
+      type="button"
+      role="switch"
+      aria-checked={on}
+      aria-label={label}
+      disabled={disabled}
+      onClick={onToggle}
+      className={`relative w-12 h-6 rounded-full transition-colors shrink-0 cursor-pointer disabled:opacity-40 ${on ? "bg-emerald-500" : "bg-slate-700"}`}
+    >
+      <span className={`absolute top-1 w-4 h-4 rounded-full bg-white transition-all ${on ? "left-7" : "left-1"}`} />
+    </button>
+  );
+}
+
+function Section({ icon: Icon, title, children }: { icon: React.ElementType; title: string; children: React.ReactNode }) {
+  return (
+    <section className="rounded-3xl bg-slate-900/50 border border-slate-800/80 p-4 space-y-3">
+      <h3 className="flex items-center gap-2 text-[11px] font-bold uppercase tracking-widest text-slate-400">
+        <Icon className="w-4 h-4 text-emerald-400" /> {title}
+      </h3>
+      {children}
+    </section>
+  );
+}
+
+function Row({ icon: Icon, title, sub, onClick, right }: {
+  icon: React.ElementType; title: string; sub?: string; onClick?: () => void; right?: React.ReactNode;
+}) {
+  const body = (
+    <>
+      <span className="w-9 h-9 rounded-xl bg-slate-800/80 border border-slate-700/50 flex items-center justify-center shrink-0">
+        <Icon className="w-4 h-4 text-slate-300" />
+      </span>
+      <span className="flex-1 min-w-0 text-left">
+        <span className="block text-sm font-medium text-slate-100 truncate">{title}</span>
+        {sub && <span className="block text-[11px] text-slate-400 leading-snug">{sub}</span>}
+      </span>
+      {right ?? (onClick ? <ChevronRight className="w-4 h-4 text-slate-500 shrink-0" /> : null)}
+    </>
+  );
+  return onClick ? (
+    <button type="button" onClick={onClick} className="w-full flex items-center gap-3 p-2.5 rounded-2xl hover:bg-slate-800/40 active:scale-[0.99] transition-all cursor-pointer">
+      {body}
+    </button>
+  ) : (
+    <div className="w-full flex items-center gap-3 p-2.5">{body}</div>
+  );
+}
+
+export function SettingsPage({ onLogout, onNavigate, onProfileUpdate, lang, onLangChange }: SettingsPageProps) {
   const { t } = useLang();
+  const { profile, session, setProfile } = useUser();
+  const queryClient = useQueryClient();
+  const goBack = useNavBack();
+
+  // ── Maxfiylik ───────────────────────────────────────────────────
+  const [isPrivate, setIsPrivate] = useState(!!profile?.profile_private);
+  const [savingPrivacy, setSavingPrivacy] = useState(false);
+  async function togglePrivacy() {
+    if (!profile) return;
+    const next = !isPrivate;
+    setIsPrivate(next);
+    setSavingPrivacy(true);
+    try {
+      const updated = await updateUserProfile(profile.id, { profile_private: next });
+      setProfile(updated);
+      onProfileUpdate(updated);
+      toast.success(t("st_private_saved"));
+    } catch (e: any) {
+      setIsPrivate(!next);
+      toast.error(e?.message || t("ep_error"));
+    } finally {
+      setSavingPrivacy(false);
+    }
+  }
+
+  // ── Parol ───────────────────────────────────────────────────────
   const [passOpen, setPassOpen] = useState(false);
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [showPass, setShowPass] = useState(false);
-  const [showConfirm, setShowConfirm] = useState(false);
   const [passLoading, setPassLoading] = useState(false);
   const [passError, setPassError] = useState("");
-  const [passSuccess, setPassSuccess] = useState("");
-
-  const NOTIF_KEY = `notif_${profile.id}`;
-  const _nd = (() => { try { return JSON.parse(localStorage.getItem(NOTIF_KEY) || "{}"); } catch { return {}; } })();
-  const [notifEnabled, setNotifEnabled] = useState<boolean>(_nd.enabled ?? false);
-  const [notifTime, setNotifTime] = useState<string>(_nd.time ?? "09:00");
-  const [notifPerm, setNotifPerm] = useState<"default" | "granted" | "denied">("default");
-
-  useEffect(() => {
-    async function checkPerms() {
-      if (Capacitor.isNativePlatform()) {
-        try {
-          const { display } = await LocalNotifications.checkPermissions();
-          setNotifPerm(display === 'granted' ? 'granted' : display === 'denied' ? 'denied' : 'default');
-        } catch (e) {
-          setNotifPerm("default");
-        }
-      } else {
-        setNotifPerm("default");
-      }
-    }
-    checkPerms();
-  }, []);
-
-  function saveNotif(enabled: boolean, time: string) {
-    localStorage.setItem(NOTIF_KEY, JSON.stringify({ enabled, time }));
-    if (enabled && time) {
-      const [h, m] = time.split(":").map(Number);
-      notificationService.scheduleDailyReminder(h, m);
-    } else {
-      notificationService.cancelDailyReminder();
-    }
-  }
-
-  async function requestNotifPermission() {
-    const granted = await notificationService.requestNotificationPermission();
-    if (granted) {
-      setNotifPerm("granted");
-      setNotifEnabled(true);
-      saveNotif(true, notifTime);
-      await notificationService.sendTestNotificationNow();
-    } else {
-      setNotifPerm("denied");
-      setNotifEnabled(false);
-      alert("Bildirishnomalarga ruxsat berilmadi. Iltimos, sozlamalardan ruxsat bering.");
-    }
-  }
-
-  async function handleSendTest() {
-    await notificationService.sendTestNotificationNow();
-    toast.success("Sinov bildirishnomasi yuborildi!");
-  }
-
-  const card: React.CSSProperties = {
-    background: "rgba(22,27,34,0.85)",
-    border: `1px solid rgba(255,255,255,0.06)`,
-    borderRadius: 14,
-  };
-
-  const inputStyle: React.CSSProperties = {
-    background: "rgba(255,255,255,0.05)",
-    border: `1px solid rgba(255,255,255,0.1)`,
-    color: "var(--foreground)",
-    borderRadius: 8,
-    padding: "9px 12px",
-    fontSize: 13,
-    outline: "none",
-    width: "100%",
-  };
-
   async function handleSavePassword() {
     if (!newPassword) return;
-    if (newPassword.length < 6) { setPassError(t('settings_pass_short')); return; }
-    if (newPassword !== confirmPassword) { setPassError(t('settings_pass_mismatch')); return; }
-    setPassLoading(true); setPassError(""); setPassSuccess("");
+    if (newPassword.length < 6) { setPassError(t("settings_pass_short")); return; }
+    if (newPassword !== confirmPassword) { setPassError(t("settings_pass_mismatch")); return; }
+    setPassLoading(true);
+    setPassError("");
     try {
       await updateUserPassword(newPassword);
-      setPassSuccess(t('settings_pass_success'));
-      setNewPassword(""); setConfirmPassword("");
-      setTimeout(() => { setPassOpen(false); setPassSuccess(""); }, 1500);
+      toast.success(t("settings_pass_success"));
+      setNewPassword(""); setConfirmPassword(""); setPassOpen(false);
     } catch (e: any) {
-      setPassError(e.message || t('ep_error'));
+      setPassError(e?.message || t("ep_error"));
     } finally {
       setPassLoading(false);
     }
   }
 
-  const LANGS: { id: Lang; flag: string; label: string }[] = [
-    { id: "uz", flag: "🇺🇿", label: "O'zbek" },
-    { id: "ru", flag: "🇷🇺", label: "Русский" },
-    { id: "en", flag: "🇬🇧", label: "English" },
-  ];
+  // ── Vibratsiya ──────────────────────────────────────────────────
+  const [haptics, setHaptics] = useState(() => {
+    try { return localStorage.getItem("haptics_enabled") === "true"; } catch { return false; }
+  });
+  function toggleHaptics() {
+    const next = !haptics;
+    setHaptics(next);
+    try { localStorage.setItem("haptics_enabled", String(next)); } catch { /* yo'q */ }
+  }
+
+  // ── Bildirishnomalar ────────────────────────────────────────────
+  const notifKey = `notif_${profile?.id ?? "anon"}`;
+  const stored = (() => { try { return JSON.parse(localStorage.getItem(notifKey) || "{}"); } catch { return {}; } })();
+  const [notifEnabled, setNotifEnabled] = useState<boolean>(stored.enabled ?? false);
+  const [notifTime, setNotifTime] = useState<string>(stored.time ?? "09:00");
+  const [notifPerm, setNotifPerm] = useState<"default" | "granted" | "denied">("default");
+  const habitReminders = (() => { try { return listHabitReminders(localStorage); } catch { return []; } })();
+
+  useEffect(() => {
+    if (!Capacitor.isNativePlatform()) return;
+    LocalNotifications.checkPermissions()
+      .then(({ display }) => setNotifPerm(display === "granted" ? "granted" : display === "denied" ? "denied" : "default"))
+      .catch(() => setNotifPerm("default"));
+  }, []);
+
+  async function applyNotifications(enabled: boolean, time: string) {
+    try { localStorage.setItem(notifKey, JSON.stringify({ enabled, time })); } catch { /* yo'q */ }
+    const [h, m] = time.split(":").map(Number);
+    // Odat nomlari — keshdagi ro'yxatdan (eslatma matni uchun)
+    const habits = (queryClient.getQueryData<{ id: string; name: string }[]>(["habits", profile?.id]) || []);
+    const nameOf = (id: string) => habits.find((x) => x.id === id)?.name || "IDROK";
+    if (enabled) {
+      await notificationService.scheduleDailyReminder(h, m);
+      for (const r of habitReminders) await notificationService.scheduleHabitReminder(r.habitId, nameOf(r.habitId), r.time);
+    } else {
+      // Eslatma vaqtlari qurilmada qoladi — qayta yoqilganda tiklanadi
+      await notificationService.cancelDailyReminder();
+      for (const r of habitReminders) await notificationService.cancelHabitReminder(r.habitId);
+    }
+  }
+
+  async function toggleNotifications() {
+    if (notifPerm !== "granted") {
+      const ok = await notificationService.initNotifications();
+      if (!ok) { setNotifPerm("denied"); return; }
+      setNotifPerm("granted");
+    }
+    const next = !notifEnabled;
+    setNotifEnabled(next);
+    await applyNotifications(next, notifTime);
+  }
+
+  // ── Sinxronizatsiya holati (habitSyncQueue) ─────────────────────
+  const pending = useSyncExternalStore(
+    (cb) => habitSyncQueue.subscribe(cb),
+    () => habitSyncQueue.size(),
+    () => 0
+  );
+  const [online, setOnline] = useState(() => (typeof navigator === "undefined" ? true : navigator.onLine));
+  useEffect(() => {
+    const on = () => setOnline(true);
+    const off = () => setOnline(false);
+    window.addEventListener("online", on);
+    window.addEventListener("offline", off);
+    return () => { window.removeEventListener("online", on); window.removeEventListener("offline", off); };
+  }, []);
+  const [syncing, setSyncing] = useState(false);
+  async function syncNow() {
+    setSyncing(true);
+    try {
+      habitSyncQueue.flush();
+      await queryClient.invalidateQueries();
+      toast.success(t("st_sync_done"));
+    } finally {
+      setSyncing(false);
+    }
+  }
+
+  // ── Chiqish ─────────────────────────────────────────────────────
+  const [confirmLogout, setConfirmLogout] = useState(false);
+
+  const email = session?.user?.email || "";
+  const name = profile?.display_name || profile?.username || "";
+  const initials = name.split(" ").map((p) => p[0]).join("").toUpperCase().slice(0, 2) || "U";
 
   return (
-    <div className="max-w-2xl mx-auto">
-      <div className="flex items-center justify-between mb-6">
-        <div>
-          <h2 className="text-base font-semibold" style={{ color: "var(--foreground)" }}>{t('settings_title')}</h2>
-          <p className="text-xs mt-0.5" style={{ color: "var(--muted-foreground)" }}>{t('settings_sub')}</p>
-        </div>
+    <div className="max-w-2xl mx-auto pb-32 space-y-4">
+      {/* Sarlavha */}
+      <div className="grid grid-cols-[40px_1fr_40px] items-center">
+        <button
+          type="button"
+          onClick={goBack}
+          aria-label={t("st_back")}
+          className="w-10 h-10 rounded-2xl bg-slate-900/60 border border-slate-800 flex items-center justify-center text-slate-200 active:scale-95 cursor-pointer"
+        >
+          <ArrowLeft className="w-5 h-5" />
+        </button>
+        <h2 className="text-center text-base font-bold text-white">{t("settings_title")}</h2>
+        <span />
       </div>
 
-      {/* Profile shortcut */}
-      <button onClick={() => onNavigate("edit-profile")}
-        className="w-full flex items-center gap-3 p-4 rounded-xl mb-3 transition-all text-left"
-        style={{ background: "rgba(74,222,128,0.06)", border: "1px solid rgba(74,222,128,0.2)" }}>
-        <div className="w-9 h-9 rounded-xl flex items-center justify-center" style={{ background: "rgba(74,222,128,0.15)" }}>
-          <UserPen size={16} style={{ color: "#4ADE80" }} />
+      {/* 1. Hisob va maxfiylik */}
+      <Section icon={User} title={t("st_account")}>
+        <div className="flex items-center gap-3 p-2.5 rounded-2xl bg-slate-950/40 border border-slate-800">
+          <span className="w-11 h-11 rounded-2xl bg-emerald-500/15 border border-emerald-500/30 text-emerald-300 font-bold flex items-center justify-center shrink-0">
+            {initials}
+          </span>
+          <span className="min-w-0">
+            <span className="block text-sm font-semibold text-white truncate">{name}</span>
+            <span className="block text-[11px] font-mono text-slate-400 truncate">{email}</span>
+          </span>
         </div>
-        <div className="flex-1">
-          <p className="text-sm font-semibold" style={{ color: "var(--foreground)" }}>{t('settings_edit_profile')}</p>
-          <p className="text-xs mt-0.5" style={{ color: "var(--muted-foreground)" }}>{t('settings_edit_sub')}</p>
-        </div>
-        <span style={{ color: "var(--muted-foreground)", fontSize: 18 }}>›</span>
-      </button>
+        <Row
+          icon={Shield}
+          title={t("st_private")}
+          sub={isPrivate ? t("st_private_on") : t("st_private_off")}
+          right={<Switch on={isPrivate} onToggle={togglePrivacy} label={t("st_private")} disabled={savingPrivacy} />}
+        />
+        <Row icon={Ruler} title={t("st_body_params")} sub={t("st_body_params_sub")} onClick={() => onNavigate("profile?edit=params")} />
+        <Row icon={UserPen} title={t("settings_edit_profile")} sub={t("settings_edit_sub")} onClick={() => onNavigate("edit-profile")} />
+        <Row icon={KeyRound} title={t("settings_password")} sub={t("settings_password_sub")} onClick={() => setPassOpen((v) => !v)} />
+        {passOpen && (
+          <div className="space-y-2 px-1">
+            <div className="relative">
+              <input
+                type={showPass ? "text" : "password"}
+                value={newPassword}
+                onChange={(e) => { setNewPassword(e.target.value); setPassError(""); }}
+                placeholder={t("settings_new_pass")}
+                className="w-full rounded-xl bg-slate-950/60 border border-slate-800 px-3 py-2.5 text-sm text-white outline-none focus:border-emerald-500/50"
+              />
+              <button type="button" onClick={() => setShowPass((v) => !v)} aria-label="show" className="absolute right-2 top-1/2 -translate-y-1/2 p-1 text-slate-400 cursor-pointer">
+                {showPass ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+              </button>
+            </div>
+            <input
+              type={showPass ? "text" : "password"}
+              value={confirmPassword}
+              onChange={(e) => { setConfirmPassword(e.target.value); setPassError(""); }}
+              placeholder={t("settings_confirm_pass")}
+              className="w-full rounded-xl bg-slate-950/60 border border-slate-800 px-3 py-2.5 text-sm text-white outline-none focus:border-emerald-500/50"
+            />
+            {passError && <p className="text-[11px] text-rose-400">{passError}</p>}
+            <button
+              type="button"
+              onClick={handleSavePassword}
+              disabled={passLoading || !newPassword}
+              className="w-full py-2.5 rounded-xl bg-emerald-500 text-slate-950 text-sm font-bold flex items-center justify-center gap-2 disabled:opacity-50 cursor-pointer"
+            >
+              {passLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
+              {t("settings_save_pass")}
+            </button>
+          </div>
+        )}
+      </Section>
 
-      {/* Language */}
-      <div style={card} className="p-4 mb-3">
-        <div className="flex items-center gap-3 mb-3">
-          <div className="w-9 h-9 rounded-xl flex items-center justify-center"
-            style={{ background: "rgba(96,165,250,0.12)" }}>
-            <Globe size={16} style={{ color: "#60A5FA" }} />
-          </div>
-          <div>
-            <p className="text-sm font-semibold" style={{ color: "var(--foreground)" }}>{t('settings_lang')}</p>
-            <p className="text-xs" style={{ color: "var(--muted-foreground)" }}>{t('settings_lang_sub')}</p>
-          </div>
-        </div>
-        <div className="flex gap-2">
+      {/* 2. Til va interfeys */}
+      <Section icon={Globe} title={t("st_interface")}>
+        <div className="grid grid-cols-3 gap-1.5 p-1 rounded-2xl bg-slate-950/50 border border-slate-800" role="radiogroup" aria-label={t("settings_lang")}>
           {LANGS.map((l) => (
-            <button key={l.id} onClick={() => onLangChange(l.id)}
-              className="flex-1 flex flex-col items-center gap-1 py-2.5 rounded-xl text-xs font-medium transition-all"
-              style={{
-                background: lang === l.id ? ("rgba(96,165,250,0.15)") : ("rgba(255,255,255,0.04)"),
-                border: lang === l.id ? "1.5px solid rgba(96,165,250,0.4)" : `1px solid rgba(255,255,255,0.07)`,
-                color: lang === l.id ? "#60A5FA" : "var(--muted-foreground)",
-              }}>
-              <span style={{ fontSize: 18 }}>{l.flag}</span>
-              <span>{l.label}</span>
+            <button
+              key={l.id}
+              type="button"
+              role="radio"
+              aria-checked={lang === l.id}
+              onClick={() => onLangChange(l.id)}
+              className={`py-2 rounded-xl text-sm font-semibold transition-all cursor-pointer ${
+                lang === l.id ? "bg-emerald-500 text-slate-950" : "text-slate-300 hover:bg-slate-800/60"
+              }`}
+            >
+              {l.label}
             </button>
           ))}
         </div>
-      </div>
+        <Row
+          icon={Vibrate}
+          title={t("st_haptics")}
+          sub={t("st_haptics_sub")}
+          right={<Switch on={haptics} onToggle={toggleHaptics} label={t("st_haptics")} />}
+        />
+      </Section>
 
-      {/* Password — compact accordion */}
-      <div style={card} className="mb-3 overflow-hidden">
-        <button onClick={() => { setPassOpen(!passOpen); setPassError(""); setPassSuccess(""); }}
-          className="w-full flex items-center gap-3 p-4 transition-all"
-          style={{ background: passOpen ? ("rgba(255,255,255,0.03)") : "transparent" }}>
-          <div className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0"
-            style={{ background: "rgba(248,113,113,0.1)" }}>
-            <KeyRound size={16} style={{ color: "#F87171" }} />
-          </div>
-          <div className="flex-1 text-left">
-            <p className="text-sm font-semibold" style={{ color: "var(--foreground)" }}>{t('settings_password')}</p>
-            <p className="text-xs" style={{ color: "var(--muted-foreground)" }}>{t('settings_password_sub')}</p>
-          </div>
-          {passOpen ? <ChevronUp size={16} style={{ color: "var(--muted-foreground)" }} /> : <ChevronDown size={16} style={{ color: "var(--muted-foreground)" }} />}
-        </button>
-
-        {passOpen && (
-          <div className="px-4 pb-4 space-y-3 border-t" style={{ borderColor: "rgba(255,255,255,0.06)" }}>
-            <div className="h-3" />
-            <div className="relative">
-              <input type={showPass ? "text" : "password"} style={{ ...inputStyle, paddingRight: 40 }}
-                value={newPassword} onChange={(e) => setNewPassword(e.target.value)}
-                placeholder={t('settings_new_pass')} />
-              <button type="button" onClick={() => setShowPass(!showPass)}
-                className="absolute right-3 top-1/2 -translate-y-1/2" style={{ color: "var(--muted-foreground)" }}>
-                {showPass ? <EyeOff size={15} /> : <Eye size={15} />}
-              </button>
-            </div>
-            <div className="relative">
-              <input type={showConfirm ? "text" : "password"} style={{ ...inputStyle, paddingRight: 40 }}
-                value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)}
-                placeholder={t('settings_confirm_pass')} />
-              <button type="button" onClick={() => setShowConfirm(!showConfirm)}
-                className="absolute right-3 top-1/2 -translate-y-1/2" style={{ color: "var(--muted-foreground)" }}>
-                {showConfirm ? <EyeOff size={15} /> : <Eye size={15} />}
-              </button>
-            </div>
-            {passError && <p className="text-xs" style={{ color: "var(--coral-red)" }}>{passError}</p>}
-            {passSuccess && <p className="text-xs" style={{ color: "var(--neon-green)" }}>{passSuccess}</p>}
-            <button onClick={handleSavePassword} disabled={passLoading || !newPassword}
-              className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-semibold"
-              style={{
-                background: !newPassword ? ("rgba(255,255,255,0.05)") : passLoading ? "rgba(74,222,128,0.4)" : "var(--neon-green)",
-                color: !newPassword ? "var(--muted-foreground)" : "#0E1117",
-                cursor: passLoading || !newPassword ? "not-allowed" : "pointer",
-              }}>
-              {passLoading ? <Loader2 size={15} className="animate-spin" /> : <Save size={15} />}
-              {t('settings_save_pass')}
-            </button>
-          </div>
-        )}
-      </div>
-
-      {/* Notifications */}
-      <div style={card} className="p-4 mb-3">
-        <div className="flex items-center justify-between mb-2">
-          <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-xl flex items-center justify-center"
-              style={{ background: "rgba(74,222,128,0.1)" }}>
-              <Bell size={16} style={{ color: "#4ADE80" }} />
-            </div>
-            <div>
-              <p className="text-sm font-semibold" style={{ color: "var(--foreground)" }}>{t('settings_notif')}</p>
-              <p className="text-xs" style={{ color: "var(--muted-foreground)" }}>{t('settings_notif_sub')}</p>
-            </div>
-          </div>
-          <button type="button"
-            onClick={async () => {
-              if (notifPerm !== "granted") {
-                const ok = await notificationService.initNotifications();
-                if (ok) setNotifPerm("granted");
-                else { setNotifPerm("denied"); return; }
-              }
-              const next = !notifEnabled;
-              setNotifEnabled(next);
-              saveNotif(next, notifTime);
-            }}
-            className="relative w-12 h-6 rounded-full transition-all shrink-0"
-            style={{ background: notifEnabled && notifPerm === "granted" ? "#4ADE80" : "rgba(255,255,255,0.1)" }}>
-            <div className="absolute top-0.5 w-5 h-5 rounded-full bg-white shadow transition-all duration-200"
-              style={{ left: notifEnabled && notifPerm === "granted" ? "calc(100% - 22px)" : "2px" }} />
-          </button>
-        </div>
-
+      {/* 3. Bildirishnomalar va vaqt */}
+      <Section icon={Bell} title={t("st_notif_time")}>
+        <Row
+          icon={Bell}
+          title={t("st_notif_all")}
+          sub={t("st_notif_all_sub").replace("{n}", String(habitReminders.length))}
+          right={<Switch on={notifEnabled && notifPerm !== "denied"} onToggle={toggleNotifications} label={t("st_notif_all")} />}
+        />
         {notifPerm === "denied" && (
-          <div className="mt-2 p-3 rounded-xl" style={{ background: "rgba(248,113,113,0.08)", border: "1px solid rgba(248,113,113,0.2)" }}>
-            <div className="flex items-center gap-2 mb-1">
-              <BellOff size={13} style={{ color: "var(--coral-red)" }} />
-              <p className="text-xs font-semibold" style={{ color: "var(--foreground)" }}>{t('settings_notif_blocked')}</p>
-            </div>
-            <p className="text-[11px] leading-relaxed" style={{ color: "var(--muted-foreground)" }}>
-              {t('settings_notif_blocked_hint')}
-            </p>
+          <div className="p-3 rounded-2xl bg-rose-500/10 border border-rose-500/25">
+            <p className="text-xs font-semibold text-rose-200">{t("settings_notif_blocked")}</p>
+            <p className="text-[11px] text-rose-200/80 mt-0.5">{t("settings_notif_blocked_hint")}</p>
           </div>
         )}
-        {notifPerm === "default" && (
-          <div className="mt-2 p-3 rounded-xl flex items-center gap-3"
-            style={{ background: "rgba(251,191,36,0.08)", border: "1px solid rgba(251,191,36,0.2)" }}>
-            <BellOff size={13} style={{ color: "#FBBF24", flexShrink: 0 }} />
-            <div className="flex-1">
-              <p className="text-xs font-medium" style={{ color: "var(--foreground)" }}>{t('settings_notif_need_perm')}</p>
-            </div>
-            <button type="button" onClick={requestNotifPermission}
-              className="text-xs font-semibold px-3 py-1.5 rounded-lg shrink-0"
-              style={{ background: "rgba(251,191,36,0.2)", color: "#FBBF24" }}>
-              {t('settings_notif_allow')}
-            </button>
-          </div>
-        )}
-        {notifEnabled && notifPerm === "granted" && (
-          <div className="mt-3 space-y-3">
-            <div>
-              <label className="text-xs font-medium mb-1.5 block" style={{ color: "var(--muted-foreground)" }}>{t('settings_notif_time')}</label>
-              <input type="time" style={inputStyle} value={notifTime}
-                onChange={(e) => { setNotifTime(e.target.value); saveNotif(notifEnabled, e.target.value); }} />
-            </div>
+        {notifEnabled && notifPerm !== "denied" && (
+          <>
+            <label className="flex items-center justify-between gap-3 p-2.5 rounded-2xl bg-slate-950/40 border border-slate-800">
+              <span className="flex items-center gap-2 text-sm text-slate-200">
+                <Clock className="w-4 h-4 text-emerald-400" /> {t("st_notif_daily_time")}
+              </span>
+              <input
+                type="time"
+                value={notifTime}
+                onChange={(e) => {
+                  if (!e.target.value) return;
+                  setNotifTime(e.target.value);
+                  applyNotifications(true, e.target.value);
+                }}
+                className="bg-transparent font-mono text-sm text-white outline-none"
+              />
+            </label>
             <button
-              onClick={handleSendTest}
-              className="w-full py-2 rounded-lg text-xs font-semibold transition-all"
-              style={{ background: "rgba(255,255,255,0.05)", color: "var(--foreground)", border: `1px solid rgba(255,255,255,0.1)` }}
+              type="button"
+              onClick={async () => { await notificationService.sendTestNotificationNow(); toast.success(t("st_notif_test_sent")); }}
+              className="w-full py-2 rounded-xl border border-slate-700 text-xs font-semibold text-slate-300 flex items-center justify-center gap-2 cursor-pointer"
             >
-              <Rocket size={13} className="inline-block align-[-2px] mr-1" />Sinab ko'rish
+              <Send className="w-3.5 h-3.5" /> {t("st_notif_test")}
+            </button>
+          </>
+        )}
+        <div className="flex items-center justify-between px-2.5 text-[11px]">
+          <span className="text-slate-400">{t("st_timezone")}</span>
+          <span className="font-mono text-slate-200">Asia/Tashkent • UTC+5</span>
+        </div>
+      </Section>
+
+      {/* 4. Ma'lumotlar va kesh */}
+      <Section icon={Database} title={t("st_data")}>
+        <div className={`flex items-center gap-2.5 p-3 rounded-2xl border text-xs ${
+          pending === 0 ? "bg-emerald-500/10 border-emerald-500/25 text-emerald-200" : "bg-amber-500/10 border-amber-500/25 text-amber-200"
+        }`}>
+          {!online ? <WifiOff className="w-4 h-4 shrink-0" /> : pending === 0 ? <CheckCircle2 className="w-4 h-4 shrink-0" /> : <RefreshCw className="w-4 h-4 shrink-0" />}
+          <span className="flex-1">
+            {pending === 0 ? t("st_sync_ok") : t("st_sync_pending").replace("{n}", String(pending))}
+            {!online && <span className="block text-[11px] opacity-80">{t("st_offline")}</span>}
+          </span>
+          <span className="font-mono">{pending}</span>
+        </div>
+        <button
+          type="button"
+          onClick={syncNow}
+          disabled={syncing || !online}
+          className="w-full py-2.5 rounded-xl bg-slate-800 border border-slate-700 text-sm font-semibold text-slate-100 flex items-center justify-center gap-2 disabled:opacity-50 cursor-pointer"
+        >
+          <RefreshCw className={`w-4 h-4 ${syncing ? "animate-spin" : ""}`} /> {t("st_sync_now")}
+        </button>
+      </Section>
+
+      {/* 5. Hisobdan chiqish */}
+      {confirmLogout ? (
+        <div className="rounded-3xl border border-rose-500/30 bg-rose-950/30 p-4 space-y-3">
+          <p className="text-sm text-rose-100">{t("st_logout_confirm")}</p>
+          <div className="grid grid-cols-2 gap-2">
+            <button type="button" onClick={onLogout} className="py-2.5 rounded-xl bg-rose-500 text-white text-sm font-bold cursor-pointer">
+              {t("st_logout_yes")}
+            </button>
+            <button type="button" onClick={() => setConfirmLogout(false)} className="py-2.5 rounded-xl bg-slate-800 text-slate-200 text-sm font-bold cursor-pointer">
+              {t("hd_cancel")}
             </button>
           </div>
-        )}
-      </div>
-
-      {/* Logout */}
-      <button onClick={onLogout}
-        className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl text-sm font-medium transition-all"
-        style={{ background: "rgba(248,113,113,0.08)", color: "var(--coral-red)", border: "1px solid rgba(248,113,113,0.2)" }}>
-        <LogOut size={16} />
-        {t('settings_logout')}
-      </button>
+        </div>
+      ) : (
+        <button
+          type="button"
+          onClick={() => setConfirmLogout(true)}
+          className="w-full py-3.5 rounded-3xl border border-rose-500/30 bg-rose-500/10 text-rose-300 text-sm font-bold flex items-center justify-center gap-2 active:scale-[0.99] cursor-pointer"
+        >
+          <LogOut className="w-4 h-4" /> {t("settings_logout")}
+        </button>
+      )}
     </div>
   );
 }

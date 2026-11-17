@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo } from "react";
+import { useSearchParams } from "react-router-dom";
 import { useLang } from "../../store/LangContext";
 import { useUser, useProfile } from "../../store/UserContext";
 import {
@@ -64,7 +65,9 @@ export function ProfilePage({ onNavigate, lang, onProfileUpdate }: ProfilePagePr
   const [showAllBadgesModal, setShowAllBadgesModal] = useState(false);
   const [showFeedbackModal, setShowFeedbackModal] = useState(false);
   const [showGuideModal, setShowGuideModal] = useState(false);
-  const [showBiometricsModal, setShowBiometricsModal] = useState(false);
+  // Sozlamalardagi "Shaxsiy parametrlarni tahrirlash" -> /profile?edit=params
+  const [searchParams] = useSearchParams();
+  const [showBiometricsModal, setShowBiometricsModal] = useState(() => searchParams.get("edit") === "params");
   // Kesh bo'lsa darhol ko'rsatamiz; birinchi marta — asosiy ma'lumot kelguncha.
   const loading = habitsQ.isPending;
 
