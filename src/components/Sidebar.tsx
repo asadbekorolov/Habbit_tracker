@@ -17,6 +17,7 @@ import {
 import { Trophy } from "lucide-react";
 import type { Profile } from "../services/supabase";
 import { useLang } from "../store/LangContext";
+import { useIsSiteAdmin } from "../hooks/useIsSiteAdmin";
 import { FeedbackModal } from "./FeedbackModal";
 
 interface SidebarProps {
@@ -28,6 +29,7 @@ interface SidebarProps {
 
 export function Sidebar({ activeTab, onTabChange, profile, onProfileClick }: SidebarProps) {
   const { t } = useLang();
+  const isAdmin = useIsSiteAdmin();
   const [showFeedback, setShowFeedback] = useState(false);
 
   const navItems = [
@@ -47,7 +49,7 @@ export function Sidebar({ activeTab, onTabChange, profile, onProfileClick }: Sid
     .toUpperCase()
     .slice(0, 2);
 
-  const visibleNavItems = profile.is_admin
+  const visibleNavItems = isAdmin
     ? [...navItems, { id: "admin", label: t('nav_admin'), icon: ShieldAlert }]
     : navItems;
 

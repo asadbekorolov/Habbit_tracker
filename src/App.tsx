@@ -29,6 +29,7 @@ import { useHabitsQuery, useDayLogsQuery, habitCache } from "./hooks/queries";
 import { toDateStr } from "./utils/date";
 import type { Profile } from "./services/supabase";
 import { LangContext, buildLangValue, type Lang } from "./store/LangContext";
+import { useIsSiteAdmin } from "./hooks/useIsSiteAdmin";
 import { useUser } from "./store/UserContext";
 import { MONTHS_FULL, DAYS_FULL, isLangLoaded, loadLang } from "./utils/i18n";
 import { trackEvent } from "./utils/analytics";
@@ -49,7 +50,6 @@ const ProfilePage = lazy(() => import("./features/profile/ProfilePage").then(m =
 const Achievements = lazy(() => import("./features/profile/Achievements").then(m => ({ default: m.Achievements })));
 const AdminPanel = lazy(() => import("./features/admin/AdminPanel").then(m => ({ default: m.AdminPanel })));
 const GroupsPage = lazy(() => import("./features/groups/GroupsPage").then(m => ({ default: m.GroupsPage })));
-const FeedPage = lazy(() => import("./features/feed/FeedPage").then(m => ({ default: m.FeedPage })));
 const EditProfilePage = lazy(() => import("./features/profile/EditProfilePage").then(m => ({ default: m.EditProfilePage })));
 const HealthPage = lazy(() => import("./features/habits/HealthPage").then(m => ({ default: m.HealthPage })));
 const JournalPage = lazy(() => import("./pages/JournalPage").then(m => ({ default: m.JournalPage })));
@@ -92,6 +92,8 @@ export default function App() {
   const [showBiometricsOnboarding, setShowBiometricsOnboarding] = useState(false);
 
   const { profile, setProfile, refreshUserProfile, loading: userLoading, isPasswordRecovery: isResettingPassword, setPasswordRecovery: setIsResettingPassword } = useUser();
+  // Admin Panel — faqat asadbekorolov0@gmail.com (bazada ham: 051_admin_email_guard.sql)
+  const isAdmin = useIsSiteAdmin();
 
   const [allDoneToast, setAllDoneToast] = useState(false);
   const [streakToast, setStreakToast] = useState<{ name: string; emoji: string; days: number } | null>(null);
@@ -819,7 +821,8 @@ export default function App() {
             />
           )} />
           <Route path="/logs" element={<Navigate to="/journal" replace />} />
-          <Route path="/feed" element={renderLayout(<FeedPage onUserClick={handleUserClick} />)} />
+          {/* Lenta (boshqalarning kunlik odatlari) maxfiylik uchun olib tashlandi */}
+          <Route path="/feed" element={<Navigate to="/dashboard" replace />} />
           <Route path="/groups" element={renderLayout(<GroupsPage onUserClick={handleUserClick} />)} />
           <Route path="/achievements" element={renderLayout(<Achievements />)} />
           <Route path="/analytics" element={renderLayout(
@@ -832,7 +835,7 @@ export default function App() {
               />
             </div>
           )} />
-          <Route path="/admin" element={renderLayout(profile?.is_admin ? <AdminPanel profile={profile} /> : <Navigate to="/dashboard" replace />)} />
+          <Route path="/admin" element={renderLayout(profile && isAdmin ? <AdminPanel profile={profile} /> : <Navigate to="/dashboard" replace />)} />
           <Route path="/profile" element={renderLayout(
             profile ? (
               <ProfilePage onNavigate={setActiveTab} onUserClick={handleUserClick} onLogout={handleLogout} lang={lang} onLangChange={handleLangChange} onProfileUpdate={handleProfileUpdate} />

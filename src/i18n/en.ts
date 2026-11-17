@@ -1154,4 +1154,5 @@ export const en: Dict = {
   ai_report_saved_hint: "Last report is saved — viewing it is free",
   ai_report_update: "Refresh",
   journal_week_title: "Last 7 days",
+  sec_admin: "Admin panel",
 }

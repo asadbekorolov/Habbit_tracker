@@ -1154,4 +1154,5 @@ export const ru: Dict = {
   ai_report_saved_hint: "Последний отчёт сохранён — просмотр бесплатный",
   ai_report_update: "Обновить",
   journal_week_title: "Последние 7 дней",
+  sec_admin: "Админ-панель",
 }

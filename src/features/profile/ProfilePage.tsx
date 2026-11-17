@@ -5,7 +5,7 @@ import {
   Settings, Coins, Zap, Trophy, Loader2, Award,
   Crown, ChevronRight, Star, Flame, Target, Sparkles, X, CheckCircle2, ShoppingBag,
   Lock, Check, MessageSquarePlus, Send, ExternalLink, BookOpen, HelpCircle, Activity, Edit3,
-  Users, Rss, HeartPulse, ListChecks, Clock
+  Users, HeartPulse, ListChecks, Clock, ShieldAlert
 } from "lucide-react";
 import { HabitIcon } from "../../components/HabitIcon";
 import {
@@ -13,6 +13,7 @@ import {
 } from "../../services/db";
 import { useHabitsQuery, useMyRankQuery } from "../../hooks/queries";
 import { useBadgeStats } from "../../hooks/useBadges";
+import { useIsSiteAdmin } from "../../hooks/useIsSiteAdmin";
 import { CoinShopModal } from "./CoinShopModal";
 import { FeedbackModal } from "./components/FeedbackModal";
 import { GuideModal } from "./components/GuideModal";
@@ -49,6 +50,7 @@ const BADGE_DEFS = [
 export function ProfilePage({ onNavigate, lang, onProfileUpdate }: ProfilePageProps) {
   const { t } = useLang();
     const profile = useProfile();
+  const isAdmin = useIsSiteAdmin();
 
   // ─── Yagona kesh (React Query) ──────────────────────────────────────
   const habitsQ = useHabitsQuery(profile.id);
@@ -176,12 +178,11 @@ export function ProfilePage({ onNavigate, lang, onProfileUpdate }: ProfilePagePr
       {/* Barcha bo'limlar: dock'da yo'q hamma sahifalar bitta joyda */}
       <section aria-label={t("sec_all_title")} className="-mt-2 space-y-2">
         <h3 className="text-xs font-bold uppercase tracking-widest text-slate-400 px-1">{t("sec_all_title")}</h3>
-        <nav className="grid grid-cols-3 gap-2">
+        <nav className="grid grid-cols-4 gap-2">
           {([
             { id: "habits", label: t("sec_habits"), icon: ListChecks },
             { id: "habits?section=routines", label: t("sec_routine"), icon: Clock },
             { id: "groups", label: t("sec_groups"), icon: Users },
-            { id: "feed", label: t("sec_feed"), icon: Rss },
             { id: "health", label: t("sec_health"), icon: HeartPulse },
             { id: "leaderboard", label: t("sec_leaderboard"), icon: Trophy },
             { id: "store", label: t("sec_store"), icon: ShoppingBag },
@@ -195,10 +196,22 @@ export function ProfilePage({ onNavigate, lang, onProfileUpdate }: ProfilePagePr
               className="flex flex-col items-center justify-center gap-1.5 py-3.5 rounded-2xl bg-slate-900/50 border border-slate-800/80 backdrop-blur-xl text-slate-300 hover:text-emerald-400 hover:border-emerald-500/30 active:scale-95 transition-all cursor-pointer"
             >
               <Icon size={19} className="text-emerald-400" />
-              <span className="text-[11px] font-semibold leading-none text-center">{label}</span>
+              <span className="text-[10px] font-semibold leading-tight text-center px-0.5">{label}</span>
             </button>
           ))}
         </nav>
+        {isAdmin && (
+          <button
+            type="button"
+            onClick={() => onNavigate("admin")}
+            className="w-full flex items-center justify-between gap-3 px-4 py-3 rounded-2xl bg-amber-500/10 border border-amber-500/30 text-amber-300 active:scale-[0.99] transition-all cursor-pointer"
+          >
+            <span className="flex items-center gap-2.5 text-sm font-semibold">
+              <ShieldAlert size={18} /> {t("sec_admin")}
+            </span>
+            <ChevronRight size={16} />
+          </button>
+        )}
       </section>
 
       {/* Anthropometrics / Biometrics Card */}
