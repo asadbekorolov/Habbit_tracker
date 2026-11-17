@@ -14,6 +14,7 @@ import {
 } from "../../services/db";
 import { useHabitsQuery, useMyRankQuery } from "../../hooks/queries";
 import { useBadgeStats } from "../../hooks/useBadges";
+import { CharacterVideo } from "../../components/CharacterVideo";
 import { useIsSiteAdmin } from "../../hooks/useIsSiteAdmin";
 import { CoinShopModal } from "./CoinShopModal";
 import { FeedbackModal } from "./components/FeedbackModal";
@@ -137,7 +138,13 @@ export function ProfilePage({ onNavigate, lang, onProfileUpdate }: ProfilePagePr
           <MiniPipAvatar profile={profile} onClick={() => setShowBiometricsModal(true)} />
         </div>
 
-        <div className="flex flex-col items-center text-center relative z-10">
+        {/* Personaj (vaqtinchalik video) — avatar uning ustiga chiqib turadi */}
+        <div className="relative -mx-6 h-52 overflow-hidden bg-[#cdad84]">
+          <CharacterVideo position="50% 38%" />
+          <div className="absolute inset-x-0 bottom-0 h-20 bg-gradient-to-t from-[#0f141e] to-transparent pointer-events-none" />
+        </div>
+
+        <div className="flex flex-col items-center text-center relative z-10 -mt-12">
           <div className="relative mb-4">
             <AvatarFrame frameId={profile.active_frame} radius={52}>
               <div className="w-24 h-24 rounded-3xl overflow-hidden border-2 border-primary/20 shadow-xl bg-card">

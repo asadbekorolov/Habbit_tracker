@@ -1206,4 +1206,7 @@ export const en: Dict = {
   st_sync_done: "Data refreshed",
   st_logout_confirm: "Sign out? If there are unsynced changes, sync them first.",
   st_logout_yes: "Yes, sign out",
+  char_next: "Next: {name}",
+  char_all_done: "Today's habits are done",
+  char_start: "Start the day with your first habit",
 }

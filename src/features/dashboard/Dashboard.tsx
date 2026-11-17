@@ -12,6 +12,8 @@ import { DisciplineProgressBar } from "./components/DisciplineProgressBar";
 import { ActiveRoutinePill } from "./components/ActiveRoutinePill";
 import { TipCard } from "./components/TipCard";
 import { LifeHabitDotsWidget } from "./components/LifeHabitDotsWidget";
+import { CharacterVideo } from "../../components/CharacterVideo";
+import { Sparkles } from "lucide-react";
 import { buildWidgetData } from "../../utils/widgetData";
 import { syncHomeWidget } from "../../services/widgetSync";
 import { cleanHabitName } from "../../components/HabitIcon";
@@ -98,6 +100,24 @@ export function Dashboard({ onNavigate, onCompletedChange, onProfileUpdate }: Da
       <div className="fixed top-0 left-1/2 -translate-x-1/2 w-full max-w-md h-80 bg-emerald-500/5 blur-[120px] pointer-events-none z-0" />
 
       <main className="relative z-10 max-w-md mx-auto px-4 pt-2 space-y-4">
+        {/* Personaj (vaqtinchalik video) */}
+        <section className="relative h-56 rounded-3xl overflow-hidden border border-slate-800/80 bg-[#cdad84] shadow-xl">
+          <CharacterVideo position="50% 40%" />
+          <div className="absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-[#090d16] via-[#090d16]/70 to-transparent pointer-events-none" />
+          <div className="absolute left-3 right-3 bottom-3 flex items-center gap-2">
+            <span className="flex items-center gap-1.5 max-w-full px-3 py-1.5 rounded-full bg-slate-950/70 border border-emerald-500/30 backdrop-blur-md text-xs font-semibold text-emerald-300">
+              <Sparkles className="w-3.5 h-3.5 shrink-0" />
+              <span className="truncate">
+                {totalCount === 0
+                  ? t("char_start")
+                  : completedCount >= totalCount
+                  ? t("char_all_done")
+                  : t("char_next").replace("{name}", cleanHabitName(positive.find((h) => day.entryOf(h.id).status !== "done")?.name || ""))}
+              </span>
+            </span>
+          </div>
+        </section>
+
         <LifeHabitDotsWidget done={completedCount} total={totalCount} />
 
         <DisciplineProgressBar completedCount={completedCount} totalCount={totalCount} percentage={progressPercent} />

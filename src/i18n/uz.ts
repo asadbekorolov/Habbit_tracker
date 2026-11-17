@@ -1204,6 +1204,9 @@ export const uz = {
   st_sync_done: "Ma'lumotlar yangilandi",
   st_logout_confirm: "Hisobdan chiqasizmi? Yuborilmagan o'zgarishlar bo'lsa, avval sinxronlang.",
   st_logout_yes: "Ha, chiqish",
+  char_next: "Keyingi: {name}",
+  char_all_done: "Bugungi odatlar bajarildi",
+  char_start: "Kunni birinchi odat bilan boshlang",
 }
 
 export type Dict = typeof uz
