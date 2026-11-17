@@ -1153,6 +1153,13 @@ export const uz = {
   ai_report_update: "Yangilash",
   journal_week_title: "So'nggi 7 kun",
   sec_admin: "Admin panel",
+  days_title: "Qaysi kunlarda",
+  days_hint: "Kamida 1 kun. Boshqa kunlar zanjirni uzmaydi",
+  days_every: "Har kuni",
+  days_work: "Ish kunlari",
+  days_weekend: "Dam olish kunlari",
+  dash_not_scheduled: "Bugun rejalashtirilmagan",
+  dash_not_scheduled_hint: "Bu odatlar bugungi intizom foiziga ta'sir qilmaydi",
 }
 
 export type Dict = typeof uz

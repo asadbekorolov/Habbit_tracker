@@ -1,6 +1,6 @@
 // Zanjir (streak) hisoblash — sof funksiya, sanalar "YYYY-MM-DD" (Toshkent).
-// HabitsLog va Dashboard bir xil natija ko'rsatishi uchun yagona manba.
-import { addDays } from './date.ts';
+// Bosh sahifa, Kundalik va odat tafsilotlari bir xil natija ko'rsatishi uchun yagona manba.
+import { addDays, isoWeekdayOf } from './date.ts';
 
 export interface StreakLog {
   habit_id: string;
@@ -8,12 +8,24 @@ export interface StreakLog {
   completed: boolean;
 }
 
+/** Hafta kunlari (1 = Dushanba ... 7 = Yakshanba); bo'sh/yo'q — har kuni. */
+export type WeekSchedule = readonly number[] | null | undefined;
+
+/** Shu kun odat uchun rejalashtirilganmi. */
+export function isScheduledOn(schedule: WeekSchedule, date: string): boolean {
+  if (!schedule || schedule.length === 0 || schedule.length >= 7) return true;
+  return schedule.includes(isoWeekdayOf(date));
+}
+
 /**
- * Har bir odat uchun ketma-ket bajarilgan kunlar soni.
+ * Har bir odat uchun joriy zanjir.
  * - Bugun bajarilgan bo'lsa zanjir bugundan, aks holda kechadan sanaladi
  *   (bugun hali tugamagan — zanjir uzilmagan hisoblanadi).
  * - Muzlatilgan (streak freeze) kunlar zanjirni uzmaydi va sanaladi.
- * - `maxDays` — tarix oynasi (so'nggi 30 kun yuklanadi).
+ * - Aqlli zanjir: odat faqat ma'lum kunlarga belgilangan bo'lsa (`schedules`),
+ *   rejalashtirilmagan kunlar o'tkazib yuboriladi — zanjirni uzmaydi. Shunday
+ *   kunda baribir bajarilgan bo'lsa, u ham sanaladi.
+ * - `maxDays` — tarix oynasi (kalendar kunlarida).
  */
 export function computeStreaks(params: {
   history: StreakLog[];
@@ -21,8 +33,9 @@ export function computeStreaks(params: {
   today: string;
   freezeDates?: Iterable<string>;
   maxDays?: number;
+  schedules?: Readonly<Record<string, WeekSchedule>>;
 }): Record<string, number> {
-  const { history, completedToday, today, maxDays = 31 } = params;
+  const { history, completedToday, today, maxDays = 31, schedules = {} } = params;
   const freeze = new Set(params.freezeDates ?? []);
   const byHabit = new Map<string, Set<string>>();
   const add = (id: string, d: string) => {
@@ -35,11 +48,14 @@ export function computeStreaks(params: {
 
   const out: Record<string, number> = {};
   for (const [id, days] of byHabit) {
+    const schedule = schedules[id];
     let streak = 0;
     for (let i = days.has(today) ? 0 : 1; i < maxDays; i++) {
       const ds = addDays(today, -i);
-      if (days.has(ds) || freeze.has(ds)) streak++;
-      else break;
+      if (days.has(ds)) { streak++; continue; }
+      if (!isScheduledOn(schedule, ds)) continue; // dam olish kuni — zanjir uzilmaydi
+      if (freeze.has(ds)) { streak++; continue; }
+      break;
     }
     if (streak > 0) out[id] = streak;
   }

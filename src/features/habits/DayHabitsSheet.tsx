@@ -46,7 +46,7 @@ export function DayHabitsSheet({ profile, date, onClose, onOpenHabit }: DayHabit
         </div>
 
         <div className="space-y-2.5">
-          {day.positive.map((habit) => (
+          {[...day.scheduled, ...day.unscheduled].map((habit) => (
             <HabitItem
               key={habit.id}
               habit={habit}

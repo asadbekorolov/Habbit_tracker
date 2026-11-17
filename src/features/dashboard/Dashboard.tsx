@@ -1,6 +1,6 @@
 import { useState, useEffect, lazy, Suspense } from "react";
 import { AnimatePresence, motion } from "framer-motion";
-import { Plus, PlusCircle, SlidersHorizontal, Clock, ShieldAlert, ChevronDown, ClipboardList } from "lucide-react";
+import { Plus, PlusCircle, SlidersHorizontal, Clock, ShieldAlert, ChevronDown, ClipboardList, CalendarOff } from "lucide-react";
 import { getTashkentToday } from "../../utils/date";
 import { isMeasurable } from "../../utils/habitMetrics";
 import type { Habit, Profile } from "../../services/supabase";
@@ -37,10 +37,12 @@ export function Dashboard({ onNavigate, onCompletedChange, onProfileUpdate }: Da
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [valueHabit, setValueHabit] = useState<Habit | null>(null);
   const [negativeOpen, setNegativeOpen] = useState(true);
+  const [offOpen, setOffOpen] = useState(false);
   const [detailHabit, setDetailHabit] = useState<Habit | null>(null);
   const [plusMenuOpen, setPlusMenuOpen] = useState(false);
 
-  const positive = day.positive;
+  // Intizom foizi faqat bugunga rejalashtirilgan odatlardan (052: hafta kunlari)
+  const positive = day.scheduled;
   const completedCount = positive.filter((h) => day.entryOf(h.id).status === "done").length;
   const totalCount = positive.length;
   const progressPercent = totalCount > 0 ? Math.round((completedCount / totalCount) * 100) : 0;
@@ -144,7 +146,7 @@ export function Dashboard({ onNavigate, onCompletedChange, onProfileUpdate }: Da
             </div>
           </div>
 
-          {!day.isLoading && positive.length === 0 && day.negative.length === 0 ? (
+          {!day.isLoading && day.positive.length === 0 && day.negative.length === 0 ? (
             <EmptyState title={t("dash_no_habits")} subtitle={t("dash_no_habits_sub")} icon={ClipboardList} />
           ) : (
             <div className="space-y-2.5">
@@ -161,6 +163,44 @@ export function Dashboard({ onNavigate, onCompletedChange, onProfileUpdate }: Da
             </div>
           )}
         </section>
+
+        {/* Bugun rejalashtirilmagan odatlar — yig'iladigan, foizga ta'sir qilmaydi */}
+        {day.unscheduled.length > 0 && (
+          <section className="rounded-2xl border border-slate-800/80 bg-slate-900/30">
+            <button
+              type="button"
+              onClick={() => setOffOpen((v) => !v)}
+              aria-expanded={offOpen}
+              className="w-full flex items-center justify-between gap-2 p-3.5 cursor-pointer"
+            >
+              <span className="flex items-center gap-2 min-w-0">
+                <CalendarOff className="w-4 h-4 text-slate-400 shrink-0" />
+                <span className="text-sm font-semibold text-slate-300 truncate">{t("dash_not_scheduled")}</span>
+                <span className="font-mono text-[11px] text-slate-400 bg-slate-800/80 px-2 py-0.5 rounded-full">{day.unscheduled.length}</span>
+              </span>
+              <ChevronDown className={`w-4 h-4 text-slate-400 transition-transform ${offOpen ? "rotate-180" : ""}`} />
+            </button>
+            <AnimatePresence initial={false}>
+              {offOpen && (
+                <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: "auto", opacity: 1 }} exit={{ height: 0, opacity: 0 }} className="overflow-hidden">
+                  <div className="px-3 pb-3 space-y-2.5">
+                    <p className="text-[11px] text-slate-400 px-1">{t("dash_not_scheduled_hint")}</p>
+                    {day.unscheduled.map((habit) => (
+                      <HabitItem
+                        key={habit.id}
+                        habit={habit}
+                        entry={day.entryOf(habit.id)}
+                        streak={day.streaks[habit.id] ?? 0}
+                        onCheck={handleCheck}
+                        onOpen={setDetailHabit}
+                      />
+                    ))}
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </section>
+        )}
 
         {/* Zararli odatlar — yig'iladigan bo'lim */}
         {day.negative.length > 0 && (

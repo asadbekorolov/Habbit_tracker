@@ -11,7 +11,7 @@ import { useHabitsQuery, useDayLogsQuery, useLogsRangeQuery, useFreezeInfoQuery 
 import { habitSyncQueue } from '../services/habitSyncQueue';
 import { soundService } from '../services/soundService';
 import { addDays, getTashkentToday, isTashkentDateOpen } from '../utils/date';
-import { computeStreaks } from '../utils/streaks';
+import { computeStreaks, isScheduledOn } from '../utils/streaks';
 import { isMeasurable } from '../utils/habitMetrics';
 import { useLang } from '../store/LangContext';
 import type { Habit } from '../services/supabase';
@@ -55,6 +55,13 @@ export function useHabitDay(uid: string, date: string) {
   const habits: Habit[] = habitsQ.data || [];
   const positive = useMemo(() => habits.filter((h) => h.type !== 'negative'), [habits]);
   const negative = useMemo(() => habits.filter((h) => h.type === 'negative'), [habits]);
+  // Hafta kunlari (052): shu kunga rejalashtirilgan va rejalashtirilmagan ijobiy odatlar
+  const scheduled = useMemo(() => positive.filter((h) => isScheduledOn(h.days_of_week, date)), [positive, date]);
+  const unscheduled = useMemo(() => positive.filter((h) => !isScheduledOn(h.days_of_week, date)), [positive, date]);
+  const schedules = useMemo(
+    () => Object.fromEntries(habits.map((h) => [h.id, h.days_of_week])),
+    [habits]
+  );
 
   const entries = useMemo(() => {
     const map = new Map<string, HabitDayEntry>();
@@ -76,8 +83,9 @@ export function useHabitDay(uid: string, date: string) {
       completedToday: doneToday,
       today,
       freezeDates: freezeQ.data?.dates,
+      schedules,
     });
-  }, [historyQ.data, todayDayQ.data, today, freezeQ.data?.dates]);
+  }, [historyQ.data, todayDayQ.data, today, freezeQ.data?.dates, schedules]);
 
   const locked = !isTashkentDateOpen(date);
   const entryOf = (habitId: string) => entries.get(habitId) ?? EMPTY;
@@ -117,6 +125,10 @@ export function useHabitDay(uid: string, date: string) {
     habits,
     positive,
     negative,
+    /** Shu kunga rejalashtirilgan ijobiy odatlar (intizom foizi shulardan) */
+    scheduled,
+    /** Shu kunga rejalashtirilmagan ijobiy odatlar */
+    unscheduled,
     entryOf,
     streaks,
     locked,

@@ -36,6 +36,13 @@ export function getTashkentTimeHM(now: Date = new Date()): string {
   return new Date(now.getTime() + TASHKENT_OFFSET_MS).toISOString().slice(11, 16);
 }
 
+/** "YYYY-MM-DD" sananing hafta kuni, ISO: 1 = dushanba … 7 = yakshanba. */
+export function isoWeekdayOf(dateStr: string): number {
+  const [y, m, d] = dateStr.split('-').map(Number);
+  const wd = new Date(Date.UTC(y, m - 1, d)).getUTCDay();
+  return wd === 0 ? 7 : wd;
+}
+
 /** Toshkent bo'yicha hafta kuni, ISO: 1 = dushanba … 7 = yakshanba. */
 export function getTashkentIsoWeekday(now: Date = new Date()): number {
   const d = new Date(now.getTime() + TASHKENT_OFFSET_MS).getUTCDay();

@@ -13,6 +13,7 @@ interface NewHabitArgs {
   scheduledStart?: string;
   scheduledEnd?: string;
   description?: string;
+  daysOfWeek?: number[];
 }
 
 export const useAddHabit = () => {
@@ -29,7 +30,8 @@ export const useAddHabit = () => {
         args.unit ?? '',
         args.scheduledStart,
         args.scheduledEnd,
-        args.description ?? ''
+        args.description ?? '',
+        args.daysOfWeek
       );
       return data;
     },
@@ -52,6 +54,7 @@ export const useAddHabit = () => {
         unit: newHabit.unit ?? '',
         scheduled_start: newHabit.scheduledStart ?? null,
         scheduled_end: newHabit.scheduledEnd ?? null,
+        days_of_week: newHabit.daysOfWeek ?? [1, 2, 3, 4, 5, 6, 7],
         is_active: true,
         created_at: new Date().toISOString(),
       };

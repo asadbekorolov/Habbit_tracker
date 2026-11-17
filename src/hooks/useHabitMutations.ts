@@ -20,6 +20,7 @@ export interface HabitFormData {
   scheduledStart?: string;
   scheduledEnd?: string;
   reminder?: string;
+  daysOfWeek?: number[];
 }
 
 const reminderKey = (habitId: string) => `reminder_${habitId}`;
@@ -51,7 +52,13 @@ export function useHabitMutations(uid: string) {
     return habit;
   }
 
-  async function update(habitId: string, data: HabitFormData): Promise<Habit> {
+  /**
+   * @param previous tahrirlanayotgan odatning oldingi holati — hafta kunlari
+   *   faqat o'zgarganda yuboriladi (052 hali qo'llanmagan bazada ham ishlaydi).
+   */
+  async function update(habitId: string, data: HabitFormData, previous?: Pick<Habit, "days_of_week">): Promise<Habit> {
+    const prevDays = previous?.days_of_week;
+    const sendDays = !!data.daysOfWeek && (data.daysOfWeek.length < 7 || (!!prevDays && prevDays.length < 7));
     const updated = await updateHabit(habitId, {
       name: data.name,
       emoji: data.emoji,
@@ -60,6 +67,7 @@ export function useHabitMutations(uid: string) {
       unit: data.unit,
       scheduled_start: data.scheduledStart || null,
       scheduled_end: data.scheduledEnd || null,
+      ...(sendDays ? { days_of_week: data.daysOfWeek } : {}),
       ...(data.type ? { type: data.type } : {}),
     } as any);
     habitCache.updated(queryClient, uid, { ...updated, id: habitId });

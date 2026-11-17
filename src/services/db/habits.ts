@@ -41,7 +41,8 @@ export async function addHabit(
   unit: string = '',
   scheduledStart?: string,
   scheduledEnd?: string,
-  description: string = ''
+  description: string = '',
+  daysOfWeek?: number[]
 ) {
   const baseData: Record<string, unknown> = { user_id: userId, name: normalizeApostrophes(name), emoji, type };
   if (target_value > 1 || unit) {
@@ -51,6 +52,8 @@ export async function addHabit(
   if (scheduledStart) baseData.scheduled_start = scheduledStart;
   if (scheduledEnd) baseData.scheduled_end = scheduledEnd;
   if (description) baseData.description = description;
+  // 052: faqat "har kuni" bo'lmasa yuboriladi (eski bazada ham ishlayveradi)
+  if (daysOfWeek && daysOfWeek.length > 0 && daysOfWeek.length < 7) baseData.days_of_week = daysOfWeek;
 
   const { data, error } = await supabase
     .from('habits')
@@ -63,7 +66,7 @@ export async function addHabit(
 
 export async function updateHabit(
   habitId: string,
-  updates: { name?: string; emoji?: string; description?: string; target_value?: number; unit?: string; scheduled_start?: string | null; scheduled_end?: string | null }
+  updates: { name?: string; emoji?: string; description?: string; target_value?: number; unit?: string; scheduled_start?: string | null; scheduled_end?: string | null; days_of_week?: number[] }
 ) {
   const { data, error } = await supabase
     .from('habits')

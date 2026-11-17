@@ -53,6 +53,8 @@ export type Habit = {
   unit?: string
   scheduled_start?: string | null
   scheduled_end?: string | null
+  /** 1 = Dushanba ... 7 = Yakshanba (052). Yo'q bo'lsa — har kuni. */
+  days_of_week?: number[]
   is_active: boolean
   created_at: string
   /** Faqat UI (demo/hisoblangan zanjir) — bazada ustun yo'q. */

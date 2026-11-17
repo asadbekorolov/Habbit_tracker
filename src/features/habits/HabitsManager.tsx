@@ -25,6 +25,7 @@ import { getHabitCategory, getCategoryTheme } from "../../utils/categoryTheme";
 import { notificationService } from "../../services/notificationService";
 import { Bell, BellOff } from "lucide-react";
 import { AddHabitModal } from "../../components/AddHabitModal";
+import { useHabitMutations, getHabitReminder } from "../../hooks/useHabitMutations";
 import { HabitDetailModal } from "./HabitDetailModal";
 import { useProfile } from "../../store/UserContext";
 
@@ -85,6 +86,7 @@ export function HabitsManager({}: HabitsManagerProps) {
   const queryClient = useQueryClient();
   const { data: habitsData, isLoading: queryLoading } = useHabitsQuery(profile.id);
   const addHabitMutation = useAddHabit();
+  const habitMutations = useHabitMutations(profile.id);
 
   // /habits?section=routines — "Kun tartibi tuzish" havolalari to'g'ridan-to'g'ri shu bo'limni ochadi
   const [searchParams] = useSearchParams();
@@ -307,44 +309,19 @@ export function HabitsManager({}: HabitsManagerProps) {
         isOpen={showForm}
         onClose={() => { setShowForm(false); setEditingId(null); }}
         onAdd={async (habitData) => {
+          // Yaratish/tahrirlash/eslatma — yagona joyda (useHabitMutations), hafta kunlari bilan
           if (editingId) {
-            const updates: any = {
-              name: habitData.name,
-              emoji: habitData.emoji,
-              type: habitData.type,
-              description: habitData.description,
-              target_value: habitData.target_value,
-              unit: habitData.unit,
-              scheduled_start: habitData.scheduledStart || null,
-              scheduled_end: habitData.scheduledEnd || null
-            };
-            const updated = await updateHabit(editingId, updates);
-            setHabits((prev) => prev.map((h) => (h.id === editingId ? { ...h, ...updated } : h)));
-            habitCache.updated(queryClient, profile.id, { ...updated, id: editingId });
-
-            if (habitData.reminder) {
-              localStorage.setItem(`reminder_${editingId}`, habitData.reminder);
-              await notificationService.initNotifications();
-              await notificationService.scheduleHabitReminder(editingId, habitData.name, habitData.reminder);
-            } else {
-              localStorage.removeItem(`reminder_${editingId}`);
-              await notificationService.cancelHabitReminder(editingId);
-            }
+            const prev = habits.find((h) => h.id === editingId);
+            const updated = await habitMutations.update(editingId, habitData, prev);
+            setHabits((list) => list.map((h) => (h.id === editingId ? { ...h, ...updated } : h)));
           } else {
-            const habit = await addHabitMutation.mutateAsync({
-              userId: profile.id,
-              ...habitData
-            });
-            trackEvent('habit_created', { type: habitData.type }, profile.id);
-            if (habitData.reminder) {
-              localStorage.setItem(`reminder_${habit.id}`, habitData.reminder);
-              await notificationService.initNotifications();
-              await notificationService.scheduleHabitReminder(habit.id, habitData.name, habitData.reminder);
-            }
+            await habitMutations.create(habitData);
           }
-          queryClient.invalidateQueries({ queryKey: ['habits', profile.id] });
         }}
-        initialData={editingId ? habits.find(h => h.id === editingId) : undefined}
+        initialData={editingId ? (() => {
+          const h = habits.find((x) => x.id === editingId);
+          return h ? { ...h, reminder: getHabitReminder(h.id) || undefined } : undefined;
+        })() : undefined}
       />
 
       {/* Odat tafsilotlari (Bosh sahifa va Kundalik bilan bir xil oyna) */}

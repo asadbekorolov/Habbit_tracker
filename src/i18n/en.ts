@@ -1155,4 +1155,11 @@ export const en: Dict = {
   ai_report_update: "Refresh",
   journal_week_title: "Last 7 days",
   sec_admin: "Admin panel",
+  days_title: "Which days",
+  days_hint: "At least 1 day. Other days won't break the streak",
+  days_every: "Every day",
+  days_work: "Weekdays",
+  days_weekend: "Weekend",
+  dash_not_scheduled: "Not scheduled today",
+  dash_not_scheduled_hint: "These don't affect today's discipline score",
 }

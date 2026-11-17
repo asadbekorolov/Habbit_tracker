@@ -1155,4 +1155,11 @@ export const ru: Dict = {
   ai_report_update: "Обновить",
   journal_week_title: "Последние 7 дней",
   sec_admin: "Админ-панель",
+  days_title: "По каким дням",
+  days_hint: "Минимум 1 день. Остальные дни не прерывают серию",
+  days_every: "Каждый день",
+  days_work: "Будни",
+  days_weekend: "Выходные",
+  dash_not_scheduled: "Сегодня не запланировано",
+  dash_not_scheduled_hint: "Не влияют на сегодняшний процент",
 }

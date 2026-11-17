@@ -9,6 +9,8 @@ import {
 } from 'lucide-react';
 import { useLang } from '../store/LangContext';
 import { useScrollLock } from '../hooks/useScrollLock';
+import { WeekdayPicker } from "./WeekdayPicker";
+import { normalizeDays } from "../utils/weekdays";
 import { CustomTimePickerModal } from './CustomTimePickerModal';
 
 const ICON_PALETTE = [
@@ -63,6 +65,7 @@ export const AddHabitModal: React.FC<AddHabitModalProps> = ({
   const [newReminderEnabled, setNewReminderEnabled] = useState(!!initialData?.reminder);
   const [newReminderTime, setNewReminderTime] = useState(initialData?.reminder || "09:00");
   const [timePickerTarget, setTimePickerTarget] = useState<'start' | 'end' | 'reminder' | null>(null);
+  const [daysOfWeek, setDaysOfWeek] = useState<number[]>(normalizeDays(initialData?.days_of_week));
 
   useEffect(() => {
     if (isOpen) {
@@ -79,6 +82,7 @@ export const AddHabitModal: React.FC<AddHabitModalProps> = ({
       setNewDescription(initialData?.description || "");
       setNewReminderEnabled(!!initialData?.reminder);
       setNewReminderTime(initialData?.reminder || "09:00");
+      setDaysOfWeek(normalizeDays(initialData?.days_of_week));
       setError("");
     }
   }, [initialData, isOpen]);
@@ -113,7 +117,8 @@ export const AddHabitModal: React.FC<AddHabitModalProps> = ({
         scheduledStart: newStartTime || undefined,
         scheduledEnd: newEndTime || undefined,
         description: newDescription.trim() || undefined,
-        reminder: newReminderEnabled ? newReminderTime : undefined
+        reminder: newReminderEnabled ? newReminderTime : undefined,
+        daysOfWeek: normalizeDays(daysOfWeek),
       });
       onClose();
     } catch (e: any) {
@@ -246,6 +251,9 @@ export const AddHabitModal: React.FC<AddHabitModalProps> = ({
                     </div>
                   </div>
                 </div>
+
+                {/* Hafta kunlari (052) */}
+                <WeekdayPicker value={daysOfWeek} onChange={setDaysOfWeek} />
 
                 {/* Reminder Settings */}
                 <div className="p-4 rounded-2xl bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 space-y-4">

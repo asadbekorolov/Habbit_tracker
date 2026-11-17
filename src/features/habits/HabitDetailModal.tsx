@@ -185,7 +185,7 @@ export function HabitDetailModal({ habit, userId, onClose }: HabitDetailModalPro
   const [editing, setEditing] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const handleEditSave = async (data: HabitFormData) => {
-    await update(live.id, data);
+    await update(live.id, data, live);
     setReminder(data.reminder || null);
     setEditing(false);
   };
