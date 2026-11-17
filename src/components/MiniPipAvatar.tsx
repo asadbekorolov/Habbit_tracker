@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import type { Profile } from '../services/supabase';
 import { useCharacterAvatar } from '../hooks/useCharacterAvatar';
-import { BiometricsModal } from './BiometricsModal';
+import { useNavigate } from 'react-router-dom';
 
 export interface MiniPipAvatarProps {
   profile?: Profile;
@@ -24,16 +24,14 @@ export const MiniPipAvatar: React.FC<MiniPipAvatarProps> = ({
   });
 
   const [imageError, setImageError] = useState(false);
-  const [isBiometricsOpen, setIsBiometricsOpen] = useState(false);
+  const navigate = useNavigate();
 
   const imageSrc = `/assets/character/${bodyTier}_${contextState}.png`;
 
   const handleClick = () => {
-    if (onClick) {
-      onClick();
-    } else {
-      setIsBiometricsOpen(true);
-    }
+    // Antropometriya faqat Profildagi "Shaxsiy parametrlar"da tahrirlanadi
+    if (onClick) onClick();
+    else navigate('/profile');
   };
 
   return (
@@ -41,7 +39,7 @@ export const MiniPipAvatar: React.FC<MiniPipAvatarProps> = ({
       <button
         type="button"
         onClick={handleClick}
-        aria-label={`BMI: ${bmiFormatted} • Antropometriyani ko'rish`}
+        aria-label={`BMI: ${bmiFormatted}`}
         title={`BMI: ${bmiFormatted}`}
         className={`w-11 h-11 rounded-2xl bg-slate-900 border border-emerald-500/30 overflow-hidden flex items-center justify-center cursor-pointer active:scale-95 transition-all shadow-md shrink-0 relative group ${className}`}
       >
@@ -71,14 +69,6 @@ export const MiniPipAvatar: React.FC<MiniPipAvatarProps> = ({
         )}
       </button>
 
-      {profile && isBiometricsOpen && (
-        <BiometricsModal
-          isOpen={isBiometricsOpen}
-          onClose={() => setIsBiometricsOpen(false)}
-          profile={profile}
-          onProfileUpdate={onProfileUpdate}
-        />
-      )}
     </>
   );
 };

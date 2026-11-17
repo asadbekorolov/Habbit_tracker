@@ -202,6 +202,7 @@ export const BiometricsOnboardingModal: React.FC<BiometricsOnboardingModalProps>
             <button
               type="button"
               onClick={handleClose}
+              data-modal-close-trigger
               aria-label="Yopish"
               className="p-1.5 rounded-xl hover:bg-slate-800 text-slate-400 hover:text-white transition-colors shrink-0 cursor-pointer"
             >

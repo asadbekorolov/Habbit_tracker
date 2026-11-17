@@ -129,7 +129,7 @@ export function ProfilePage({ onNavigate, lang, onProfileUpdate }: ProfilePagePr
 
         <div className="flex items-center justify-between mb-2 relative z-10">
           <span className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Shaxsiy profil</span>
-          <MiniPipAvatar profile={profile} onProfileUpdate={onProfileUpdate} />
+          <MiniPipAvatar profile={profile} onClick={() => setShowBiometricsModal(true)} />
         </div>
 
         <div className="flex flex-col items-center text-center relative z-10">
