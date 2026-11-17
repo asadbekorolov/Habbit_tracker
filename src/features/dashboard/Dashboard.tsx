@@ -11,6 +11,7 @@ import { useHabitMutations, type HabitFormData } from "../../hooks/useHabitMutat
 import { DisciplineProgressBar } from "./components/DisciplineProgressBar";
 import { ActiveRoutinePill } from "./components/ActiveRoutinePill";
 import { TipCard } from "./components/TipCard";
+import { LifeHabitDotsWidget } from "./components/LifeHabitDotsWidget";
 import { HabitItem } from "../habits/components/HabitItem";
 import { QuickLogModal } from "../../components/QuickLogModal";
 import { EmptyState } from "../../components/EmptyState";
@@ -78,6 +79,8 @@ export function Dashboard({ onNavigate, onCompletedChange, onProfileUpdate }: Da
       <div className="fixed top-0 left-1/2 -translate-x-1/2 w-full max-w-md h-80 bg-emerald-500/5 blur-[120px] pointer-events-none z-0" />
 
       <main className="relative z-10 max-w-md mx-auto px-4 pt-2 space-y-4">
+        <LifeHabitDotsWidget done={completedCount} total={totalCount} />
+
         <DisciplineProgressBar completedCount={completedCount} totalCount={totalCount} percentage={progressPercent} />
 
         <ActiveRoutinePill userId={profile.id} onNavigate={onNavigate} />

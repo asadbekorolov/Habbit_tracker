@@ -1172,4 +1172,7 @@ export const ru: Dict = {
   hd_part_afternoon: "День",
   hd_part_evening: "Вечер",
   hd_legend_off: "Не по плану",
+  widget_day: "Прогресс дня",
+  widget_habits: "Привычки сегодня",
+  widget_no_habits: "Сегодня нет плана",
 }

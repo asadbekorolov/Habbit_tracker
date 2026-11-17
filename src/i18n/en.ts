@@ -1172,4 +1172,7 @@ export const en: Dict = {
   hd_part_afternoon: "Afternoon",
   hd_part_evening: "Evening",
   hd_legend_off: "Not scheduled",
+  widget_day: "Day progress",
+  widget_habits: "Today's habits",
+  widget_no_habits: "Nothing planned today",
 }

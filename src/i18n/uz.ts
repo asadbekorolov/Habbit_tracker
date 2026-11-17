@@ -1170,6 +1170,9 @@ export const uz = {
   hd_part_afternoon: "Kunduz",
   hd_part_evening: "Kechqurun",
   hd_legend_off: "Rejada yo'q",
+  widget_day: "Kun jarayoni",
+  widget_habits: "Bugungi odatlar",
+  widget_no_habits: "Bugun reja yo'q",
 }
 
 export type Dict = typeof uz
