@@ -133,9 +133,16 @@ export function ProfilePage({ onNavigate, lang, onProfileUpdate }: ProfilePagePr
       <div className="premium-card p-6 relative overflow-hidden">
         <div className="absolute top-0 right-0 w-40 h-40 bg-primary/5 rounded-full -mr-20 -mt-20 blur-3xl pointer-events-none" />
 
-        <div className="flex items-center justify-between mb-2 relative z-10">
-          <span className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Shaxsiy profil</span>
-          <MiniPipAvatar profile={profile} onClick={() => setShowBiometricsModal(true)} />
+        <div className="flex items-center justify-between mb-3 relative z-10">
+          <span className="text-xs font-bold uppercase tracking-widest text-muted-foreground">{t("profile_section_title")}</span>
+          <button
+            type="button"
+            onClick={() => onNavigate("edit-profile")}
+            aria-label={t("settings_edit_profile")}
+            className="w-9 h-9 rounded-xl bg-slate-800/80 border border-slate-700/60 text-slate-300 flex items-center justify-center active:scale-95 cursor-pointer"
+          >
+            <Edit3 size={16} />
+          </button>
         </div>
 
         {/* Personaj (vaqtinchalik video) — avatar uning ustiga chiqib turadi */}
@@ -170,13 +177,13 @@ export function ProfilePage({ onNavigate, lang, onProfileUpdate }: ProfilePagePr
 
           {/* Dedicated Character/Avatar Showcase Stats */}
           <div className="flex items-center justify-center gap-2 flex-wrap">
-            <div className="px-3.5 py-1.5 rounded-2xl bg-xp/10 border border-xp/20 text-xp text-xs font-bold flex items-center gap-2 shadow-sm">
-              <Zap size={15} className="fill-xp" /> LVL {lv.level} · {lv.label}
-            </div>
+            <button type="button" onClick={() => onNavigate("achievements")} className="px-3.5 py-1.5 rounded-2xl bg-xp/10 border border-xp/20 text-xp text-xs font-bold flex items-center gap-2 shadow-sm active:scale-95 cursor-pointer">
+              <Zap size={15} className="fill-xp" /> <span className="font-mono">LVL {lv.level}</span> · {lv.label}
+            </button>
             {rank > 0 && (
-              <div className="px-3.5 py-1.5 rounded-2xl bg-blue-500/10 border border-blue-500/20 text-blue-500 text-xs font-bold flex items-center gap-2 shadow-sm">
-                <Trophy size={15} /> #{rank} Reyting
-              </div>
+              <button type="button" onClick={() => onNavigate("leaderboard")} className="px-3.5 py-1.5 rounded-2xl bg-blue-500/10 border border-blue-500/20 text-blue-400 text-xs font-bold flex items-center gap-2 shadow-sm active:scale-95 cursor-pointer">
+                <Trophy size={15} /> <span className="font-mono">#{rank}</span> {t("sec_leaderboard")}
+              </button>
             )}
             <button type="button" onClick={() => setShowAllBadgesModal(true)} className="px-3.5 py-1.5 rounded-2xl bg-amber-500/10 border border-amber-500/20 text-amber-400 text-xs font-bold flex items-center gap-2 shadow-sm cursor-pointer active:scale-95">
               <Award size={15} className="text-amber-400" /> {t("sec_badges")}: {unlockedTieredCount}/{tieredBadges.length} <ChevronRight size={14} />

@@ -1207,6 +1207,16 @@ export const uz = {
   char_next: "Keyingi: {name}",
   char_all_done: "Bugungi odatlar bajarildi",
   char_start: "Kunni birinchi odat bilan boshlang",
+  rt_none_today: "Bugun uchun kun tartibi yo'q",
+  rt_not_created: "Kun tartibi hali tuzilmagan",
+  rt_create: "Kun tartibi tuzish",
+  rt_now: "Hozir faol",
+  rt_next: "Keyingi",
+  rt_done: "Yakunlandi",
+  rt_day_over: "Bugungi kun tartibi tugadi",
+  rt_edit: "Kun tartibini tahrirlash",
+  rt_toggle_aria: "Kun tartibini ko'rsatish",
+  profile_section_title: "Shaxsiy profil",
 }
 
 export type Dict = typeof uz

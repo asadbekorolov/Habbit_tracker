@@ -2,9 +2,10 @@ import React, { useEffect, useMemo, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Clock, ChevronDown, ChevronUp, CalendarPlus, Sun, Briefcase, Moon, Zap, Target,
-  BookOpen, Heart, Activity, Dumbbell, Coffee, Shield, CheckCircle2,
+  BookOpen, Heart, Activity, Dumbbell, Coffee, Shield, CheckCircle2, ChevronRight,
 } from "lucide-react";
 import { useRoutines } from "../../../hooks/useRoutines";
+import { useLang } from "../../../store/LangContext";
 import { getTashkentIsoWeekday, getTashkentTimeHM } from "../../../utils/date";
 import { buildRoutineSchedule, type ScheduledRoutine } from "../../../utils/routineSchedule";
 
@@ -32,6 +33,7 @@ function useTashkentClock() {
 const timeSlot = (s: ScheduledRoutine) => `${s.start} - ${s.end}`;
 
 export function ActiveRoutinePill({ userId, onNavigate }: ActiveRoutinePillProps) {
+  const { t } = useLang();
   const [isExpanded, setIsExpanded] = useState(false);
   const { data: routines, isLoading } = useRoutines(userId);
   const { hm, weekday } = useTashkentClock();
@@ -50,28 +52,26 @@ export function ActiveRoutinePill({ userId, onNavigate }: ActiveRoutinePillProps
       <button
         type="button"
         onClick={() => onNavigate?.("habits?section=routines")}
-        className="w-full flex items-center justify-between gap-3 rounded-2xl bg-slate-900/50 border border-dashed border-slate-700/80 p-3.5 text-left cursor-pointer active:scale-[0.99] transition-all"
+        className="w-full flex items-center gap-3 rounded-2xl bg-slate-900/50 border border-dashed border-slate-700/80 p-3 text-left cursor-pointer active:scale-[0.99] transition-all"
       >
-        <span className="flex items-center gap-2.5 min-w-0">
-          <Clock className="w-4 h-4 text-slate-500 shrink-0" />
-          <span className="text-xs text-slate-400 truncate">
-            {hasAny ? "Bugun uchun kun tartibi yo'q" : "Kun tartibi hali tuzilmagan"}
-          </span>
+        <span className="w-9 h-9 rounded-xl bg-emerald-500/10 border border-emerald-500/25 flex items-center justify-center shrink-0">
+          <CalendarPlus className="w-4 h-4 text-emerald-400" />
         </span>
-        <span className="flex items-center gap-1.5 shrink-0 text-xs font-semibold text-emerald-400">
-          <CalendarPlus className="w-4 h-4" />
-          Kun tartibi tuzish
+        <span className="flex-1 min-w-0">
+          <span className="block text-sm font-semibold text-emerald-300">{t("rt_create")}</span>
+          <span className="block text-[11px] text-slate-400">{hasAny ? t("rt_none_today") : t("rt_not_created")}</span>
         </span>
+        <ChevronRight className="w-4 h-4 text-slate-500 shrink-0" />
       </button>
     );
   }
 
   const head = schedule.current ?? schedule.next;
   const badge = schedule.current
-    ? { text: "HOZIR FAOL", cls: "bg-emerald-950/60 border-emerald-500/30 text-emerald-400" }
+    ? { text: t("rt_now"), cls: "bg-emerald-950/60 border-emerald-500/30 text-emerald-400" }
     : schedule.next
-    ? { text: "KEYINGI", cls: "bg-slate-800/60 border-slate-600/40 text-slate-300" }
-    : { text: "YAKUNLANDI", cls: "bg-slate-800/60 border-slate-600/40 text-slate-400" };
+    ? { text: t("rt_next"), cls: "bg-slate-800/60 border-slate-600/40 text-slate-300" }
+    : { text: t("rt_done"), cls: "bg-slate-800/60 border-slate-600/40 text-slate-400" };
 
   return (
     <section className="rounded-2xl bg-slate-900/50 border border-slate-800/80 backdrop-blur-xl p-3.5 transition-all shadow-lg">
@@ -87,7 +87,7 @@ export function ActiveRoutinePill({ userId, onNavigate }: ActiveRoutinePillProps
               <span className="text-xs font-medium text-slate-200 truncate">{head.routine.title}</span>
             </>
           ) : (
-            <span className="text-xs font-medium text-slate-300 truncate">Bugungi kun tartibi tugadi</span>
+            <span className="text-xs font-medium text-slate-300 truncate">{t("rt_day_over")}</span>
           )}
         </div>
 
@@ -97,7 +97,7 @@ export function ActiveRoutinePill({ userId, onNavigate }: ActiveRoutinePillProps
           </span>
           <button
             type="button"
-            aria-label="Kun tartibini ko'rsatish"
+            aria-label={t("rt_toggle_aria")}
             className="p-0.5 rounded-lg text-slate-400 hover:text-slate-200 transition-colors"
           >
             {isExpanded ? <ChevronUp className="w-4 h-4 stroke-[2]" /> : <ChevronDown className="w-4 h-4 stroke-[2]" />}
@@ -150,7 +150,7 @@ export function ActiveRoutinePill({ userId, onNavigate }: ActiveRoutinePillProps
                 onClick={() => onNavigate("habits?section=routines")}
                 className="w-full text-center text-[11px] font-semibold text-emerald-400/90 pt-1 cursor-pointer"
               >
-                Kun tartibini tahrirlash
+                {t("rt_edit")}
               </button>
             )}
           </motion.div>

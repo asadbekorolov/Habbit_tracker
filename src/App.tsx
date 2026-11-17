@@ -449,11 +449,11 @@ export default function App() {
                 paddingTop: "calc(0.75rem + env(safe-area-inset-top, 16px))",
               }}
             >
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
+              <div className="flex items-center justify-between gap-2">
+                <div className="flex items-center gap-2.5 min-w-0 flex-1">
                   <button
                     onClick={() => setActiveTab("profile")}
-                    className="active:scale-95 transition-transform"
+                    className="active:scale-95 transition-transform shrink-0"
                   >
                     {profile.avatar_url ? (
                       <div className="w-10 h-10 rounded-2xl border-2 border-primary/20 overflow-hidden shadow-sm flex-shrink-0">
@@ -469,26 +469,26 @@ export default function App() {
                       </div>
                     )}
                   </button>
-                  <div className="text-left">
-                    <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">
+                  <div className="text-left min-w-0">
+                    <p className="text-[10px] font-black uppercase tracking-wider text-muted-foreground whitespace-nowrap truncate">
                       {greeting}
                     </p>
-                    <p className="text-sm font-bold truncate max-w-[120px]">
+                    <p className="text-sm font-bold truncate">
                       {(profile.display_name || profile.full_name || "User").split(" ")[0]}
                     </p>
                   </div>
                 </div>
 
-                <div className="flex items-center gap-3">
+                <div className="flex items-center gap-1.5 shrink-0">
                   {/* Coins Pill */}
                   <button
                     type="button"
                     onClick={() => setActiveTab("store")}
                     aria-label={langVal.t("hdr_coins_aria").replace("{n}", String(profile.coins || 0))}
-                    className="flex items-center gap-1.5 pl-3 pr-2 py-1.5 rounded-full bg-amber-500/10 border border-amber-500/20 text-amber-600 dark:text-amber-400 hover:bg-amber-500/20 transition-all active:scale-95 cursor-pointer"
+                    className="flex items-center gap-1 pl-2.5 pr-1.5 h-9 rounded-full bg-amber-500/10 border border-amber-500/20 text-amber-400 hover:bg-amber-500/20 transition-all active:scale-95 cursor-pointer whitespace-nowrap"
                   >
                     <Coins size={14} className="fill-amber-500/20" />
-                    <span className="text-xs font-black tracking-tight">{profile.coins || 0}</span>
+                    <span className="text-xs font-black font-mono tracking-tight">{profile.coins || 0}</span>
                     <ChevronRight size={12} className="opacity-60 -ml-0.5" />
                   </button>
 
@@ -499,13 +499,13 @@ export default function App() {
                       <button
                         onClick={() => setActiveTab("achievements")}
                         aria-label={langVal.t("hdr_level_aria").replace("{n}", String(lv.level))}
-                        className="flex items-center gap-1.5 pl-1.5 pr-2 py-1.5 rounded-full bg-primary/10 border border-primary/20 transition-all hover:bg-primary/20"
+                        className="flex items-center gap-1 pl-1 pr-1.5 h-9 rounded-full bg-primary/10 border border-primary/20 transition-all hover:bg-primary/20 active:scale-95 whitespace-nowrap"
                         style={{ color: lv.color }}
                       >
                         <div className="w-5 h-5 rounded-full flex items-center justify-center bg-white/10 overflow-hidden">
                           <HabitIcon emoji={lv.icon} size={10} noWrapper />
                         </div>
-                        <span className="text-[10px] font-black tracking-tighter">LVL {lv.level}</span>
+                        <span className="text-[11px] font-black font-mono tracking-tight">LVL {lv.level}</span>
                         <ChevronRight size={12} className="opacity-60 -ml-0.5" />
                       </button>
                     );

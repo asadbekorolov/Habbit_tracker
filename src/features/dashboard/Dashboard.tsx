@@ -8,7 +8,6 @@ import { useProfile } from "../../store/UserContext";
 import { useLang } from "../../store/LangContext";
 import { useHabitDay } from "../../hooks/useHabitDay";
 import { useHabitMutations, type HabitFormData } from "../../hooks/useHabitMutations";
-import { DisciplineProgressBar } from "./components/DisciplineProgressBar";
 import { ActiveRoutinePill } from "./components/ActiveRoutinePill";
 import { TipCard } from "./components/TipCard";
 import { LifeHabitDotsWidget } from "./components/LifeHabitDotsWidget";
@@ -51,7 +50,6 @@ export function Dashboard({ onNavigate, onCompletedChange, onProfileUpdate }: Da
   const positive = day.scheduled;
   const completedCount = positive.filter((h) => day.entryOf(h.id).status === "done").length;
   const totalCount = positive.length;
-  const progressPercent = totalCount > 0 ? Math.round((completedCount / totalCount) * 100) : 0;
 
   useEffect(() => {
     if (day.isLoading) return;
@@ -120,7 +118,6 @@ export function Dashboard({ onNavigate, onCompletedChange, onProfileUpdate }: Da
 
         <LifeHabitDotsWidget done={completedCount} total={totalCount} />
 
-        <DisciplineProgressBar completedCount={completedCount} totalCount={totalCount} percentage={progressPercent} />
 
         <ActiveRoutinePill userId={profile.id} onNavigate={onNavigate} />
 
