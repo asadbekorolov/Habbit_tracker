@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { useLang } from "../store/LangContext";
 import {
@@ -9,6 +9,7 @@ import { supabase } from "../services/supabase";
 import { nativeNotificationService } from "../services/nativeNotificationService";
 import type { Profile } from "../services/supabase";
 import { respondTelegramRequest } from "../services/db";
+import { toast } from "sonner";
 import { useScrollLock } from "../hooks/useScrollLock";
 import { useHaptics } from "../hooks/useHaptics";
 
@@ -145,7 +146,10 @@ export function NotificationBell({ profile, onNavigate, onUserClick }: Notificat
     setActionError("");
     try {
       await respondTelegramRequest(n.link.replace("telegram_request:", ""), "approved");
-      setNotifications((prev) => prev.map((x) => x.id === n.id ? { ...x, is_read: true, type: "telegram_request_done" } : x));
+      // Bajarilgan so'rov ro'yxatda qolmaydi — bazadan ham o'chiriladi
+      supabase.from("notifications").delete().eq("id", n.id).then(() => {});
+      setNotifications((prev) => prev.filter((x) => x.id !== n.id));
+      toast.success(t("notif_accepted"));
     } catch (e: any) { setActionError(e?.message || t('err_loading')); }
     finally { setActioningId(null); }
   }
@@ -156,12 +160,20 @@ export function NotificationBell({ profile, onNavigate, onUserClick }: Notificat
     setActionError("");
     try {
       await respondTelegramRequest(n.link.replace("telegram_request:", ""), "rejected");
+      supabase.from("notifications").delete().eq("id", n.id).then(() => {});
       setNotifications((prev) => prev.filter((x) => x.id !== n.id));
     } catch (e: any) { setActionError(e?.message || t('err_loading')); }
     finally { setActioningId(null); }
   }
 
   const unreadCount = notifications.filter((n) => !n.is_read).length;
+
+  // Oyna yopilganda (ko'rib chiqildi) — hammasi o'qilgan, qizil hisoblagich tozalanadi
+  const wasOpenRef = useRef(false);
+  useEffect(() => {
+    if (wasOpenRef.current && !isOpen && notifications.some((n) => !n.is_read)) markAllRead();
+    wasOpenRef.current = isOpen;
+  }, [isOpen]);
 
   return (
     <div className="relative">

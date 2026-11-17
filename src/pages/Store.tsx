@@ -28,7 +28,7 @@ interface StoreProps {
   isModal?: boolean;
 }
 
-export type CategoryTab = "all" | "buffs" | "frames" | "resources";
+export type CategoryTab = "all" | "buffs" | "frames";
 
 export interface TopUpPackage {
   id: string;
@@ -381,75 +381,10 @@ export function Store({ onProfileUpdate, onClose, isModal = false }: StoreProps)
       colorBorder: "rgba(245,158,11,0.25)",
       type: "buff",
     },
-    {
-      id: "xp_booster",
-      category: "buffs",
-      name: t('store_item_xp_name'),
-      desc: t('store_item_xp_desc'),
-      price: 100,
-      icon: Zap,
-      color: "#A855F7",
-      colorBg: "rgba(168,85,247,0.1)",
-      colorBorder: "rgba(168,85,247,0.25)",
-      type: "buff",
-    },
-    {
-      id: "star_badge",
-      category: "buffs",
-      name: t('store_item_vip_name'),
-      desc: t('store_item_vip_desc'),
-      price: 500,
-      icon: Star,
-      color: "#FBBF24",
-      colorBg: "rgba(251,191,36,0.12)",
-      colorBorder: "rgba(251,191,36,0.3)",
-      type: "star",
-    },
   ];
 
-  const RESOURCE_ITEMS: ShopItem[] = [
-    {
-      id: "pdf_focus_guide",
-      category: "resources",
-      name: t('store_res_focus_name'),
-      desc: t('store_res_focus_desc'),
-      price: 400,
-      icon: BookOpen,
-      color: "#818CF8",
-      colorBg: "rgba(129,140,248,0.1)",
-      colorBorder: "rgba(129,140,248,0.25)",
-      type: "resource",
-      downloadUrl: "https://example.com/focus_guide.pdf",
-    },
-    {
-      id: "checklist_productivity",
-      category: "resources",
-      name: t('store_res_checklist_name'),
-      desc: t('store_res_checklist_desc'),
-      price: 150,
-      icon: CheckSquare,
-      color: "#34D399",
-      colorBg: "rgba(52,211,153,0.1)",
-      colorBorder: "rgba(52,211,153,0.25)",
-      type: "resource",
-    },
-    {
-      id: "telegram_vip_access",
-      category: "resources",
-      name: t('store_res_community_name'),
-      desc: t('store_res_community_desc'),
-      price: 1000,
-      icon: Send,
-      color: "#38BDF8",
-      colorBg: "rgba(56,189,248,0.1)",
-      colorBorder: "rgba(56,189,248,0.25)",
-      type: "resource",
-      actionUrl: "https://t.me/+vip_community_tracker",
-    },
-  ];
 
   const filteredBuffs = activeTab === "all" || activeTab === "buffs" ? BUFF_ITEMS : [];
-  const filteredResources = activeTab === "all" || activeTab === "resources" ? RESOURCE_ITEMS : [];
   const showFramesSection = activeTab === "all" || activeTab === "frames";
 
   return (
@@ -489,7 +424,6 @@ export function Store({ onProfileUpdate, onClose, isModal = false }: StoreProps)
           { id: "all", label: t('store_tab_all') },
           { id: "buffs", label: t('store_tab_buffs') },
           { id: "frames", label: t('store_tab_frames') },
-          { id: "resources", label: t('store_tab_resources') },
         ].map((tab) => (
           <button
             key={tab.id}
@@ -697,7 +631,8 @@ export function Store({ onProfileUpdate, onClose, isModal = false }: StoreProps)
                 </div>
               </div>
 
-              {TITLES.map((tItem) => {
+              {/* Unvonlar sotilmaydi (mehnat, zanjir va daraja bilan). Ilgari olinganlarini taqish/yechish qoladi. */}
+              {TITLES.filter((tItem) => ownedIds.has(tItem.id)).map((tItem) => {
                 const isOwned = ownedIds.has(tItem.id);
                 const isEquipped = activeTitle === tItem.id;
                 const isBuying = buying === tItem.id;
@@ -766,71 +701,6 @@ export function Store({ onProfileUpdate, onClose, isModal = false }: StoreProps)
           </div>
         )}
 
-        {/* Bilim & Resurslar Section */}
-        {filteredResources.length > 0 && (
-          <div>
-            <div className="flex items-center gap-2 mb-3">
-              <BookOpen className="w-4 h-4 text-indigo-400" />
-              <h3 className="text-xs font-bold text-slate-300 uppercase tracking-wider">{t('store_digital_resources')}</h3>
-            </div>
-
-            <div className="grid grid-cols-1 gap-3">
-              {filteredResources.map((item) => {
-                const Icon = item.icon;
-                const isBuying = buying === item.id;
-                const isOwned = ownedIds.has(item.id);
-
-                return (
-                  <div
-                    key={item.id}
-                    className="p-4 rounded-2xl flex items-center justify-between gap-4 transition-all"
-                    style={{ background: item.colorBg, border: `1px solid ${item.colorBorder}` }}
-                  >
-                    <div className="flex items-start gap-3">
-                      <div className="w-10 h-10 rounded-xl bg-slate-900/80 border border-white/10 flex items-center justify-center shrink-0">
-                        <Icon className="w-5 h-5" style={{ color: item.color }} />
-                      </div>
-                      <div>
-                        <h4 className="text-sm font-bold text-white">{item.name}</h4>
-                        <p className="text-xs text-slate-300 leading-relaxed mt-0.5">{item.desc}</p>
-                      </div>
-                    </div>
-
-                    <div className="shrink-0">
-                      {isOwned ? (
-                        <button
-                          type="button"
-                          onClick={() => {
-                            if (item.actionUrl) window.open(item.actionUrl, '_blank');
-                            else toast.success(t('store_digital_bought'));
-                          }}
-                          className="px-3.5 py-2 rounded-xl text-xs font-bold bg-emerald-500/20 text-emerald-400 border border-emerald-500/40 flex items-center gap-1.5"
-                        >
-                          <Check className="w-4 h-4" /> {t('store_open')}
-                        </button>
-                      ) : (
-                        <button
-                          type="button"
-                          disabled={isBuying}
-                          onClick={() => triggerBuyWithConfirmation(item, () => buyItemStandard(item))}
-                          className="px-4 py-2 rounded-xl text-xs font-bold bg-amber-500 hover:bg-amber-400 text-slate-950 flex items-center gap-1.5 transition-all shadow-md"
-                        >
-                          {isBuying ? (
-                            <Loader2 className="w-4 h-4 animate-spin" />
-                          ) : (
-                            <>
-                              <Coins className="w-3.5 h-3.5" /> {item.price}
-                            </>
-                          )}
-                        </button>
-                      )}
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-        )}
       </div>
 
       {/* Real Monetization Top-Up Modal */}
