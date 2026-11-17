@@ -125,6 +125,17 @@ export function PublicProfileModal({ viewingId, myProfile, onClose }: PublicProf
     setTgLoading(false);
   }
 
+  // Escape / Android "Orqaga" — oynani yopadi. Hook har renderda (yuklanish
+  // paytida ham) chaqiriladi: avval early return'dan keyin turgani React
+  // #310 ("Rendered more hooks than during the previous render") xatosini berardi.
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") onClose();
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [onClose]);
+
   function formatCooldown(retryAt: string | null): string {
     const ms = retryAt ? new Date(retryAt).getTime() - Date.now() : 0;
     if (ms <= 0) return t('pp_request_cooldown_m').replace('{m}', '0');
@@ -163,17 +174,6 @@ export function PublicProfileModal({ viewingId, myProfile, onClose }: PublicProf
   // tasdiqlangan. Aks holda hech narsa ko'rsatilmaydi — pastdagi "So'rov
   // yuborish" tugmasi orqali ruxsat so'raladi (Actions bo'limi).
   const canSeeTelegram = isSelf || !profile.telegram_private || tgStatus === 'approved';
-
-  // Keyboard Escape listener for Android hardware back button
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === "Escape") {
-        onClose();
-      }
-    };
-    window.addEventListener("keydown", handleKeyDown);
-    return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [onClose]);
 
   return (
     <div

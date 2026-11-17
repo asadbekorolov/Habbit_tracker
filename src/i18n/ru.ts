@@ -1147,4 +1147,10 @@ export const ru: Dict = {
   tip_notes_cta: "Открыть дневник",
   tip_reminder_title: "Напоминания",
   tip_reminder_body: "Нажмите на карточку привычки и включите «Напоминание» — телефон напомнит в нужное время.",
+  ai_report_strengths: "Сильные стороны",
+  ai_report_weaknesses: "Слабые места",
+  ai_report_actions: "3 шага на завтра",
+  ai_report_summary: "Вывод тренера",
+  ai_report_saved_hint: "Последний отчёт сохранён — просмотр бесплатный",
+  ai_report_update: "Обновить",
 }

@@ -1147,4 +1147,10 @@ export const en: Dict = {
   tip_notes_cta: "Open Journal",
   tip_reminder_title: "Reminders",
   tip_reminder_body: "Tap a habit card and turn on 'Reminder' — your phone will nudge you at that time.",
+  ai_report_strengths: "Strengths",
+  ai_report_weaknesses: "Weak spots",
+  ai_report_actions: "3-step action plan",
+  ai_report_summary: "Coach summary",
+  ai_report_saved_hint: "Last report is saved — viewing it is free",
+  ai_report_update: "Refresh",
 }

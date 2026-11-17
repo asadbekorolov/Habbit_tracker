@@ -21,18 +21,43 @@ const ALLOWED_ORIGINS = new Set([
   'capacitor://localhost',
 ])
 
-const SYSTEM_PROMPT = `Siz xatti-harakatlar psixologiyasi va yuqori unumdorlik (High-Performance Habit Coaching) bo'yicha yetakchi AI tahlilchisiz.
-Sizga foydalanuvchining barcha odatlari va ko'rsatkichlari telemetriyasi taqdim etiladi.
-Sizning vazifangiz shunchaki umumiy gaplar aytish emas, balki ANIQ RAQAMLAR, STATISTIK BOG'LIQLIKLAR va KELAJAK UCHUN AMALIY MASLAHATLAR bilan boyitilgan chuqur hisobot tuzish.
+const SYSTEM_PROMPT = `Siz xatti-harakatlar psixologiyasi va odatlar bo'yicha tajribali murabbiysiz.
+Sizga foydalanuvchining odatlari, hafta kunlari bo'yicha bajarilishi va salomatlik ko'rsatkichlari telemetriyasi beriladi.
 
-Tahlil tuzilmasi:
-1. Aniq Raqamlar va Tendensiyalar (qaysi odatlar kuchli, qaysilari zaif, raqamlar bilan solishtirish).
-2. Uyqu va Salomatlikning Intizomga Ta'siri (uyqu soati va qadamlarning odatlarni bajarishga bog'liqligi).
-3. Kelgusi 7-14 Kunlik Strategik Reja (zaif odatlarni, masalan: ertalab yugurish yoki turnikni tiklash uchun qat'iy vaqt va trigger taklif qilish).
+Javobni uchta bo'limga ajrating:
+- strengths: kuchli tomonlar — qaysi odatlar va zanjirlar barqaror (2–4 band, har birida aniq raqam).
+- weaknesses: zaif nuqtalar — qaysi odatlarda va qaysi hafta kunlarida pasayish bor (2–4 band, raqam bilan).
+- actions: aynan 3 ta aniq harakat — ertadanoq qo'llash mumkin bo'lgan, vaqt va trigger ko'rsatilgan qadamlar.
 
-Faqat telemetriyada haqiqatan bor raqam va odatlarga tayaning — ma'lumotda yo'q raqam yoki odatni o'ylab topmang.
-Javobni o'zbek tilida, professional, chuqur tahliliy va kuchli motivatsion ruhda yozing.
+Har bir band 1–2 jumla, o'zbek tilida, sodda va motivatsion ohangda.
+Faqat telemetriyada haqiqatan bor raqam va odatlarga tayaning — yo'q raqam yoki odatni o'ylab topmang.
 Emoji va boshqa piktogramma belgilarini ishlatmang — faqat matn.`
+
+// Tuzilgan javob (structured outputs): ilova uni uchta kartochkada ko'rsatadi.
+const REPORT_SCHEMA = {
+  type: 'object',
+  properties: {
+    strengths: { type: 'array', items: { type: 'string' } },
+    weaknesses: { type: 'array', items: { type: 'string' } },
+    actions: { type: 'array', items: { type: 'string' } },
+  },
+  required: ['strengths', 'weaknesses', 'actions'],
+  additionalProperties: false,
+}
+
+type Report = { strengths: string[]; weaknesses: string[]; actions: string[] }
+
+function parseReport(text: string): Report | null {
+  try {
+    const o = JSON.parse(text)
+    const list = (v: unknown) =>
+      Array.isArray(v) ? v.filter((x): x is string => typeof x === 'string' && x.trim().length > 0).map((x) => x.trim()) : []
+    const r = { strengths: list(o?.strengths), weaknesses: list(o?.weaknesses), actions: list(o?.actions).slice(0, 3) }
+    return r.strengths.length || r.weaknesses.length || r.actions.length ? r : null
+  } catch {
+    return null
+  }
+}
 
 function setCors(req: any, res: any) {
   const origin = req.headers?.origin
@@ -104,7 +129,10 @@ export default async function handler(req: any, res: any) {
     const response = await client.beta.messages.create({
       model: 'claude-opus-5-5',
       max_tokens: 16000,
-      output_config: { effort: 'medium' },
+      output_config: {
+        effort: 'medium',
+        format: { type: 'json_schema', schema: REPORT_SCHEMA },
+      },
       // If the model declines, the API retries on a fallback model in the same call.
       betas: ['server-side-fallback-2026-07-01'],
       fallbacks: 'default',
@@ -128,7 +156,16 @@ export default async function handler(req: any, res: any) {
       await refund()
       return res.status(200).json({ ok: false, error: 'empty_response' })
     }
-    return res.status(200).json({ ok: true, text })
+    if (response.stop_reason === 'max_tokens') {
+      await refund()
+      return res.status(200).json({ ok: false, error: 'bad_format' })
+    }
+    const report = parseReport(text)
+    if (!report) {
+      await refund()
+      return res.status(200).json({ ok: false, error: 'bad_format' })
+    }
+    return res.status(200).json({ ok: true, report })
   } catch (e: any) {
     await refund()
     if (e instanceof Anthropic.RateLimitError) {

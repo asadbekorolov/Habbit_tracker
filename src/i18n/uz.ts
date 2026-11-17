@@ -1145,6 +1145,12 @@ export const uz = {
   tip_notes_cta: "Kundalikni ochish",
   tip_reminder_title: "Eslatmalar",
   tip_reminder_body: "Odat kartasini bosing va 'Eslatma'ni yoqing — belgilagan vaqtingizda telefon eslatadi.",
+  ai_report_strengths: "Kuchli tomonlar",
+  ai_report_weaknesses: "Zaif nuqtalar",
+  ai_report_actions: "3 ta harakat rejasi",
+  ai_report_summary: "Murabbiy xulosasi",
+  ai_report_saved_hint: "Oxirgi hisobot saqlangan — qayta ko'rish bepul",
+  ai_report_update: "Yangilash",
 }
 
 export type Dict = typeof uz

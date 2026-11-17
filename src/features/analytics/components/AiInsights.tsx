@@ -1,5 +1,5 @@
 // Tahlil (Analytics) — AiInsights.
-import { Loader2, Brain, Sparkles, RotateCw, Coins, AlertTriangle } from "lucide-react";
+import { Loader2, Brain, Sparkles, RotateCw, Coins, AlertTriangle, TrendingUp, TrendingDown, ListChecks } from "lucide-react";
 import type { AnalyticsData } from "../useAnalyticsData";
 
 export function AiInsights({ s }: { s: AnalyticsData }) {
@@ -44,13 +44,27 @@ export function AiInsights({ s }: { s: AnalyticsData }) {
           )}
           {!coachLoading && coachNote ? (
             <>
-              <p className="text-[13px] leading-relaxed" style={{ color: "var(--foreground)" }}>{coachNote}</p>
+              <div className="space-y-2.5">
+                {coachNote.summary && !coachNote.strengths.length && !coachNote.weaknesses.length && !coachNote.actions.length && (
+                  <ReportCard icon={Brain} tone="violet" title={t("ai_report_summary")} items={[coachNote.summary]} />
+                )}
+                {coachNote.strengths.length > 0 && (
+                  <ReportCard icon={TrendingUp} tone="emerald" title={t("ai_report_strengths")} items={coachNote.strengths} />
+                )}
+                {coachNote.weaknesses.length > 0 && (
+                  <ReportCard icon={TrendingDown} tone="rose" title={t("ai_report_weaknesses")} items={coachNote.weaknesses} />
+                )}
+                {coachNote.actions.length > 0 && (
+                  <ReportCard icon={ListChecks} tone="amber" title={t("ai_report_actions")} items={coachNote.actions} numbered />
+                )}
+              </div>
               <div
-                className="flex items-center justify-between mt-3 pt-3"
+                className="flex items-center justify-between gap-2 mt-3 pt-3"
                 style={{ borderTop: `1px solid rgba(255,255,255,0.06)` }}
               >
-                <span className="text-[10px]" style={{ color: "var(--muted-foreground)", fontFamily: "'Geist Mono', monospace" }}>
-                  {coachGeneratedAt ? new Date(coachGeneratedAt).toLocaleDateString() : ""}
+                <span className="text-[10px] min-w-0" style={{ color: "var(--muted-foreground)" }}>
+                  <span className="font-mono">{coachGeneratedAt ? new Date(coachGeneratedAt).toLocaleDateString() : ""}</span>
+                  <span className="block">{t("ai_report_saved_hint")}</span>
                 </span>
                 <button
                   type="button"
@@ -60,7 +74,7 @@ export function AiInsights({ s }: { s: AnalyticsData }) {
                   style={{ opacity: coachLoading ? 0.6 : 1 }}
                 >
                   {coachLoading ? <Loader2 size={12} className="animate-spin" /> : <RotateCw className="w-3.5 h-3.5" />}
-                  <span>Yangilash</span>
+                  <span>{t("ai_report_update")}</span>
                   <Coins className="w-3.5 h-3.5 text-amber-400 ml-1" />
                   <span>{PREMIUM_AI_COST}</span>
                 </button>
@@ -116,5 +130,37 @@ export function AiInsights({ s }: { s: AnalyticsData }) {
         )}
       </div>
     </div>
+  );
+}
+
+const TONES = {
+  emerald: { card: "bg-emerald-500/10 border-emerald-500/25", icon: "text-emerald-400 bg-emerald-500/15", num: "text-emerald-400" },
+  rose: { card: "bg-rose-500/10 border-rose-500/25", icon: "text-rose-400 bg-rose-500/15", num: "text-rose-400" },
+  amber: { card: "bg-amber-500/10 border-amber-500/25", icon: "text-amber-400 bg-amber-500/15", num: "text-amber-400" },
+  violet: { card: "bg-violet-500/10 border-violet-500/25", icon: "text-violet-400 bg-violet-500/15", num: "text-violet-400" },
+} as const;
+
+/** AI hisobotining bitta bo'limi — squircle kartochka. */
+function ReportCard({ icon: Icon, tone, title, items, numbered }: {
+  icon: React.ElementType; tone: keyof typeof TONES; title: string; items: string[]; numbered?: boolean;
+}) {
+  const c = TONES[tone];
+  return (
+    <section className={`rounded-2xl border p-3.5 ${c.card}`}>
+      <div className="flex items-center gap-2 mb-2">
+        <span className={`w-7 h-7 rounded-xl flex items-center justify-center ${c.icon}`}>
+          <Icon className="w-4 h-4" />
+        </span>
+        <h4 className="text-xs font-bold text-slate-100">{title}</h4>
+      </div>
+      <ul className="space-y-1.5">
+        {items.map((item, i) => (
+          <li key={i} className="flex gap-2 text-[12.5px] leading-relaxed text-slate-300">
+            <span className={`font-mono text-[11px] font-bold shrink-0 mt-0.5 ${c.num}`}>{numbered ? `${i + 1}.` : "—"}</span>
+            <span className="whitespace-pre-wrap">{item}</span>
+          </li>
+        ))}
+      </ul>
+    </section>
   );
 }

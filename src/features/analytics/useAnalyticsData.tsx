@@ -12,6 +12,7 @@ import { getCoachNote, upsertCoachNote, isHabitLogSuccess } from "../../services
 import { useHabitsMetaQuery, useLogsRangeQuery, useHealthRangeQuery, useMonthNotesQuery } from "../../hooks/queries";
 import { supabase } from "../../services/supabase";
 import { requestClaudeHabitAnalysis } from "../../services/aiService";
+import { loadCachedReport, parseAiReport, saveCachedReport, type AiReport } from "../../utils/aiReport";
 import { getLevel } from "../../utils/levels";
 import { useUser, useProfile } from "../../store/UserContext";
 import { tashkentTodayAnchor, toDateStr, addDays, getTashkentToday } from "../../utils/date";
@@ -31,8 +32,9 @@ export function useAnalyticsData({ completedToday, totalHabits, onUserClick, onP
   const [viewMode, setViewMode] = useState<'personal' | 'leaderboard'>('personal');
 
 
-  const [coachNote, setCoachNote] = useState<string | null>(null);
-  const [coachGeneratedAt, setCoachGeneratedAt] = useState<string | null>(null);
+  // Oxirgi AI hisoboti: avval qurilmadagi keshdan (darhol, tangasiz), keyin serverdan
+  const [coachNote, setCoachNote] = useState<AiReport | null>(() => loadCachedReport(profile.id)?.report ?? null);
+  const [coachGeneratedAt, setCoachGeneratedAt] = useState<string | null>(() => loadCachedReport(profile.id)?.generatedAt ?? null);
   const [coachLoading, setCoachLoading] = useState(false);
   const [coachError, setCoachError] = useState("");
   const [showPremiumAI, setShowPremiumAI] = useState(false);
@@ -72,8 +74,17 @@ export function useAnalyticsData({ completedToday, totalHabits, onUserClick, onP
   const loading = logsQ.isPending || metaQ.isPending;
 
   useEffect(() => {
+    const local = loadCachedReport(profile.id);
+    if (local) { setCoachNote(local.report); setCoachGeneratedAt(local.generatedAt); }
     getCoachNote(profile.id).then((cached) => {
-      if (cached) { setCoachNote(cached.note); setCoachGeneratedAt(cached.generated_at); }
+      if (!cached?.note) return;
+      // Qurilmadagi nusxa serverdagidan yangi yoki teng bo'lsa — o'zgarishsiz
+      if (local && local.generatedAt >= (cached.generated_at || "")) return;
+      const report = parseAiReport(cached.note) ?? parseAiReport({ summary: cached.note });
+      if (!report) return;
+      setCoachNote(report);
+      setCoachGeneratedAt(cached.generated_at);
+      saveCachedReport(profile.id, { report, generatedAt: cached.generated_at || new Date().toISOString() });
     }).catch(() => {});
   }, [profile.id]);
 
@@ -370,6 +381,19 @@ export function useAnalyticsData({ completedToday, totalHabits, onUserClick, onP
         return `Odat: "${h.name}" | 30 kunlik bajarilish: ${h.completedDays}/30 (${h.pct}%) | Streak: ${h.streak} kun | Holat: ${h.pct >= 70 ? 'Kuchli' : h.pct < 30 ? 'Zaif' : "O'rtacha"}`;
       }).join('\n');
 
+      // Hafta kunlari bo'yicha o'rtacha bajarilish foizi — qaysi kunlarda pasayish borligini ko'rish uchun
+      const WD = ["Yakshanba", "Dushanba", "Seshanba", "Chorshanba", "Payshanba", "Juma", "Shanba"];
+      const wdSum = new Array(7).fill(0), wdCnt = new Array(7).fill(0);
+      for (let i = 1; i <= 56; i++) {
+        const ds = addDays(today, -i);
+        const wd = new Date(ds + "T12:00:00Z").getUTCDay();
+        wdSum[wd] += totalHabits > 0 ? Math.min(1, (byDate[ds] || 0) / totalHabits) : 0;
+        wdCnt[wd]++;
+      }
+      const weekdaySummary = [1, 2, 3, 4, 5, 6, 0]
+        .map((d) => `${WD[d]}: ${wdCnt[d] ? Math.round((wdSum[d] / wdCnt[d]) * 100) : 0}%`)
+        .join("\n");
+
       const avgCalories = healthLogs.length > 0
         ? Math.round(healthLogs.reduce((acc, curr) => acc + (curr.calories || 0), 0) / healthLogs.length)
         : 0;
@@ -386,21 +410,20 @@ FOYDALANUVCHI PROFILI:
 
 ODATLAR TELEMETRIYASI (Barcha faoliyat):
 ${habitDataSummary}
+
+HAFTA KUNLARI BO'YICHA O'RTACHA BAJARILISH (so'nggi 8 hafta):
+${weekdaySummary}
 `;
 
-      const analysisText = await requestClaudeHabitAnalysis(telemetryPayload);
+      const report = await requestClaudeHabitAnalysis(telemetryPayload);
       updateCoins(Math.max(0, liveCoins - PREMIUM_AI_COST));
-      refreshUserProfile().catch(() => {});
 
-      // 4. Save and Update local state + LocalStorage cache
-      await upsertCoachNote(profile.id, analysisText);
-      localStorage.setItem('latest_ai_analysis', JSON.stringify({
-        text: analysisText,
-        date: new Date().toISOString()
-      }));
-
-      setCoachNote(analysisText);
-      setCoachGeneratedAt(new Date().toISOString());
+      // Hisobot qurilmada (darhol) va serverda saqlanadi — qayta ko'rish tangasiz
+      const generatedAt = new Date().toISOString();
+      saveCachedReport(profile.id, { report, generatedAt });
+      setCoachNote(report);
+      setCoachGeneratedAt(generatedAt);
+      upsertCoachNote(profile.id, JSON.stringify(report)).catch(() => {});
 
       toast.success(isUpdate ? "Tahlil yangilandi!" : "AI Tahlil muvaffaqiyatli yakunlandi!");
     } catch (e: any) {
@@ -408,6 +431,8 @@ ${habitDataSummary}
       toast.error(e?.message || "Xatolik yuz berdi.");
     } finally {
       setCoachLoading(false);
+      // Haqiqiy balans serverdan (yechilgan yoki qaytarilgan tangalar)
+      refreshUserProfile().catch(() => {});
     }
   }
 
