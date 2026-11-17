@@ -1175,4 +1175,6 @@ export const ru: Dict = {
   widget_day: "Прогресс дня",
   widget_habits: "Привычки сегодня",
   widget_no_habits: "Сегодня нет плана",
+  widget_days_label: "дн.",
+  widget_stale: "Откройте приложение, чтобы обновить",
 }

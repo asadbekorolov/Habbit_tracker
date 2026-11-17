@@ -1173,6 +1173,8 @@ export const uz = {
   widget_day: "Kun jarayoni",
   widget_habits: "Bugungi odatlar",
   widget_no_habits: "Bugun reja yo'q",
+  widget_days_label: "kun",
+  widget_stale: "Bugungi holat uchun ilovani oching",
 }
 
 export type Dict = typeof uz

@@ -5,4 +5,13 @@
     <string name="package_name">com.idrok.app</string>
     <string name="custom_url_scheme">com.idrok.app</string>
     <string name="server_client_id">512488053553-tjcrlmg447iupisp9ka3l9u67ip6rhmo.apps.googleusercontent.com</string>
+
+    <!-- Bosh ekran vidjeti. Asosiy matnlar ilovadan JSON bilan keladi (ilova tilida);
+         bular — ilova hali ochilmaganda ko'rinadigan zaxira matnlar. -->
+    <string name="widget_title">IDROK</string>
+    <string name="widget_label">IDROK — Bugungi odatlar</string>
+    <string name="widget_description">Zanjir, bugungi bajarilish foizi va odatlar</string>
+    <string name="widget_days">kun</string>
+    <string name="widget_empty">Bugun reja yo\'q</string>
+    <string name="widget_stale">Bugungi holat uchun ilovani oching</string>
 </resources>

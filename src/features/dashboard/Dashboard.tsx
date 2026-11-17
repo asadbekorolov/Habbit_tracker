@@ -12,6 +12,9 @@ import { DisciplineProgressBar } from "./components/DisciplineProgressBar";
 import { ActiveRoutinePill } from "./components/ActiveRoutinePill";
 import { TipCard } from "./components/TipCard";
 import { LifeHabitDotsWidget } from "./components/LifeHabitDotsWidget";
+import { buildWidgetData } from "../../utils/widgetData";
+import { syncHomeWidget } from "../../services/widgetSync";
+import { cleanHabitName } from "../../components/HabitIcon";
 import { HabitItem } from "../habits/components/HabitItem";
 import { QuickLogModal } from "../../components/QuickLogModal";
 import { EmptyState } from "../../components/EmptyState";
@@ -52,6 +55,22 @@ export function Dashboard({ onNavigate, onCompletedChange, onProfileUpdate }: Da
     if (day.isLoading) return;
     onCompletedChange?.(completedCount, totalCount);
   }, [day.isLoading, completedCount, totalCount]);
+
+  // Android bosh ekran vidjeti: bugungi holat o'zgarganda yangilanadi
+  const widgetHabits = positive.map((h) => ({ name: cleanHabitName(h.name), done: day.entryOf(h.id).status === "done" }));
+  const widgetKey = JSON.stringify(widgetHabits);
+  const bestStreak = Math.max(0, ...Object.values(day.streaks));
+  useEffect(() => {
+    if (day.isLoading) return;
+    syncHomeWidget(
+      buildWidgetData({
+        date: today,
+        habits: widgetHabits,
+        streak: bestStreak,
+        labels: { days: t("widget_days_label"), empty: t("widget_no_habits"), stale: t("widget_stale") },
+      })
+    );
+  }, [day.isLoading, widgetKey, bestStreak, today, t]);
 
   // Doiracha: oddiy odat — darhol; o'lchanadigan (bajarilmagan) — qiymat oynasi
   const handleCheck = (habit: Habit) => {
