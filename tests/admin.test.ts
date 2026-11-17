@@ -19,7 +19,7 @@ test('Admin Panel faqat asadbekorolov0@gmail.com uchun', () => {
 
 test('ilova va baza (051) bir xil emailni ishlatadi', () => {
   const sql = readFileSync(new URL('../supabase/migrations/051_admin_email_guard.sql', import.meta.url), 'utf8');
-  assert.match(sql, new RegExp(`lower\(u\.email\) = '${SITE_ADMIN_EMAIL.replace(/\./g, '\.')}'`));
+  assert.ok(sql.includes(`lower(u.email) = '${SITE_ADMIN_EMAIL}'`), '051 dagi email ilovadagi bilan bir xil');
 });
 
 test("Lenta marshruti va bo'limi olib tashlangan", () => {
