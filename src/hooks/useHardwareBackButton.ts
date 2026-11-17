@@ -1,106 +1,97 @@
+// Android apparat "Orqaga" tugmasi.
+// Ustuvorlik (utils/navStack.ts -> decideBack, testlari bilan):
+//   1) ochiq modal / bottom sheet / menyu — eng ustkisi yopiladi;
+//   2) sahifalar tarixi (LIFO) — bir qadam orqaga (Tahlil -> Reyting -> Tahlil);
+//   3) tarix bo'sh, Bosh sahifada emas — Bosh sahifaga;
+//   4) Bosh sahifada — 2 soniya ichida ikkinchi bosishda chiqish.
 import { useEffect, useRef } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { Capacitor } from '@capacitor/core';
 import { App as CapApp } from '@capacitor/app';
 import { Haptics, ImpactStyle } from '@capacitor/haptics';
 import { toast } from 'sonner';
+import { navHistory } from '../services/navHistory';
+import { decideBack, normalizePath } from '../utils/navStack';
+import { getT, type Lang } from '../utils/i18n';
+
+/** Eng ustki ochiq oynani yopuvchi amal (yo'q bo'lsa null). */
+function findTopOverlayCloser(): (() => void) | null {
+  // a) Aniq belgilangan yopish tugmalari — DOM'dagi oxirgisi eng ustki
+  const triggers = document.querySelectorAll<HTMLElement>('[data-modal-close-trigger]');
+  if (triggers.length > 0) {
+    const top = triggers[triggers.length - 1];
+    return () => top.click();
+  }
+  // b) Boshqa ochiq dialog/sheet
+  const dialogs = document.querySelectorAll<HTMLElement>(
+    '[role="dialog"], [aria-modal="true"], [data-state="open"], .fixed.inset-0.z-50, .fixed.inset-0.z-40'
+  );
+  if (dialogs.length === 0) return null;
+  const active = dialogs[dialogs.length - 1];
+  const btn = active.querySelector<HTMLElement>(
+    'button[data-modal-close-trigger], button[aria-label*="close" i], button[aria-label*="yop" i], button[aria-label*="bekor" i], button.close'
+  );
+  if (btn) return () => btn.click();
+  return () => {
+    document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', code: 'Escape', keyCode: 27, which: 27, bubbles: true, cancelable: true }));
+  };
+}
+
+function currentLang(): Lang {
+  try { return (localStorage.getItem('lang') as Lang) || 'uz'; } catch { return 'uz'; }
+}
 
 export function useHardwareBackButton() {
   const location = useLocation();
   const navigate = useNavigate();
-  const lastBackPressTimeRef = useRef<number>(0);
-  const backPressTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const lastPressRef = useRef(0);
+  const pathRef = useRef('');
+
+  // Har bir sahifaga o'tish tarixga yoziladi (ketma-ket takror yozilmaydi)
+  const current = normalizePath(location.pathname, location.search);
+  useEffect(() => {
+    pathRef.current = current;
+    if (current === '/login') navHistory.reset();
+    else navHistory.record(current);
+  }, [current]);
 
   useEffect(() => {
     if (!Capacitor.isNativePlatform()) return;
 
-    const backButtonListener = CapApp.addListener('backButton', () => {
-      // Light haptic feedback on physical back button press
-      try {
-        Haptics.impact({ style: ImpactStyle.Light }).catch(() => {});
-      } catch {}
+    const listener = CapApp.addListener('backButton', () => {
+      Haptics.impact({ style: ImpactStyle.Light }).catch(() => {});
 
-      // 1. Check for explicit data-modal-close-trigger elements in DOM
-      const closeTriggers = document.querySelectorAll('[data-modal-close-trigger]');
-      if (closeTriggers.length > 0) {
-        const topCloseBtn = closeTriggers[closeTriggers.length - 1] as HTMLElement;
-        topCloseBtn.click();
-        return;
-      }
-
-      // 2. Check for active open modal / overlay / dialog in DOM
-      const activeModal = document.querySelector(
-        '[role="dialog"], [aria-modal="true"], [data-state="open"], .fixed.inset-0.z-50, .fixed.inset-0.z-40'
-      );
-
-      if (activeModal) {
-        const closeBtn = activeModal.querySelector(
-          'button[data-modal-close-trigger], button[aria-label*="close" i], button[aria-label*="yop" i], button[aria-label*="bekor" i], button.close'
-        ) as HTMLElement;
-
-        if (closeBtn) {
-          closeBtn.click();
-          return;
-        }
-
-        // Fallback: Dispatch Escape key event to close open modal/dialog/sheet
-        try {
-          const escapeEvent = new KeyboardEvent('keydown', {
-            key: 'Escape',
-            code: 'Escape',
-            keyCode: 27,
-            which: 27,
-            bubbles: true,
-            cancelable: true,
-          });
-          document.dispatchEvent(escapeEvent);
-        } catch {
-          const event: any = document.createEvent('KeyboardEvent');
-          if (event.initEvent) event.initEvent('keydown', true, true);
-          document.dispatchEvent(event);
-        }
-        return;
-      }
-
-      // 3. Check if on root screen or an inner subpage/tab
-      const pathname = location.pathname;
-      const cleanPath = pathname.endsWith('/') && pathname.length > 1 ? pathname.slice(0, -1) : pathname;
-      const isRootScreen = cleanPath === '/dashboard' || cleanPath === '' || cleanPath === '/' || cleanPath === '/login';
-
-      if (!isRootScreen) {
-        // If on an inner subpage or non-home tab: navigate back to the main/home tab
-        navigate('/dashboard');
-        return;
-      }
-
-      // 4. On root screen: double-tap within 2000ms to exit app
+      const closer = findTopOverlayCloser();
       const now = Date.now();
-      if (now - lastBackPressTimeRef.current < 2000) {
-        if (backPressTimerRef.current) {
-          clearTimeout(backPressTimerRef.current);
-          backPressTimerRef.current = null;
-        }
-        lastBackPressTimeRef.current = 0;
-        CapApp.exitApp();
-      } else {
-        lastBackPressTimeRef.current = now;
-        toast("Chiqish uchun yana bir marta bosing");
+      const action = decideBack({
+        overlayOpen: !!closer,
+        stack: navHistory.get(),
+        currentPath: pathRef.current,
+        now,
+        lastPressAt: lastPressRef.current,
+      });
 
-        if (backPressTimerRef.current) {
-          clearTimeout(backPressTimerRef.current);
-        }
-        backPressTimerRef.current = setTimeout(() => {
-          lastBackPressTimeRef.current = 0;
-          backPressTimerRef.current = null;
-        }, 2000);
+      switch (action.type) {
+        case 'close-overlay':
+          closer?.();
+          return;
+        case 'navigate':
+          navHistory.set(action.stack);
+          navigate(action.to);
+          return;
+        case 'confirm-exit':
+          lastPressRef.current = now;
+          toast(getT(currentLang())('back_exit_confirm', "Ilovadan chiqish uchun yana bir marta bosing"), { duration: 2000 });
+          return;
+        case 'exit':
+          lastPressRef.current = 0;
+          CapApp.exitApp();
+          return;
       }
     });
 
     return () => {
-      if (backPressTimerRef.current) {
-        clearTimeout(backPressTimerRef.current);
-      }
-      backButtonListener.then((handler) => handler.remove());
+      listener.then((h) => h.remove()).catch(() => {});
     };
-  }, [location.pathname, navigate]);
+  }, [navigate]);
 }

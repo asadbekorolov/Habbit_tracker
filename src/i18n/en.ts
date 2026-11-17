@@ -1179,4 +1179,5 @@ export const en: Dict = {
   widget_stale: "Open the app to update today",
   journal_prev_week: "Previous week",
   journal_next_week: "Next week",
+  back_exit_confirm: "Press back again to exit",
 }

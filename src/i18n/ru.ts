@@ -1179,4 +1179,5 @@ export const ru: Dict = {
   widget_stale: "Откройте приложение, чтобы обновить",
   journal_prev_week: "Предыдущая неделя",
   journal_next_week: "Следующая неделя",
+  back_exit_confirm: "Нажмите ещё раз, чтобы выйти",
 }

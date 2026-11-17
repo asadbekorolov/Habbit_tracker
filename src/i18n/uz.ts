@@ -1177,6 +1177,7 @@ export const uz = {
   widget_stale: "Bugungi holat uchun ilovani oching",
   journal_prev_week: "Oldingi hafta",
   journal_next_week: "Keyingi hafta",
+  back_exit_confirm: "Ilovadan chiqish uchun yana bir marta bosing",
 }
 
 export type Dict = typeof uz
