@@ -5,7 +5,7 @@ export function WeeklyComparison({ s }: { s: AnalyticsData }) {
   const { t, weeklyComparison, card } = s;
 
   return (
-    <div style={{ ...card, background: "rgba(22,27,34,0.85)" }}>
+    <div style={card}>
       <div className="flex items-center justify-between mb-4">
         <div>
           <h3 className="font-semibold text-sm text-slate-900 dark:text-white">

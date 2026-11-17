@@ -11,7 +11,7 @@ export function TrendLine({ s }: { s: AnalyticsData }) {
     : trendData.map((d) => d.label);
 
   return (
-    <div style={{ ...card, background: "rgba(22,27,34,0.85)" }}>
+    <div style={card}>
       <div className="mb-1">
         <h3 className="font-semibold text-sm text-slate-900 dark:text-white">
           {t('analytics_trend')}

@@ -7,7 +7,7 @@ export function HabitBreakdown({ s }: { s: AnalyticsData }) {
   const { t, navigate, habitStats, card } = s;
 
   return (
-    <div style={{ ...card, background: "rgba(22,27,34,0.85)" }}>
+    <div style={card}>
       <div className="mb-6 flex items-center justify-between">
         <div>
           <h3 className="font-semibold text-sm text-slate-900 dark:text-white">

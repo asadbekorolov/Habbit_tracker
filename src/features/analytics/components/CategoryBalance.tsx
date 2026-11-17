@@ -22,7 +22,7 @@ export function CategoryBalance({ s }: { s: AnalyticsData }) {
   const max = Math.max(...categoryBalance.map((c) => c.done), 1);
 
   return (
-    <div style={{ ...card, background: "rgba(22,27,34,0.85)" }}>
+    <div style={card}>
       <div className="flex items-center gap-2 mb-1">
         <div className="p-2 rounded-xl bg-purple-400/10">
           <Sparkles size={16} className="text-purple-400" />

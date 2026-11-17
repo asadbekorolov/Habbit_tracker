@@ -6,7 +6,7 @@ export function KpiGrid({ s }: { s: AnalyticsData }) {
   const { t, card, kpis } = s;
 
   return (
-    <div style={{ ...card, background: "rgba(22,27,34,0.85)" }}>
+    <div style={card}>
       <div className="flex items-center gap-2 mb-4">
         <div className="p-2 rounded-xl bg-emerald-400/10">
           <BarChart3 size={16} className="text-emerald-500 dark:text-emerald-400" />

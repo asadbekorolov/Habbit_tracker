@@ -574,10 +574,11 @@ ${weekdaySummary}
     });
   }, [byDate, totalHabits]);
 
+  // Ilovadagi boshqa kartalar bilan bir xil: slate-900/50 fon, slate-800 chegara, 24px squircle
   const card = {
-    background: "rgba(22,27,34,0.85)",
-    border: `1px solid rgba(255,255,255,0.06)`,
-    borderRadius: 12,
+    background: "rgba(15,23,42,0.5)",
+    border: `1px solid rgba(30,41,59,0.8)`,
+    borderRadius: 24,
     padding: 20,
   };
 

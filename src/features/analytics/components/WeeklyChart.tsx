@@ -6,7 +6,7 @@ export function WeeklyChart({ s }: { s: AnalyticsData }) {
   const { totalHabits, t, weeklyData, card } = s;
 
   return (
-    <div style={{ ...card, background: "rgba(22,27,34,0.85)" }}>
+    <div style={card}>
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-3">
           <div className="p-2 rounded-xl bg-cyan-400/10">
