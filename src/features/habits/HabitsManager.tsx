@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo } from "react";
+import { PageHeader } from "../../components/PageHeader";
 import { motion, AnimatePresence } from "framer-motion";
 import { toast } from "sonner";
 import {
@@ -239,6 +240,7 @@ export function HabitsManager({}: HabitsManagerProps) {
 
   return (
     <div className="flex flex-col gap-5 max-w-2xl">
+      <PageHeader title={t('sec_habits')} subtitle={t('hm_page_sub')} />
       {/* Squircle Segmented Control Tab */}
       <div className="w-full p-1 bg-slate-900/80 border border-slate-800/80 rounded-2xl flex items-center gap-1 mb-1 shadow-inner">
         {/* Tab 1: Odatlar */}
@@ -275,11 +277,7 @@ export function HabitsManager({}: HabitsManagerProps) {
       ) : (
         <>
           <div className="flex items-center justify-between gap-2 mb-1">
-            {/* Left: Title & Subtitle */}
-            <div className="flex-1 min-w-0">
-              <h2 className="text-xl font-bold text-slate-900 dark:text-white tracking-tight">Odatlarni Boshqarish</h2>
-              <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">Qo'shish, tahrirlash va tartibga solish</p>
-            </div>
+            <div className="flex-1 min-w-0" />
 
             {/* Right: Actions Group */}
             <div className="flex items-center gap-2 shrink-0">

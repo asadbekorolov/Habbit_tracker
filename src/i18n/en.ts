@@ -1219,4 +1219,7 @@ export const en: Dict = {
   rt_edit: "Edit routine",
   rt_toggle_aria: "Show routine",
   profile_section_title: "My profile",
+  ach_page_sub: "Track your progress and reach new milestones",
+  hm_page_sub: "Add, edit and reorder",
+  store_page_sub: "Streak protection and profile decorations",
 }

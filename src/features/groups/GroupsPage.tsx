@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { PageHeader } from "../../components/PageHeader";
 import { useQueryClient } from "@tanstack/react-query";
 import { useMyGroupsQuery, queryKeys } from "../../hooks/queries";
 import { motion } from "framer-motion";
@@ -112,34 +113,32 @@ export function GroupsPage({ onUserClick }: GroupsPageProps) {
 
   return (
     <div className="max-w-2xl">
-      <div className="flex items-center justify-between mb-6">
-        <div>
-          <h2 className="text-base font-semibold text-slate-900 dark:text-white">{t('groups_title')}</h2>
-          <p className="text-xs mt-0.5 text-slate-500 dark:text-muted-foreground">
-            {t('groups_sub')}
-          </p>
-        </div>
-        <div className="flex items-center gap-2">
-          <button
-            onClick={() => { setShowJoin(true); setError(""); }}
-            className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-medium"
-            style={{
-              background: "rgba(255,255,255,0.06)",
-              color: "var(--muted-foreground)",
-              border: `1px solid rgba(255,255,255,0.08)`,
-            }}
-          >
-            <LogIn size={13} /> {t('groups_join')}
-          </button>
-          <button
-            onClick={() => { setShowCreate(true); setError(""); }}
-            className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-medium"
-            style={{ background: "var(--neon-green)", color: "#0E1117" }}
-          >
-            <Plus size={13} /> {t('groups_create')}
-          </button>
-        </div>
-      </div>
+      <PageHeader
+        title={t('groups_title')}
+        subtitle={t('groups_sub')}
+        actions={
+          <>
+            <button
+              type="button"
+              onClick={() => { setShowJoin(true); setError(""); }}
+              aria-label={t('groups_join')}
+              title={t('groups_join')}
+              className="w-10 h-10 rounded-2xl bg-slate-900/60 border border-slate-800 text-slate-300 flex items-center justify-center active:scale-95 cursor-pointer"
+            >
+              <LogIn size={17} />
+            </button>
+            <button
+              type="button"
+              onClick={() => { setShowCreate(true); setError(""); }}
+              aria-label={t('groups_create')}
+              title={t('groups_create')}
+              className="w-10 h-10 rounded-2xl bg-emerald-500 text-slate-950 flex items-center justify-center active:scale-95 cursor-pointer"
+            >
+              <Plus size={18} strokeWidth={2.5} />
+            </button>
+          </>
+        }
+      />
 
       {/* Sub-view Switcher */}
       <div className="flex bg-slate-100 dark:bg-white/5 p-1 rounded-2xl border border-slate-200 dark:border-white/10 mb-6">

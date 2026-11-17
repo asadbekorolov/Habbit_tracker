@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { PageHeader } from "../../components/PageHeader";
 import { Trophy, Star, Medal, Crown, Loader2, Lock, AlertCircle, User } from "lucide-react";
 import type { LeaderboardEntry } from "../../services/db";
 import { useLeaderboardQuery, useMyRankQuery } from "../../hooks/queries";
@@ -10,12 +11,14 @@ import { getUsernameGlowStyle } from "../../utils/cosmetics";
 import { useProfile } from "../../store/UserContext";
 
 interface GlobalLeaderboardPageProps {
+  /** Tahlil sahifasi ichida (tab) — orqaga tugmasi kerak emas */
+  embedded?: boolean;
   onUserClick?: (userId: string) => void;
 }
 
 type LeaderboardPeriod = 'daily' | 'monthly' | '6months' | 'yearly' | 'all';
 
-export function GlobalLeaderboardPage({ onUserClick }: GlobalLeaderboardPageProps) {
+export function GlobalLeaderboardPage({ onUserClick, embedded }: GlobalLeaderboardPageProps) {
   const profile = useProfile();
   const { t } = useLang();
   const [period, setPeriod] = useState<LeaderboardPeriod>('monthly');
@@ -46,28 +49,17 @@ export function GlobalLeaderboardPage({ onUserClick }: GlobalLeaderboardPageProp
 
   return (
     <div className="max-w-2xl">
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
-        <div>
-          <h2 className="text-base font-semibold" style={{ color: "var(--foreground)" }}>
-            {t('lb_title')}
-          </h2>
-          <p className="text-xs mt-0.5" style={{ color: "var(--muted-foreground)" }}>
-            {t('lb_sub')}
-          </p>
-        </div>
-        {myRank >= 0 && (
-          <div
-            className="flex items-center gap-2 px-3 py-1.5 rounded-xl"
-            style={{ background: "rgba(74,222,128,0.1)", border: "1px solid rgba(74,222,128,0.25)" }}
-          >
-            <Medal size={14} style={{ color: "#4ADE80" }} />
-            <span className="text-sm font-bold" style={{ color: "#4ADE80", fontFamily: "'Geist Mono', monospace" }}>
-              #{myRank + 1}
-            </span>
-            <span className="text-xs" style={{ color: "var(--muted-foreground)" }}>{t('lb_your_rank')}</span>
+      <PageHeader
+        hideBack={embedded}
+        title={t('lb_title')}
+        subtitle={t('lb_sub')}
+        actions={myRank >= 0 ? (
+          <div className="flex items-center gap-1.5 px-3 h-10 rounded-2xl bg-emerald-500/10 border border-emerald-500/25" title={t('lb_your_rank')}>
+            <Medal size={14} className="text-emerald-400" />
+            <span className="text-sm font-bold font-mono text-emerald-400">#{myRank + 1}</span>
           </div>
-        )}
-      </div>
+        ) : undefined}
+      />
 
       {/* Interval Filters */}
       <div className="flex bg-slate-100 dark:bg-white/5 p-1 rounded-2xl border border-slate-200 dark:border-white/10 mb-6 overflow-x-auto no-scrollbar">

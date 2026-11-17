@@ -1,5 +1,6 @@
 // Admin panel.
 import { ShieldAlert, Loader2, X, Gift, Eye, AlertTriangle, Coins, Star } from "lucide-react";
+import { PageHeader } from "../../components/PageHeader";
 import { AdminPanelProps } from "./adminShared";
 import { useAdminPanelState } from "./useAdminPanelState";
 import { OverviewTab } from "./tabs/OverviewTab";
@@ -25,17 +26,7 @@ export function AdminPanel(props: AdminPanelProps) {
 
   return (
     <div className="max-w-3xl flex flex-col gap-5">
-      <div className="flex items-center gap-3 mb-2">
-        <div className="p-2 rounded-xl" style={{ background: "rgba(239,68,68,0.1)", color: "#EF4444" }}>
-          <ShieldAlert size={20} />
-        </div>
-        <div>
-          <h2 className="text-base font-semibold" style={{ color: "var(--foreground)" }}>{t('admin_title')}</h2>
-          <p className="text-xs mt-0.5" style={{ color: "var(--muted-foreground)" }}>
-            {t('admin_subtitle')}
-          </p>
-        </div>
-      </div>
+      <PageHeader title={t('admin_title')} subtitle={t('admin_subtitle')} />
 
       {error && (
         <p className="text-xs px-3 py-2.5 rounded-lg" style={{ color: "var(--coral-red)", background: "rgba(248,113,113,0.1)" }}>

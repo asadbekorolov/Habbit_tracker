@@ -1217,6 +1217,9 @@ export const uz = {
   rt_edit: "Kun tartibini tahrirlash",
   rt_toggle_aria: "Kun tartibini ko'rsatish",
   profile_section_title: "Shaxsiy profil",
+  ach_page_sub: "O'z natijalaringizni kuzating va yangi marralarni zabt eting",
+  hm_page_sub: "Qo'shish, tahrirlash va tartibga solish",
+  store_page_sub: "Himoya vositalari va profil bezaklari",
 }
 
 export type Dict = typeof uz

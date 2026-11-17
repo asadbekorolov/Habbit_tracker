@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo } from "react";
+import { PageHeader } from "../../components/PageHeader";
 import { useLang } from "../../store/LangContext";
 import { Loader2, Award } from "lucide-react";
 import { HabitIcon } from "../../components/HabitIcon";
@@ -39,19 +40,19 @@ export function Achievements({}: AchievementsProps) {
 
   return (
     <div className="max-w-3xl">
-      <div className="mb-6 flex items-center justify-between">
-        <div>
-          <h2 className="text-base font-semibold" style={{ color: "var(--foreground)" }}>{t('ach_title')}</h2>
-          <p className="text-xs mt-0.5" style={{ color: "var(--muted-foreground)" }}>O'z natijalaringizni kuzating va yangi marralarni zabt eting</p>
-        </div>
-        <button
-          onClick={() => setShowSchool21Modal(true)}
-          className="text-xs px-3.5 py-1.5 rounded-full font-bold flex items-center gap-1.5 transition-all hover:scale-105 active:scale-95 shadow-sm"
-          style={{ background: "rgba(74,222,128,0.15)", color: "var(--neon-green)", fontFamily: "'Geist Mono', monospace" }}
-        >
-          <Award size={14} /> Nishonlar ({unlockedTieredCount}/{badgesTotal})
-        </button>
-      </div>
+      <PageHeader
+        title={t('ach_title')}
+        subtitle={t('ach_page_sub')}
+        actions={
+          <button
+            type="button"
+            onClick={() => setShowSchool21Modal(true)}
+            className="h-10 px-3 rounded-2xl bg-emerald-500/10 border border-emerald-500/25 text-emerald-400 text-xs font-bold font-mono flex items-center gap-1.5 active:scale-95 cursor-pointer"
+          >
+            <Award size={14} /> {unlockedTieredCount}/{badgesTotal}
+          </button>
+        }
+      />
 
       {/* Level card */}
       <div

@@ -47,7 +47,7 @@ export function Analytics(props: AnalyticsProps) {
       <div className="flex items-center justify-between gap-3 mb-1">
         <div className="flex items-center gap-3">
           <MiniPipAvatar profile={profile} onProfileUpdate={onProfileUpdate} />
-          <h2 className="text-xl font-bold text-slate-900 dark:text-white">Tahlil</h2>
+          <h2 className="text-xl font-bold text-white">{s.t("analytics_page_title")}</h2>
         </div>
         <div className="flex bg-slate-100 dark:bg-white/5 p-1 rounded-2xl border border-slate-200 dark:border-white/10 shrink-0">
           <button
@@ -78,7 +78,7 @@ export function Analytics(props: AnalyticsProps) {
       {showPremiumAI && <PremiumAiModal s={s} />}
 
       {viewMode === 'leaderboard' ? (
-        <GlobalLeaderboardPage onUserClick={onUserClick} />
+        <GlobalLeaderboardPage onUserClick={onUserClick} embedded />
       ) : (
         <>
           {/* Time Filter Pills */}

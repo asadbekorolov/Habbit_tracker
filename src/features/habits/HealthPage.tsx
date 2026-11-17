@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useMemo } from "react";
+import { PageHeader } from "../../components/PageHeader";
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import {
@@ -468,13 +469,10 @@ export function HealthPage({}: HealthPageProps) {
   return (
     <div className="max-w-2xl flex flex-col gap-5 pb-36">
       {/* Header Bar */}
-      <div className="flex items-center justify-between px-1">
-        <div>
-          <h2 className="text-xl font-bold tracking-tight text-white">{t('health_page_title')}</h2>
-          <p className="text-xs font-medium text-slate-400 mt-0.5">
-            {t('health_page_sub')}
-          </p>
-        </div>
+      <PageHeader
+        title={t('health_page_title')}
+        subtitle={t('health_page_sub')}
+        actions={
         <button
           type="button"
           onClick={() => loadData()}
@@ -483,7 +481,8 @@ export function HealthPage({}: HealthPageProps) {
         >
           <RefreshCw className="w-4 h-4 stroke-[2]" />
         </button>
-      </div>
+        }
+      />
 
       {lastSynced && (
         <div className="flex justify-center -mt-2">
