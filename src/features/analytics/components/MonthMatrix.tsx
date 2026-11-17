@@ -1,15 +1,15 @@
-// Kundalik — Oy matritsasi: har kunning bajarilish foizi; kun bosilsa
+// Tahlil — yagona Oylik matritsa: har kunning bajarilish foizi; kun bosilsa
 // o'sha kunning odatlari (DayHabitsSheet) ochiladi.
 import { useMemo, useState } from "react";
 import { CalendarDays, ChevronLeft, ChevronRight } from "lucide-react";
 import { toast } from "sonner";
-import { useHabitsQuery, useLogsRangeQuery, useDayLogsQuery } from "../../hooks/queries";
-import { addDays, getTashkentToday } from "../../utils/date";
-import { MONTHS_FULL, DAYS_SHORT } from "../../utils/i18n";
-import { useLang } from "../../store/LangContext";
-import { useHaptics } from "../../hooks/useHaptics";
+import { useHabitsQuery, useLogsRangeQuery, useDayLogsQuery } from "../../../hooks/queries";
+import { addDays, getTashkentToday } from "../../../utils/date";
+import { MONTHS_FULL, DAYS_SHORT } from "../../../utils/i18n";
+import { useLang } from "../../../store/LangContext";
+import { useHaptics } from "../../../hooks/useHaptics";
 
-interface JournalCalendarProps {
+interface MonthMatrixProps {
   userId: string;
   onSelectDate: (date: string) => void;
 }
@@ -18,7 +18,7 @@ const pad = (n: number) => String(n).padStart(2, "0");
 // Dushanbadan boshlanadigan hafta: DAYS_SHORT 0 = yakshanba
 const MON_FIRST = [1, 2, 3, 4, 5, 6, 0];
 
-export function JournalCalendar({ userId, onSelectDate }: JournalCalendarProps) {
+export function MonthMatrix({ userId, onSelectDate }: MonthMatrixProps) {
   const { t, lang } = useLang();
   const haptics = useHaptics();
   const today = getTashkentToday();

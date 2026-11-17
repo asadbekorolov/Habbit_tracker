@@ -1151,6 +1151,7 @@ export const uz = {
   ai_report_summary: "Murabbiy xulosasi",
   ai_report_saved_hint: "Oxirgi hisobot saqlangan — qayta ko'rish bepul",
   ai_report_update: "Yangilash",
+  journal_week_title: "So'nggi 7 kun",
 }
 
 export type Dict = typeof uz

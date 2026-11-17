@@ -1,13 +1,12 @@
-// Kundalik — tarix va yozuvlar: oy matritsasi (kun bosilsa o'sha kunning
-// odatlari), kunlik eslatma va kayfiyat, haftalik sarhisob, oylik tahlil.
-// Bugungi odatlar ro'yxati faqat Bosh sahifada (takror yo'q).
+// Kundalik — yengil sahifa: kun tanlash (so'nggi 7 kun; kun bosilsa o'sha
+// kunning odatlari), kunlik eslatma va kayfiyat, haftalik sarhisob.
+// Bugungi odatlar ro'yxati — Bosh sahifada; to'liq oylik matritsa — Tahlilda.
 import { useState, lazy, Suspense } from "react";
 import type { Habit } from "../services/supabase";
-import { MonthGrid } from "../features/dashboard/MonthGrid";
 import { DailyNotes } from "../features/dashboard/DailyNotes";
 import { WeeklyReflection } from "../features/dashboard/WeeklyReflection";
-import { JournalCalendar } from "../features/journal/JournalCalendar";
-import { DayHabitsSheet } from "../features/journal/DayHabitsSheet";
+import { WeekStrip } from "../features/journal/WeekStrip";
+import { DayHabitsSheet } from "../features/habits/DayHabitsSheet";
 import { useLang } from "../store/LangContext";
 import { MiniPipAvatar } from "../components/MiniPipAvatar";
 import { useProfile } from "../store/UserContext";
@@ -33,7 +32,7 @@ export function JournalPage(_props: JournalPageProps) {
         <h2 className="text-xl font-bold text-white">{t("journal_title")}</h2>
       </div>
 
-      <JournalCalendar userId={profile.id} onSelectDate={setSelectedDate} />
+      <WeekStrip userId={profile.id} onSelectDate={setSelectedDate} />
 
       <section aria-label={t("journal_notes_section")}>
         <DailyNotes profile={profile} />
@@ -41,10 +40,6 @@ export function JournalPage(_props: JournalPageProps) {
 
       <section aria-label={t("journal_weekly_section")}>
         <WeeklyReflection profile={profile} />
-      </section>
-
-      <section aria-label={t("journal_month_section")}>
-        <MonthGrid profile={profile} />
       </section>
 
       {selectedDate && (

@@ -46,3 +46,20 @@ const DOMAIN_BY_CATEGORY: Record<CategoryType, HabitDomain> = {
 
 export const getHabitDomain = (name: string, emoji: string): HabitDomain =>
   DOMAIN_BY_CATEGORY[getHabitCategory(name, emoji)];
+
+// ─── Odat ikonkasi rangi (HabitItem) ─────────────────────────────────────────
+// Erta turish — amber, Dasturlash — cyan, Oila — rose, Kundalik/O'ziga qarash —
+// violet, Sport/Salomatlik — orange, Kitob/Til o'rganish va boshqalar — emerald.
+export type HabitTone = 'amber' | 'cyan' | 'rose' | 'violet' | 'orange' | 'emerald';
+
+const TONE_BY_CATEGORY: Record<CategoryType, HabitTone> = {
+  morning: 'amber',
+  code: 'cyan', digital: 'cyan',
+  social: 'rose', gaming: 'rose', discipline: 'rose',
+  journal: 'violet', selfcare: 'violet', mindfulness: 'violet', prayer: 'violet', sleep: 'violet',
+  workout: 'orange', health: 'orange', water: 'orange',
+  reading: 'emerald', default: 'emerald',
+};
+
+export const getHabitTone = (name: string, emoji: string, _type?: string): HabitTone =>
+  TONE_BY_CATEGORY[getHabitCategory(name, emoji)];

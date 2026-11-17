@@ -9,7 +9,12 @@ import { KpiGrid } from "./components/KpiGrid";
 import { WeeklyChart } from "./components/WeeklyChart";
 import { WeeklyComparison } from "./components/WeeklyComparison";
 import { AiAdviceCard } from "./components/AiAdviceCard";
-import { Heatmap } from "./components/Heatmap";
+import { useState, lazy, Suspense } from "react";
+import { MonthMatrix } from "./components/MonthMatrix";
+import { DayHabitsSheet } from "../habits/DayHabitsSheet";
+import type { Habit } from "../../services/supabase";
+
+const HabitDetailModal = lazy(() => import("../habits/HabitDetailModal").then((m) => ({ default: m.HabitDetailModal })));
 import { TrendLine } from "./components/TrendLine";
 import { CategoryBalance } from "./components/CategoryBalance";
 import { HabitBreakdown } from "./components/HabitBreakdown";
@@ -18,6 +23,9 @@ import { AiInsights } from "./components/AiInsights";
 export function Analytics(props: AnalyticsProps) {
   const s = useAnalyticsData(props);
   const { totalHabits, onUserClick, onProfileUpdate, profile, downloadingPoster, timeFilter, setTimeFilter, viewMode, setViewMode, showPremiumAI, logs, loading, habitStats, shareAnalytics } = s;
+  // Oylik matritsada tanlangan kun va ochilgan odat (hook'lar early return'dan oldin)
+  const [selectedDate, setSelectedDate] = useState<string | null>(null);
+  const [detailHabit, setDetailHabit] = useState<Habit | null>(null);
 
 
   if (loading && logs.length === 0) {
@@ -129,8 +137,17 @@ export function Analytics(props: AnalyticsProps) {
       {/* AI Advice Card */}
       <AiAdviceCard s={s} />
 
-      {/* Heatmap */}
-      <Heatmap s={s} />
+      {/* Yagona oylik matritsa (kun bosilsa — o'sha kunning odatlari) */}
+      <MonthMatrix userId={profile.id} onSelectDate={setSelectedDate} />
+
+      {selectedDate && (
+        <DayHabitsSheet profile={profile} date={selectedDate} onClose={() => setSelectedDate(null)} onOpenHabit={setDetailHabit} />
+      )}
+      {detailHabit && (
+        <Suspense fallback={null}>
+          <HabitDetailModal habit={detailHabit} userId={profile.id} onClose={() => setDetailHabit(null)} />
+        </Suspense>
+      )}
 
       {/* 30 kunlik tendensiya chizig'i */}
       {totalHabits > 0 && <TrendLine s={s} />}

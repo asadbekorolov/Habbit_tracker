@@ -1,11 +1,11 @@
-// Kundalik — tanlangan kunning odatlari: ko'rish va (ochiq kun bo'lsa) tahrirlash.
+// Tanlangan kunning odatlari (Kundalik va Tahlil): ko'rish va (ochiq kun bo'lsa) tahrirlash.
 import { useState } from "react";
 import { AnimatePresence } from "framer-motion";
 import { Lock, Unlock } from "lucide-react";
 import { Modal } from "../../components/Modal";
 import { QuickLogModal } from "../../components/QuickLogModal";
-import { HabitItem } from "../habits/components/HabitItem";
-import { NumericMetrics } from "../habits/NumericMetrics";
+import { HabitItem } from "./components/HabitItem";
+import { NumericMetrics } from "./NumericMetrics";
 import { useHabitDay } from "../../hooks/useHabitDay";
 import { isMeasurable } from "../../utils/habitMetrics";
 import { parseDateStr } from "../../utils/date";

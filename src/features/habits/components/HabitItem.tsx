@@ -13,6 +13,7 @@ import type { HabitDayEntry } from "../../../hooks/useHabitDay";
 import { normalizeApostrophes } from "../../../utils/text";
 import { cleanHabitName, EMOJI_MAP } from "../../../components/HabitIcon";
 import { HABIT_REWARD, isMeasurable, progressPct } from "../../../utils/habitMetrics";
+import { getHabitTone, type HabitTone } from "../../../utils/habitCategory";
 
 const ICON_MAP: Record<string, React.ElementType> = {
   BookOpen, Dumbbell, Activity, Code, Sparkles, Brain, Droplets,
@@ -49,6 +50,20 @@ export function resolveHabitIcon(iconName?: string, habitName?: string): React.E
 
   return Sparkles;
 }
+
+// Odat yo'nalishiga mos rang (ikonka va uning squircle foni). Klass satrlari
+// to'liq yozilgan — Tailwind ularni manbadan topishi uchun.
+const TONE_CLASS: Record<HabitTone, string> = {
+  amber: "text-amber-400 bg-amber-500/15 border-amber-500/30",
+  cyan: "text-cyan-400 bg-cyan-500/15 border-cyan-500/30",
+  rose: "text-rose-400 bg-rose-500/15 border-rose-500/30",
+  violet: "text-violet-400 bg-violet-500/15 border-violet-500/30",
+  orange: "text-orange-400 bg-orange-500/15 border-orange-500/30",
+  emerald: "text-emerald-400 bg-emerald-500/15 border-emerald-500/30",
+};
+
+export const habitToneClass = (habit: Pick<Habit, "name" | "emoji" | "type">) =>
+  TONE_CLASS[getHabitTone(habit.name, habit.emoji, habit.type)];
 
 export interface HabitItemProps {
   habit: Habit;
@@ -99,14 +114,8 @@ export function HabitItem({ habit, entry, streak, onCheck, onFail, onOpen, locke
       } ${locked ? "opacity-60" : ""}`}
     >
       <div
-        className={`w-11 h-11 rounded-2xl border flex items-center justify-center shrink-0 shadow-inner transition-colors ${
-          done
-            ? "bg-emerald-500/20 border-emerald-500/40 text-emerald-400"
-            : failed
-            ? "bg-rose-500/10 border-rose-500/30 text-rose-400"
-            : negative
-            ? "bg-slate-800/80 border-slate-700/50 text-rose-300"
-            : "bg-slate-800/80 border-slate-700/50 text-emerald-400"
+        className={`w-11 h-11 rounded-2xl border flex items-center justify-center shrink-0 shadow-inner transition-colors ${habitToneClass(habit)} ${
+          done ? "ring-2 ring-emerald-400/60" : failed ? "ring-2 ring-rose-500/50" : ""
         }`}
       >
         <Icon className="w-5 h-5 stroke-[2.2]" />

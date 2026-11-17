@@ -18,7 +18,6 @@ import { NotificationBell } from "./components/NotificationBell";
 import { App as CapacitorApp } from "@capacitor/app";
 import { Browser } from "@capacitor/browser";
 import { Dashboard } from "./features/dashboard/Dashboard";
-import { MonthGrid } from "./features/dashboard/MonthGrid";
 import { DailyNotes } from "./features/dashboard/DailyNotes";
 
 import { WeeklyReflection } from "./features/dashboard/WeeklyReflection";
