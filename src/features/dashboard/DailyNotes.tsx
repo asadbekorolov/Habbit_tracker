@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { queryKeys } from "../../hooks/queries";
 import { toast } from "sonner";
-import { ChevronLeft, ChevronRight, Save, Moon, Monitor, Smile, Lock, Laugh, Meh, Frown, Angry } from "lucide-react";
+import { Save, Moon, Monitor, Smile, Lock, Laugh, Meh, Frown, Angry } from "lucide-react";
 import { getDailyNote, upsertDailyNote, getHealthLog, upsertHealthLog } from "../../services/db";
 import type { Profile } from "../../services/supabase";
 import { tashkentTodayAnchor, toDateStr } from "../../utils/date";
@@ -12,9 +12,11 @@ import { HabitIcon } from "../../components/HabitIcon";
 
 interface DailyNotesProps {
   profile: Profile;
+  /** Tanlangan kun — Kundalikdagi yagona hafta navigatoridan (WeekNavigator) */
+  date: string;
 }
 
-export function DailyNotes({ profile }: DailyNotesProps) {
+export function DailyNotes({ profile, date }: DailyNotesProps) {
   const { t, lang } = useLang();
   const queryClient = useQueryClient();
   const MOODS = [
@@ -27,7 +29,7 @@ export function DailyNotes({ profile }: DailyNotesProps) {
   const now = tashkentTodayAnchor();
   const todayStr = toDateStr(now);
 
-  const [selectedDate, setSelectedDate] = useState(todayStr);
+  const selectedDate = date;
   const [content, setContent] = useState("");
   const [mood, setMood] = useState<number | undefined>(undefined);
   const [sleepHours, setSleepHours] = useState<number | undefined>(undefined);
@@ -65,19 +67,6 @@ export function DailyNotes({ profile }: DailyNotesProps) {
   useEffect(() => {
     loadNote();
   }, [loadNote]);
-
-  function prevDay() {
-    const d = new Date(selectedDate + "T00:00:00");
-    d.setDate(d.getDate() - 1);
-    setSelectedDate(toDateStr(d));
-  }
-
-  function nextDay() {
-    if (selectedDate >= todayStr) return;
-    const d = new Date(selectedDate + "T00:00:00");
-    d.setDate(d.getDate() + 1);
-    setSelectedDate(toDateStr(d));
-  }
 
   async function handleSave() {
     if (isReadOnly) return;
@@ -150,71 +139,6 @@ export function DailyNotes({ profile }: DailyNotesProps) {
 
   return (
     <div className="flex flex-col gap-4">
-      {/* Date nav */}
-      <div style={cardStyle} className="p-4">
-        <div className="flex items-center justify-between">
-          <button
-            onClick={prevDay}
-            className="p-1.5 rounded-lg"
-            style={{ background: "rgba(255,255,255,0.06)" }}
-          >
-            <ChevronLeft size={16} style={{ color: "var(--foreground)" }} />
-          </button>
-
-          <div className="text-center">
-            <p className="text-sm font-semibold" style={{ color: "var(--foreground)" }}>
-              {isToday ? `${t('today')} — ` : ""}{DAYS_FULL[lang][dayOfWeek]}
-            </p>
-            <p className="text-xs mt-0.5" style={{ color: "var(--muted-foreground)", fontFamily: "'Geist Mono', monospace" }}>
-              {dayNum} {monthName} {yearNum}
-            </p>
-          </div>
-
-          <button
-            onClick={nextDay}
-            disabled={isToday}
-            className="p-1.5 rounded-lg"
-            style={{
-              background: "rgba(255,255,255,0.06)",
-              opacity: isToday ? 0.3 : 1,
-            }}
-          >
-            <ChevronRight size={16} style={{ color: "var(--foreground)" }} />
-          </button>
-        </div>
-
-        {/* Quick date chips: last 7 days */}
-        <div className="flex gap-1.5 mt-3 overflow-x-auto pb-1 no-scrollbar">
-          {Array.from({ length: 7 }, (_, i) => {
-            const d = tashkentTodayAnchor();
-            d.setDate(d.getDate() - (6 - i));
-            const ds = toDateStr(d);
-            const isSelected = ds === selectedDate;
-            const dow = d.getDay();
-            return (
-              <button
-                key={ds}
-                onClick={() => setSelectedDate(ds)}
-                className="flex-shrink-0 flex flex-col items-center gap-0.5 px-2 py-1.5 rounded-lg transition-all"
-                style={{
-                  background: isSelected
-                    ? "#4ADE80"
-                    : "rgba(255,255,255,0.04)",
-                  minWidth: 40,
-                }}
-              >
-                <span className="text-[9px]" style={{ color: isSelected ? "#0a0a0a" : "var(--muted-foreground)", fontFamily: "'Geist Mono', monospace" }}>
-                  {DAYS_SHORT[lang][dow]}
-                </span>
-                <span className="text-xs font-semibold" style={{ color: isSelected ? "#0a0a0a" : "var(--foreground)", fontFamily: "'Geist Mono', monospace" }}>
-                  {d.getDate()}
-                </span>
-              </button>
-            );
-          })}
-        </div>
-      </div>
-
       {/* Mood + Sleep + Screen */}
       <div style={cardStyle} className="p-5">
         <p className="text-[10px] font-black uppercase tracking-[0.2em] mb-5 text-slate-500">

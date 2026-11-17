@@ -21,3 +21,12 @@ test('ISO hafta kuni sanadan (vaqt zonasidan mustaqil)', () => {
   assert.equal(isoWeekdayOf('2026-11-16'), 1); // dushanba
   assert.equal(isoWeekdayOf('2026-11-22'), 7); // yakshanba
 });
+
+test('hafta navigatori: dushanbadan boshlanadigan hafta', async () => {
+  const { weekStartOf, weekDates } = await import('../src/utils/weekdays.ts');
+  assert.equal(weekStartOf('2026-11-17'), '2026-11-16'); // seshanba -> dushanba
+  assert.equal(weekStartOf('2026-11-16'), '2026-11-16');
+  assert.equal(weekStartOf('2026-11-22'), '2026-11-16'); // yakshanba
+  assert.equal(weekStartOf('2026-11-01'), '2026-10-26'); // oy chegarasi
+  assert.deepEqual(weekDates('2026-11-30'), ['2026-11-30', '2026-12-01', '2026-12-02', '2026-12-03', '2026-12-04', '2026-12-05', '2026-12-06']);
+});

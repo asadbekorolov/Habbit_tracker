@@ -27,3 +27,19 @@ export function toggleDay(days: readonly number[], day: number): number[] {
   if (d.includes(day)) return d.length === 1 ? d : d.filter((x) => x !== day);
   return normalizeDays([...d, day]);
 }
+
+/** Sana joylashgan haftaning dushanbasi ("YYYY-MM-DD"). */
+export function weekStartOf(dateStr: string): string {
+  const [y, m, d] = dateStr.split('-').map(Number);
+  const t = Date.UTC(y, m - 1, d);
+  const wd = new Date(t).getUTCDay(); // 0 = yakshanba
+  const back = (wd + 6) % 7;
+  return new Date(t - back * 86_400_000).toISOString().slice(0, 10);
+}
+
+/** Dushanbadan boshlab 7 kun. */
+export function weekDates(weekStart: string): string[] {
+  const [y, m, d] = weekStart.split('-').map(Number);
+  const t = Date.UTC(y, m - 1, d);
+  return Array.from({ length: 7 }, (_, i) => new Date(t + i * 86_400_000).toISOString().slice(0, 10));
+}

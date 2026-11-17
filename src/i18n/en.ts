@@ -1177,4 +1177,6 @@ export const en: Dict = {
   widget_no_habits: "Nothing planned today",
   widget_days_label: "days",
   widget_stale: "Open the app to update today",
+  journal_prev_week: "Previous week",
+  journal_next_week: "Next week",
 }

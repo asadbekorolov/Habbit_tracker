@@ -1,11 +1,12 @@
-// Kundalik — yengil sahifa: kun tanlash (so'nggi 7 kun; kun bosilsa o'sha
-// kunning odatlari), kunlik eslatma va kayfiyat, haftalik sarhisob.
+// Kundalik — yengil sahifa: yagona hafta navigatori (kun bosilsa — o'sha
+// kunning odatlari), tanlangan kunning eslatmasi va kayfiyati, haftalik sarhisob.
 // Bugungi odatlar ro'yxati — Bosh sahifada; to'liq oylik matritsa — Tahlilda.
 import { useState, lazy, Suspense } from "react";
 import type { Habit } from "../services/supabase";
 import { DailyNotes } from "../features/dashboard/DailyNotes";
 import { WeeklyReflection } from "../features/dashboard/WeeklyReflection";
-import { WeekStrip } from "../features/journal/WeekStrip";
+import { WeekNavigator } from "../features/journal/WeekNavigator";
+import { getTashkentToday } from "../utils/date";
 import { DayHabitsSheet } from "../features/habits/DayHabitsSheet";
 import { useLang } from "../store/LangContext";
 import { MiniPipAvatar } from "../components/MiniPipAvatar";
@@ -22,6 +23,9 @@ interface JournalPageProps {
 export function JournalPage(_props: JournalPageProps) {
   const profile = useProfile();
   const { t } = useLang();
+  // Hafta navigatorida tanlangan kun (eslatma shu kunga tegishli)
+  const [activeDate, setActiveDate] = useState(() => getTashkentToday());
+  // Odatlar oynasi ochiq bo'lgan kun
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
   const [detailHabit, setDetailHabit] = useState<Habit | null>(null);
 
@@ -32,10 +36,15 @@ export function JournalPage(_props: JournalPageProps) {
         <h2 className="text-xl font-bold text-white">{t("journal_title")}</h2>
       </div>
 
-      <WeekStrip userId={profile.id} onSelectDate={setSelectedDate} />
+      <WeekNavigator
+        userId={profile.id}
+        selectedDate={activeDate}
+        onSelectDate={setActiveDate}
+        onOpenDay={setSelectedDate}
+      />
 
       <section aria-label={t("journal_notes_section")}>
-        <DailyNotes profile={profile} />
+        <DailyNotes profile={profile} date={activeDate} />
       </section>
 
       <section aria-label={t("journal_weekly_section")}>
