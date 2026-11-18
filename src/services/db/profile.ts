@@ -132,20 +132,48 @@ export interface PublicProfileStats {
   habitsCount: number
 }
 
+export type EffectiveCosmetics = { active_frame: string | null; username_glow: boolean }
+
+/**
+ * Boshqa foydalanuvchilarning amaldagi (muddati o'tmagan) ramka va
+ * yaltirashi (057: get_effective_cosmetics). 057 hali qo'llanmagan bo'lsa
+ * yoki xato bo'lsa — bo'sh xarita (chaqiruvchi profiles qiymatini ishlatadi).
+ */
+export async function getEffectiveCosmetics(userIds: string[]): Promise<Map<string, EffectiveCosmetics>> {
+  const map = new Map<string, EffectiveCosmetics>()
+  const ids = Array.from(new Set(userIds.filter(Boolean))).slice(0, 500)
+  if (!ids.length) return map
+  const { data, error } = await supabase.rpc('get_effective_cosmetics', { p_user_ids: ids })
+  if (error || !Array.isArray(data)) return map
+  for (const r of data as { user_id: string; active_frame: string | null; username_glow: boolean }[]) {
+    map.set(r.user_id, { active_frame: r.active_frame, username_glow: !!r.username_glow })
+  }
+  return map
+}
+
 /**
  * Ommaviy profil: faqat yig'ma raqamlar (055: get_public_profile_stats).
  * Odatlar va kunlik belgilar hech qachon yuklanmaydi. 055 hali qo'llanmagan
  * bazada (PGRST202) — faqat o'z profilida loglardan hisoblanadi.
  */
 export async function getPublicProfileStats(userId: string): Promise<PublicProfileStats> {
-  const [baseProfile, tg, rpc] = await Promise.all([
+  const [baseProfile, tg, rpc, cosmetics] = await Promise.all([
     getProfileById(userId),
     getTelegramContact(userId),
     supabase.rpc('get_public_profile_stats', { p_user_id: userId }),
+    getEffectiveCosmetics([userId]),
   ])
   // telegram_username endi to'g'ridan-to'g'ri o'qilmaydi: server faqat ruxsat
   // bo'lsa (o'zi / ochiq / so'rov tasdiqlangan) qaytaradi.
-  const profile = { ...baseProfile, telegram_username: tg.username, has_telegram: tg.has_telegram }
+  // Ramka/yaltirash — faqat muddati o'tmaganlari (057), egasi ilovani
+  // ochmaguncha profiles jadvalida eski qiymat qolishi mumkin.
+  const eff = cosmetics.get(userId)
+  const profile = {
+    ...baseProfile,
+    ...(eff ? { active_frame: eff.active_frame, username_glow: eff.username_glow } : {}),
+    telegram_username: tg.username,
+    has_telegram: tg.has_telegram,
+  }
   const s: any = rpc.error ? null : rpc.data
   if (s) {
     return {

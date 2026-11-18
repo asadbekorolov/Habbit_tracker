@@ -20,9 +20,9 @@ export const PREMIUM_AVATAR_COLORS: ShopColorItem[] = [
 
 export type ShopFrameItem = { id: string; name: string; price: number; icon: string; border: string; shadow: string };
 export const FRAMES: ShopFrameItem[] = [
-  { id: "frame_bronze", name: "Bronza ramka", price: 300, icon: "Medal", border: "3px solid #CD7F32", shadow: "0 0 10px rgba(205,127,50,0.5)" },
-  { id: "frame_silver", name: "Kumush ramka", price: 600, icon: "Medal", border: "3px solid #C0C0C0", shadow: "0 0 12px rgba(192,192,192,0.6)" },
-  { id: "frame_gold", name: "Oltin ramka", price: 1000, icon: "Crown", border: "3px solid #FBBF24", shadow: "0 0 16px rgba(251,191,36,0.7)" },
+  { id: "frame_bronze", name: "Bronza ramka", price: 150, icon: "Medal", border: "3px solid #CD7F32", shadow: "0 0 10px rgba(205,127,50,0.5)" },
+  { id: "frame_silver", name: "Kumush ramka", price: 300, icon: "Medal", border: "3px solid #C0C0C0", shadow: "0 0 12px rgba(192,192,192,0.6)" },
+  { id: "frame_gold", name: "Oltin ramka", price: 600, icon: "Crown", border: "3px solid #FBBF24", shadow: "0 0 16px rgba(251,191,36,0.7)" },
 ];
 
 // Ramkalar va "Yaltiroq ism" — 20 kunlik xarid. Tugash vaqti serverda
@@ -57,7 +57,7 @@ export function getFrameStyle(frameId: string | null | undefined): { border: str
 // "Yaltiroq ism" — 20 kunlik kosmetika; profiles.username_glow — yoqilganmi
 // (muddat tugaguncha o'chirib/yoqib turish mumkin).
 export const USERNAME_GLOW_ID = "username_glow";
-export const USERNAME_GLOW_PRICE = 800;
+export const USERNAME_GLOW_PRICE = 400;
 
 export function getUsernameGlowStyle(): { textShadow: string } {
   return { textShadow: "0 0 6px #4ADE80, 0 0 14px rgba(74,222,128,0.65), 0 0 22px rgba(74,222,128,0.35)" };

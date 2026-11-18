@@ -21,8 +21,11 @@ test('necha kun qoldi — yuqoriga yaxlitlanadi, tugagan bo\'lsa 0', () => {
   assert.equal(cosmeticDaysLeft(new Date(NOW - DAY).toISOString(), NOW), 0);
 });
 
-test('frontend narx va muddatlari 056-migratsiyadagi shop_items bilan bir xil', () => {
-  const sql = fs.readFileSync(new URL('../supabase/migrations/056_cosmetics_20d_and_feedback_admin.sql', import.meta.url), 'utf8');
+test('frontend narx va muddatlari bazadagi eng oxirgi shop_items qiymatlari bilan bir xil', () => {
+  // Migratsiyalar tartib bilan o'qiladi — har bir bezak uchun oxirgi yozilgan narx amal qiladi
+  const dir = new URL('../supabase/migrations/', import.meta.url);
+  const files = fs.readdirSync(dir).filter((f) => /^\d+_.+\.sql$/.test(f)).sort();
+  const sql = files.map((f) => fs.readFileSync(new URL(f, dir), 'utf8')).join('\n');
   const rows = new Map<string, { price: number; days: number }>();
   for (const m of sql.matchAll(/\('(frame_\w+|username_glow)',\s*'(?:frame|glow)',\s*(\d+),\s*true,\s*(\d+)\)/g)) {
     rows.set(m[1], { price: Number(m[2]), days: Number(m[3]) });
@@ -30,6 +33,6 @@ test('frontend narx va muddatlari 056-migratsiyadagi shop_items bilan bir xil', 
   assert.equal(COSMETIC_DURATION_DAYS, 20);
   for (const f of FRAMES) assert.deepEqual(rows.get(f.id), { price: f.price, days: 20 }, f.id);
   assert.deepEqual(rows.get(USERNAME_GLOW_ID), { price: USERNAME_GLOW_PRICE, days: 20 });
-  assert.deepEqual(FRAMES.map((f) => f.price), [300, 600, 1000]);
-  assert.equal(USERNAME_GLOW_PRICE, 800);
+  assert.deepEqual(FRAMES.map((f) => f.price), [150, 300, 600]);
+  assert.equal(USERNAME_GLOW_PRICE, 400);
 });
