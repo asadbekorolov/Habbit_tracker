@@ -135,11 +135,11 @@ export function AiInsights({ s }: { s: AnalyticsData }) {
   );
 }
 
-/** "Sening Aksing" — natija tepasidagi personaj (raqamli egizak). */
+/** "AI Tahlil" — natija tepasidagi personaj, yuzma-yuz (closeup) kadr. */
 function TwinHeader({ title, sub }: { title: string; sub: string }) {
   return (
     <div className="relative mb-3 h-44 rounded-2xl overflow-hidden border border-white/10" style={{ background: "#cdad84" }}>
-      <CharacterVideo position="50% 35%" />
+      <CharacterVideo variant="closeup" />
       <div className="absolute inset-x-0 bottom-0 px-3.5 pb-3 pt-10 bg-gradient-to-t from-[#090d16] via-[#090d16]/70 to-transparent">
         <h4 className="text-base font-black text-white tracking-tight">{title}</h4>
         <p className="text-[11px] text-slate-300">{sub}</p>

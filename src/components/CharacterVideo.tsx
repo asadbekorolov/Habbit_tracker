@@ -11,13 +11,26 @@ interface CharacterVideoProps {
   className?: string;
   /** object-position, masalan "50% 30%" */
   position?: string;
+  /**
+   * full — personaj to'liq bo'yi bilan (Bosh sahifa, Profil);
+   * closeup — yuz va yelkagacha yaqinlashtirilgan kadr (AI Tahlil:
+   * yuzma-yuz suhbat effekti).
+   */
+  variant?: "full" | "closeup";
 }
+
+const VARIANT_CLASS = {
+  full: "",
+  closeup: "object-top scale-[1.85] origin-top",
+} as const;
 
 function prefersReducedMotion(): boolean {
   try { return window.matchMedia?.("(prefers-reduced-motion: reduce)").matches ?? false; } catch { return false; }
 }
 
-export function CharacterVideo({ className = "", position = "50% 35%" }: CharacterVideoProps) {
+export function CharacterVideo({ className = "", position, variant = "full" }: CharacterVideoProps) {
+  const objectPosition = position ?? (variant === "closeup" ? "50% 0%" : "50% 35%");
+  const variantClass = VARIANT_CLASS[variant];
   const ref = useRef<HTMLVideoElement>(null);
   const [failed, setFailed] = useState(false);
   const [still] = useState(prefersReducedMotion);
@@ -53,8 +66,8 @@ export function CharacterVideo({ className = "", position = "50% 35%" }: Charact
         src={CHARACTER_POSTER_SRC}
         alt=""
         aria-hidden="true"
-        className={`w-full h-full object-cover ${className}`}
-        style={{ objectPosition: position }}
+        className={`w-full h-full object-cover ${variantClass} ${className}`}
+        style={{ objectPosition }}
       />
     );
   }
@@ -71,8 +84,8 @@ export function CharacterVideo({ className = "", position = "50% 35%" }: Charact
       preload="auto"
       aria-hidden="true"
       onError={() => setFailed(true)}
-      className={`w-full h-full object-cover pointer-events-none select-none ${className}`}
-      style={{ objectPosition: position }}
+      className={`w-full h-full object-cover pointer-events-none select-none ${variantClass} ${className}`}
+      style={{ objectPosition }}
     />
   );
 }
