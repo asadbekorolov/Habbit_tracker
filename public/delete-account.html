@@ -1,0 +1,123 @@
+<!doctype html>
+<html lang="uz">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>IDROK — Hisobni o'chirish / Delete account</title>
+<meta name="description" content="IDROK odat kuzatuvchisida hisob va ma'lumotlarni o'chirish tartibi.">
+<style>
+  :root { --bg:#090d16; --card:#0f1522; --line:#1e293b; --text:#e2e8f0; --muted:#94a3b8; --accent:#10b981; --red:#fb7185; }
+  * { box-sizing: border-box; }
+  body { margin:0; background:var(--bg); color:var(--text); font:15px/1.65 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif; }
+  .wrap { max-width:720px; margin:0 auto; padding:28px 16px 64px; }
+  header h1 { margin:0 0 4px; font-size:24px; }
+  header p { margin:0; color:var(--muted); font-size:13px; }
+  .tabs { display:flex; gap:6px; margin:18px 0 22px; padding:4px; background:var(--card); border:1px solid var(--line); border-radius:16px; width:fit-content; }
+  .tabs button { border:0; background:transparent; color:var(--muted); font-weight:700; padding:8px 14px; border-radius:12px; cursor:pointer; font-size:13px; }
+  .tabs button[aria-selected="true"] { background:#1e293b; color:#fff; }
+  section.lang { display:none; } section.lang.on { display:block; }
+  .card { background:var(--card); border:1px solid var(--line); border-radius:20px; padding:16px 18px; margin:0 0 12px; }
+  .warn { border-color:rgba(251,113,133,.35); background:rgba(251,113,133,.07); }
+  h2 { font-size:16px; margin:0 0 8px; color:#fff; }
+  ol, ul { margin:6px 0 0; padding-left:22px; } li { margin:4px 0; }
+  a { color:var(--accent); }
+  .btn { display:inline-block; margin-top:10px; padding:10px 16px; border-radius:14px; background:var(--accent); color:#04130d; font-weight:800; text-decoration:none; }
+  .mono { font-family:ui-monospace,"Geist Mono",Menlo,monospace; font-size:13px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>IDROK</h1>
+    <p>Asadbek O'rolov · <span class="mono">2026-11-18</span></p>
+  </header>
+  <div class="tabs" role="tablist">
+    <button role="tab" data-l="uz">O'zbekcha</button>
+    <button role="tab" data-l="ru">Русский</button>
+    <button role="tab" data-l="en">English</button>
+  </div>
+
+  <section class="lang" data-l="uz" lang="uz">
+    <div class="card"><h2>Hisob va ma'lumotlarni o'chirish</h2>
+      <p>IDROK odat kuzatuvchisidagi hisobingizni va unga bog'liq barcha ma'lumotlarni istalgan vaqtda o'chirishingiz mumkin.</p>
+    </div>
+    <div class="card"><h2>1-usul. Ilovada yoki veb-saytda (darhol)</h2>
+      <ol>
+        <li>IDROK ilovasini yoki <a href="https://habit-tracker-asadbek.vercel.app/settings">veb-versiyani</a> oching va hisobingizga kiring.</li>
+        <li><b>Sozlamalar → Maxfiylik va hisob → Akkauntni o'chirish</b> ni bosing.</li>
+        <li>Tasdiqlash uchun foydalanuvchi nomingizni (username) kiriting va o'chirishni tasdiqlang.</li>
+      </ol>
+      <a class="btn" href="https://habit-tracker-asadbek.vercel.app/settings">Sozlamalarni ochish</a>
+    </div>
+    <div class="card"><h2>2-usul. Email orqali</h2>
+      <p>Hisobingizga kira olmasangiz, ro'yxatdan o'tgan email manzilingizdan <a href="mailto:asadbekorolov0@gmail.com?subject=IDROK%20-%20hisobni%20o%27chirish">asadbekorolov0@gmail.com</a> ga "Hisobni o'chirish" mavzusida xat yuboring. So'rov 7 kun ichida bajariladi va sizga javob yoziladi.</p>
+    </div>
+    <div class="card warn"><h2>Nimalar o'chiriladi</h2>
+      <p>Hisobingiz va unga bog'liq <b>barcha</b> ma'lumotlar darhol va butunlay o'chiriladi: profil, odatlar va kunlik belgilar, "bajarilmadi" sabablari, kundalik va kayfiyat, salomatlik (qadam, uyqu) va ekran vaqti yozuvlari, kun tartiblari, guruhlardagi a'zolik va yozuvlar, obunalar, tangalar, nishonlar, xaridlar, fikrlar, bildirishnomalar va AI tahlillari. Bu amalni orqaga qaytarib bo'lmaydi.</p>
+      <p>Ilova ichidagi foydalanish hodisalari (qaysi bo'lim ochilgani) o'chirilmaydi, lekin hisobingiz bilan bog'lanishi uziladi — ular anonim statistika bo'lib qoladi. Biz alohida zaxira nusxalarini saqlamaymiz. Faqat veb-versiyada Click/Payme orqali to'lov qilgan bo'lsangiz, ushbu to'lov tizimlari o'z tranzaksiya yozuvlarini qonun talabiga ko'ra o'zlari saqlashi mumkin.</p>
+    </div>
+    <p style="color:var(--muted);font-size:13px">Batafsil: <a href="/privacy.html?lang=uz">Maxfiylik siyosati</a></p>
+  </section>
+
+  <section class="lang" data-l="ru" lang="ru">
+    <div class="card"><h2>Удаление аккаунта и данных</h2>
+      <p>Вы можете в любой момент удалить свой аккаунт в трекере привычек IDROK и все связанные с ним данные.</p>
+    </div>
+    <div class="card"><h2>Способ 1. В приложении или на сайте (сразу)</h2>
+      <ol>
+        <li>Откройте приложение IDROK или <a href="https://habit-tracker-asadbek.vercel.app/settings">веб-версию</a> и войдите в аккаунт.</li>
+        <li>Нажмите <b>Настройки → Конфиденциальность и аккаунт → Удалить аккаунт</b>.</li>
+        <li>Для подтверждения введите своё имя пользователя (username) и подтвердите удаление.</li>
+      </ol>
+      <a class="btn" href="https://habit-tracker-asadbek.vercel.app/settings">Открыть настройки</a>
+    </div>
+    <div class="card"><h2>Способ 2. По email</h2>
+      <p>Если вы не можете войти, отправьте с email, указанного при регистрации, письмо на <a href="mailto:asadbekorolov0@gmail.com?subject=IDROK%20-%20delete%20account">asadbekorolov0@gmail.com</a> с темой «Удаление аккаунта». Запрос выполняется в течение 7 дней, вы получите ответ.</p>
+    </div>
+    <div class="card warn"><h2>Что удаляется</h2>
+      <p>Аккаунт и <b>все</b> связанные данные удаляются сразу и безвозвратно: профиль, привычки и отметки, причины «не выполнено», дневник и настроение, записи о здоровье (шаги, сон) и экранном времени, распорядки, участие и записи в группах, подписки, монеты, значки, покупки, отзывы, уведомления и AI-анализы. Это действие нельзя отменить.</p>
+      <p>События использования внутри приложения (какой раздел открыт) не удаляются, но отвязываются от аккаунта и остаются анонимной статистикой. Мы не храним отдельных резервных копий. Если вы оплачивали монеты в веб-версии через Click/Payme, эти платёжные системы могут хранить свои записи о транзакциях в соответствии с законом.</p>
+    </div>
+    <p style="color:var(--muted);font-size:13px">Подробнее: <a href="/privacy.html?lang=ru">Политика конфиденциальности</a></p>
+  </section>
+
+  <section class="lang" data-l="en" lang="en">
+    <div class="card"><h2>Delete your account and data</h2>
+      <p>You can delete your IDROK habit tracker account and all associated data at any time.</p>
+    </div>
+    <div class="card"><h2>Option 1. In the app or on the website (immediate)</h2>
+      <ol>
+        <li>Open the IDROK app or the <a href="https://habit-tracker-asadbek.vercel.app/settings">web version</a> and sign in.</li>
+        <li>Tap <b>Settings → Privacy &amp; account → Delete account</b>.</li>
+        <li>Type your username to confirm, then confirm the deletion.</li>
+      </ol>
+      <a class="btn" href="https://habit-tracker-asadbek.vercel.app/settings">Open settings</a>
+    </div>
+    <div class="card"><h2>Option 2. By email</h2>
+      <p>If you cannot sign in, email <a href="mailto:asadbekorolov0@gmail.com?subject=IDROK%20-%20delete%20account">asadbekorolov0@gmail.com</a> from the address you registered with, using the subject "Delete account". The request is completed within 7 days and you will receive a reply.</p>
+    </div>
+    <div class="card warn"><h2>What is deleted</h2>
+      <p>Your account and <b>all</b> associated data are deleted immediately and permanently: profile, habits and check-ins, "not done" reasons, journal and mood, health (steps, sleep) and screen time records, routines, group membership and records, follows, coins, badges, purchases, feedback, notifications and AI analyses. This cannot be undone.</p>
+      <p>In-app usage events (which screen was opened) are not deleted but are unlinked from your account and remain as anonymous statistics. We keep no separate backups. If you paid for coins in the web version via Click/Payme, those payment providers may keep their own transaction records as required by law.</p>
+    </div>
+    <p style="color:var(--muted);font-size:13px">More: <a href="/privacy.html?lang=en">Privacy policy</a></p>
+  </section>
+</div>
+<script>
+  (function () {
+    var tabs = document.querySelectorAll('.tabs button');
+    var secs = document.querySelectorAll('section.lang');
+    function show(l) {
+      secs.forEach(function (s) { s.classList.toggle('on', s.getAttribute('data-l') === l); });
+      tabs.forEach(function (b) { b.setAttribute('aria-selected', String(b.getAttribute('data-l') === l)); });
+      document.documentElement.lang = l;
+    }
+    var q = new URLSearchParams(location.search).get('lang');
+    var nav = (navigator.language || 'uz').slice(0, 2);
+    var start = ['uz', 'ru', 'en'].indexOf(q) >= 0 ? q : (['ru', 'en'].indexOf(nav) >= 0 ? nav : 'uz');
+    tabs.forEach(function (b) { b.addEventListener('click', function () { show(b.getAttribute('data-l')); }); });
+    show(start);
+  })();
+</script>
+</body>
+</html>

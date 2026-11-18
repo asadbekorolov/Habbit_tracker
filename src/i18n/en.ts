@@ -1310,4 +1310,9 @@ export const en: Dict = {
   store_earn_quests: "Bonuses for daily quests and weekly group wins",
   store_earn_badges: "Rewards for badges (streaks, active days)",
   store_not_enough_coins_earn: "Not enough coins — earn more by completing habits, daily quests and badges.",
+  st_legal: "Privacy & account",
+  st_privacy_policy: "Privacy policy",
+  st_privacy_policy_sub: "What data is collected and how to delete it",
+  st_account_deleted: "Your account and all data were deleted",
+  login_privacy_link: "Privacy policy",
 }

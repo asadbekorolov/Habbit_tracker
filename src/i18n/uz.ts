@@ -1308,6 +1308,11 @@ export const uz = {
   store_earn_quests: "Kunlik vazifalar va guruhning haftalik g'olibi uchun bonus",
   store_earn_badges: "Nishonlar (zanjir, faol kunlar) uchun mukofot",
   store_not_enough_coins_earn: "Tangalar yetarli emas — odatlarni bajarib, kunlik vazifalar va nishonlar orqali to'plang.",
+  st_legal: "Maxfiylik va hisob",
+  st_privacy_policy: "Maxfiylik siyosati",
+  st_privacy_policy_sub: "Qanday ma'lumot yig'iladi va qanday o'chiriladi",
+  st_account_deleted: "Hisobingiz va barcha ma'lumotlaringiz o'chirildi",
+  login_privacy_link: "Maxfiylik siyosati",
 }
 
 export type Dict = typeof uz

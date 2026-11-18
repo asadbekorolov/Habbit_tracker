@@ -13,6 +13,7 @@ import { signInWithGoogle } from "../../services/authService";
 import { supabase } from "../../services/supabase";
 import type { Profile } from "../../services/supabase";
 import { useLang } from "../../store/LangContext";
+import { openPublicPage, PRIVACY_PATH } from "../../utils/openPublicPage";
 import { trackEvent } from "../../utils/analytics";
 import { soundService } from "../../services/soundService";
 import { toast } from "sonner";
@@ -71,7 +72,7 @@ interface LoginPageProps {
 type Tab = "login" | "register" | "forgot" | "verify-email" | "complete-google";
 
 export function LoginPage({ onLogin }: LoginPageProps) {
-  const { t } = useLang();
+  const { t, lang } = useLang();
   const [tab, setTab] = useState<Tab>("login");
 
   // Login
@@ -737,6 +738,13 @@ export function LoginPage({ onLogin }: LoginPageProps) {
             )}
           </div>
         )}
+        <button
+          type="button"
+          onClick={() => openPublicPage(PRIVACY_PATH, lang)}
+          className="mt-3 text-[11px] text-slate-500 hover:text-slate-300 underline underline-offset-2 cursor-pointer"
+        >
+          {t('login_privacy_link')}
+        </button>
       </div>
     </div>
   );

@@ -7,6 +7,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import {
   ArrowLeft, User, Shield, Globe, Vibrate, Bell, Clock, RefreshCw, Database, LogOut,
   ChevronRight, UserPen, Ruler, KeyRound, Eye, EyeOff, Loader2, Save, Send, WifiOff, CheckCircle2, PanelBottom,
+  FileText, Trash2, Scale,
 } from "lucide-react";
 import { useDockSlots } from "../../hooks/useDockSlots";
 import { DOCK_OPTIONS, MAX_DOCK_SLOTS, toggleDockSlot } from "../../utils/dockConfig";
@@ -22,6 +23,8 @@ import { habitSyncQueue } from "../../services/habitSyncQueue";
 import { useNavBack } from "../../hooks/useNavBack";
 import { listHabitReminders } from "../../utils/reminders";
 import { CustomTimePickerModal } from "../../components/CustomTimePickerModal";
+import { DeleteAccountModal } from "../../components/DeleteAccountModal";
+import { openPublicPage, PRIVACY_PATH } from "../../utils/openPublicPage";
 
 type Lang = "uz" | "ru" | "en";
 
@@ -144,6 +147,7 @@ export function SettingsPage({ onLogout, onNavigate, onProfileUpdate, lang, onLa
   const { profile, session, setProfile } = useUser();
   const queryClient = useQueryClient();
   const goBack = useNavBack();
+  const [showDeleteAccount, setShowDeleteAccount] = useState(false);
 
   // ── Maxfiylik ───────────────────────────────────────────────────
   const [isPrivate, setIsPrivate] = useState(!!profile?.profile_private);
@@ -449,7 +453,42 @@ export function SettingsPage({ onLogout, onNavigate, onProfileUpdate, lang, onLa
         </button>
       </Section>
 
-      {/* 5. Hisobdan chiqish */}
+      {/* 5. Maxfiylik va hisob (Google Play: siyosat havolasi va ilova ichida o'chirish) */}
+      <Section icon={Scale} title={t("st_legal")}>
+        <Row
+          icon={FileText}
+          title={t("st_privacy_policy")}
+          sub={t("st_privacy_policy_sub")}
+          onClick={() => openPublicPage(PRIVACY_PATH, lang)}
+        />
+        <button
+          type="button"
+          onClick={() => setShowDeleteAccount(true)}
+          className="w-full flex items-center gap-3 p-2.5 rounded-2xl border border-rose-500/25 bg-rose-500/5 text-left cursor-pointer"
+        >
+          <span className="w-9 h-9 rounded-xl bg-rose-500/10 border border-rose-500/25 flex items-center justify-center shrink-0">
+            <Trash2 className="w-4 h-4 text-rose-300" />
+          </span>
+          <span className="flex-1 min-w-0">
+            <span className="block text-sm font-medium text-rose-200">{t("settings_delete_account")}</span>
+            <span className="block text-[11px] text-rose-200/70 leading-snug">{t("settings_delete_account_sub")}</span>
+          </span>
+          <ChevronRight className="w-4 h-4 text-rose-300/60 shrink-0" />
+        </button>
+      </Section>
+      {showDeleteAccount && profile && (
+        <DeleteAccountModal
+          profile={profile}
+          onClose={() => setShowDeleteAccount(false)}
+          onDeleted={() => {
+            setShowDeleteAccount(false);
+            toast.success(t("st_account_deleted"));
+            onLogout();
+          }}
+        />
+      )}
+
+      {/* 6. Hisobdan chiqish */}
       {confirmLogout ? (
         <div className="rounded-3xl border border-rose-500/30 bg-rose-950/30 p-4 space-y-3">
           <p className="text-sm text-rose-100">{t("st_logout_confirm")}</p>
