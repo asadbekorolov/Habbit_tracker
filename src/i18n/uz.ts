@@ -1252,6 +1252,20 @@ export const uz = {
   pp_total_done: "Bajarilgan",
   pp_badges_earned: "Nishonlar",
   pp_private_stats: "Profil yopiq — zanjir va nishonlar ko'rinmaydi",
+  tp_title: "Vaqtni tanlang",
+  tp_hour: "Soat",
+  tp_minute: "Daqiqa",
+  tp_morning: "Ertalab",
+  tp_work: "Ish boshi",
+  tp_lunch: "Tushlik",
+  tp_evening: "Kechqurun",
+  tp_cancel: "Bekor qilish",
+  tp_clear: "Tozalash",
+  tp_set: "O'rnatish",
+  tp_up: "Oshirish",
+  tp_down: "Kamaytirish",
+  tp_close: "Yopish",
+  tp_reminder: "Eslatma vaqti",
 }
 
 export type Dict = typeof uz

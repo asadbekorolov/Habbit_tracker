@@ -11,6 +11,7 @@ import { useScrollLock } from "../hooks/useScrollLock";
 import { HabitIcon, cleanHabitName } from "./HabitIcon";
 import { toast } from "sonner";
 import { CustomTimePickerModal } from "./CustomTimePickerModal";
+import { useLang } from "../store/LangContext";
 
 interface RoutineModalProps {
   isOpen: boolean;
@@ -56,6 +57,7 @@ export function RoutineModal({
   userHabits = [],
 }: RoutineModalProps) {
   const haptics = useHaptics();
+  const { t } = useLang();
   useScrollLock(isOpen);
 
   const [title, setTitle] = useState("");
@@ -295,7 +297,7 @@ export function RoutineModal({
             <div className="grid grid-cols-2 gap-3">
               <div>
                 <label className="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1.5">
-                  Boshlanish Vaqti
+                  {t("habits_start_time")}
                 </label>
                 <button
                   type="button"
@@ -312,7 +314,7 @@ export function RoutineModal({
 
               <div>
                 <label className="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1.5">
-                  Tugash Vaqti
+                  {t("habits_end_time")}
                 </label>
                 <button
                   type="button"
@@ -561,7 +563,7 @@ export function RoutineModal({
       <CustomTimePickerModal
         isOpen={timePickerTarget !== null}
         onClose={() => setTimePickerTarget(null)}
-        title={timePickerTarget === "start" ? "Boshlanish vaqti" : "Tugash vaqti"}
+        title={timePickerTarget === "start" ? t("habits_start_time") : t("habits_end_time")}
         initialTime={timePickerTarget === "start" ? timeStart : timeEnd}
         onConfirm={(newTime) => {
           if (timePickerTarget === "start") setTimeStart(newTime);

@@ -219,7 +219,7 @@ export const AddHabitModal: React.FC<AddHabitModalProps> = ({
                       >
                         <span className="flex items-center gap-1.5 truncate">
                           <Clock className="w-3.5 h-3.5 text-emerald-500 dark:text-emerald-400 shrink-0" />
-                          <span>{newStartTime || "Boshlanishi"}</span>
+                          <span>{newStartTime || t('habits_start_time')}</span>
                         </span>
                         <ChevronDown className="w-3.5 h-3.5 text-slate-400 shrink-0" />
                       </button>
@@ -230,7 +230,7 @@ export const AddHabitModal: React.FC<AddHabitModalProps> = ({
                       >
                         <span className="flex items-center gap-1.5 truncate">
                           <Clock className="w-3.5 h-3.5 text-emerald-500 dark:text-emerald-400 shrink-0" />
-                          <span>{newEndTime || "Tugashi"}</span>
+                          <span>{newEndTime || t('habits_end_time')}</span>
                         </span>
                         <ChevronDown className="w-3.5 h-3.5 text-slate-400 shrink-0" />
                       </button>
@@ -374,13 +374,18 @@ export const AddHabitModal: React.FC<AddHabitModalProps> = ({
           timePickerTarget === 'start' ? newStartTime : timePickerTarget === 'end' ? newEndTime : newReminderTime
         }
         title={
-          timePickerTarget === 'start' ? "Boshlanish vaqti" : timePickerTarget === 'end' ? "Tugash vaqti" : "Eslatma vaqti"
+          timePickerTarget === 'start' ? t('habits_start_time') : timePickerTarget === 'end' ? t('habits_end_time') : t('tp_reminder')
         }
         onSave={(timeStr) => {
           if (timePickerTarget === 'start') setNewStartTime(timeStr);
           if (timePickerTarget === 'end') setNewEndTime(timeStr);
           if (timePickerTarget === 'reminder') setNewReminderTime(timeStr);
         }}
+        onClear={
+          timePickerTarget === 'start' ? (newStartTime ? () => setNewStartTime('') : undefined)
+          : timePickerTarget === 'end' ? (newEndTime ? () => setNewEndTime('') : undefined)
+          : () => setNewReminderEnabled(false)
+        }
         onClose={() => setTimePickerTarget(null)}
       />
     </AnimatePresence>

@@ -10,6 +10,7 @@ import {
   Minus, Plus, Shield, ShieldCheck, Bell, Clock, Repeat, Timer, Sunrise, Sun, Moon,
 } from "lucide-react";
 import { Modal } from "../../components/Modal";
+import { CustomTimePickerModal } from "../../components/CustomTimePickerModal";
 import { resolveHabitIcon, habitToneClass } from "./components/HabitItem";
 import { cleanHabitName } from "../../components/HabitIcon";
 import { useHabitDay, markHabitOnDate, doneValue } from "../../hooks/useHabitDay";
@@ -187,6 +188,7 @@ export function HabitDetailModal({ habit, userId, onClose }: HabitDetailModalPro
 
   // ── Eslatma ─────────────────────────────────────────────────────
   const [reminder, setReminder] = useState<string | null>(() => getHabitReminder(live.id));
+  const [reminderPickerOpen, setReminderPickerOpen] = useState(false);
   const saveReminder = async (time: string | null) => {
     setReminder(time);
     try {
@@ -456,18 +458,25 @@ export function HabitDetailModal({ habit, userId, onClose }: HabitDetailModalPro
             </button>
           </div>
           {reminder && (
-            <label className="flex items-center justify-between gap-2 px-3 py-2 rounded-xl bg-slate-900 border border-slate-800">
+            <button
+              type="button"
+              onClick={() => setReminderPickerOpen(true)}
+              className="w-full flex items-center justify-between gap-2 px-3 py-2.5 rounded-2xl bg-slate-900 border border-slate-800 hover:border-emerald-500/40 transition-colors cursor-pointer"
+            >
               <span className="flex items-center gap-2 text-xs text-slate-300">
                 <Clock className="w-4 h-4 text-emerald-400" /> {t("hd_reminder")}
               </span>
-              <input
-                type="time"
-                value={reminder}
-                onChange={(e) => e.target.value && saveReminder(e.target.value)}
-                className="bg-transparent font-mono text-sm text-white outline-none"
-              />
-            </label>
+              <span className="font-mono text-sm font-bold text-emerald-400">{reminder}</span>
+            </button>
           )}
+          <CustomTimePickerModal
+            isOpen={reminderPickerOpen}
+            title={t("tp_reminder")}
+            initialTime={reminder || "09:00"}
+            onConfirm={(v) => saveReminder(v)}
+            onClear={() => saveReminder(null)}
+            onClose={() => setReminderPickerOpen(false)}
+          />
         </section>
 
         {/* Takrorlanish jadvali */}

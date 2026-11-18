@@ -1,264 +1,328 @@
-import React, { useState, useEffect, useRef } from "react";
-import { Clock, X } from "lucide-react";
+// IDROK vaqt tanlagichi — brauzerning <input type="time"> (Android'dagi kulrang
+// analog siferblat) o'rniga. Ikki ustun: Soat 00–23 va Daqiqa 00–59; har biri
+// barmoq bilan silliq aylantiriladi (scroll-snap) yoki tepa/past o'qlar bilan.
+// Oyna document.body'ga portal qilinadi — shunda u har doim DOM'da oxirgi
+// bo'ladi va Android "Orqaga" tugmasi (data-modal-close-trigger) avval shu
+// oynani yopadi, ostidagi modalni emas.
+import { useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
+import { ChevronDown, ChevronUp, Clock, X } from "lucide-react";
 import { useScrollLock } from "../hooks/useScrollLock";
 import { useHaptics } from "../hooks/useHaptics";
+import { useLang } from "../store/LangContext";
 
 interface CustomTimePickerModalProps {
   isOpen: boolean;
   onClose: () => void;
   title?: string;
-  initialTime?: string;
+  initialTime?: string | null;
   onConfirm?: (timeStr: string) => void;
   onSave?: (timeStr: string) => void;
+  /** Berilsa "Tozalash" tugmasi chiqadi (masalan, eslatmani o'chirish). */
+  onClear?: () => void;
 }
 
-const HOURS_LIST = Array.from({ length: 24 }, (_, i) => i);
-const MINUTES_LIST = [0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55];
+const ITEM_H = 40; // px — bitta qator balandligi
+const VISIBLE = 5; // ko'rinadigan qatorlar soni (o'rtadagisi tanlangan)
+const PAD = ((VISIBLE - 1) / 2) * ITEM_H;
+
+const PRESETS: { h: number; m: number; key: "tp_morning" | "tp_work" | "tp_lunch" | "tp_evening" }[] = [
+  { h: 7, m: 0, key: "tp_morning" },
+  { h: 9, m: 0, key: "tp_work" },
+  { h: 13, m: 0, key: "tp_lunch" },
+  { h: 21, m: 0, key: "tp_evening" },
+];
+
+const pad2 = (n: number) => String(n).padStart(2, "0");
+
+function parseTime(s: string | null | undefined): { h: number; m: number } {
+  const [hs, ms] = (s || "").split(":");
+  const h = parseInt(hs, 10);
+  const m = parseInt(ms, 10);
+  return {
+    h: Number.isFinite(h) ? Math.min(23, Math.max(0, h)) : 9,
+    m: Number.isFinite(m) ? Math.min(59, Math.max(0, m)) : 0,
+  };
+}
+
+function WheelColumn({
+  label,
+  count,
+  value,
+  onChange,
+  upLabel,
+  downLabel,
+}: {
+  label: string;
+  count: number;
+  value: number;
+  onChange: (v: number) => void;
+  upLabel: string;
+  downLabel: string;
+}) {
+  const ref = useRef<HTMLDivElement>(null);
+  const settleRef = useRef<number | undefined>(undefined);
+  const mountedRef = useRef(false);
+  const valueRef = useRef(value);
+  valueRef.current = value;
+
+  // Qiymat o'zgarsa (o'q, tezkor tugma) — ro'yxat shu qatorga aylanadi.
+  // Birinchi ochilishda animatsiyasiz, keyin silliq.
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    const target = value * ITEM_H;
+    if (Math.abs(el.scrollTop - target) >= 2) {
+      if (mountedRef.current) el.scrollTo({ top: target, behavior: "smooth" });
+      else el.scrollTop = target;
+    }
+    mountedRef.current = true;
+  }, [value]);
+
+  useEffect(() => () => window.clearTimeout(settleRef.current), []);
+
+  // Barmoq bilan aylantirish to'xtaganda — o'rtadagi qator tanlanadi
+  const onScroll = () => {
+    window.clearTimeout(settleRef.current);
+    settleRef.current = window.setTimeout(() => {
+      const el = ref.current;
+      if (!el) return;
+      const idx = Math.min(count - 1, Math.max(0, Math.round(el.scrollTop / ITEM_H)));
+      if (idx !== valueRef.current) onChange(idx);
+    }, 90);
+  };
+
+  const step = (d: 1 | -1) => onChange((value + d + count) % count);
+
+  return (
+    <div className="flex flex-col items-center flex-1 min-w-0">
+      <span className="text-[10px] font-mono tracking-widest font-bold text-slate-500 uppercase mb-1.5">{label}</span>
+      <button
+        type="button"
+        onClick={() => step(-1)}
+        aria-label={upLabel}
+        className="w-full max-w-[96px] h-8 flex items-center justify-center rounded-xl text-slate-400 hover:text-emerald-400 hover:bg-slate-800/60 active:scale-95 transition-all cursor-pointer"
+      >
+        <ChevronUp className="w-5 h-5" />
+      </button>
+      <div className="relative w-full max-w-[96px]" style={{ height: VISIBLE * ITEM_H }}>
+        {/* Tanlov chizig'i */}
+        <div
+          className="absolute inset-x-0 rounded-2xl bg-emerald-500/10 border border-emerald-500/40 pointer-events-none"
+          style={{ top: PAD, height: ITEM_H }}
+        />
+        <div
+          ref={ref}
+          onScroll={onScroll}
+          role="listbox"
+          aria-label={label}
+          className="relative h-full overflow-y-auto no-scrollbar snap-y snap-mandatory overscroll-contain touch-pan-y"
+          style={{ paddingTop: PAD, paddingBottom: PAD }}
+        >
+          {Array.from({ length: count }, (_, i) => {
+            const sel = i === value;
+            const dist = Math.abs(i - value);
+            return (
+              <button
+                key={i}
+                type="button"
+                role="option"
+                aria-selected={sel}
+                onClick={() => onChange(i)}
+                className={`w-full snap-center flex items-center justify-center font-mono tabular-nums transition-all cursor-pointer ${
+                  sel
+                    ? "text-3xl font-bold text-emerald-400"
+                    : dist === 1
+                    ? "text-lg text-slate-400"
+                    : "text-base text-slate-600"
+                }`}
+                style={{ height: ITEM_H }}
+              >
+                {pad2(i)}
+              </button>
+            );
+          })}
+        </div>
+        {/* Yuqori/pastki xiralash */}
+        <div className="absolute inset-x-0 top-0 h-10 bg-gradient-to-b from-slate-950 to-transparent pointer-events-none" />
+        <div className="absolute inset-x-0 bottom-0 h-10 bg-gradient-to-t from-slate-950 to-transparent pointer-events-none" />
+      </div>
+      <button
+        type="button"
+        onClick={() => step(1)}
+        aria-label={downLabel}
+        className="w-full max-w-[96px] h-8 flex items-center justify-center rounded-xl text-slate-400 hover:text-emerald-400 hover:bg-slate-800/60 active:scale-95 transition-all cursor-pointer"
+      >
+        <ChevronDown className="w-5 h-5" />
+      </button>
+    </div>
+  );
+}
 
 export function CustomTimePickerModal({
   isOpen,
   onClose,
-  title = "Boshlanish vaqti",
-  initialTime = "06:30",
+  title,
+  initialTime,
   onConfirm,
   onSave,
+  onClear,
 }: CustomTimePickerModalProps) {
   useScrollLock(isOpen);
   const haptics = useHaptics();
+  const { t } = useLang();
 
-  const [selectedHour, setSelectedHour] = useState(6);
-  const [selectedMinute, setSelectedMinute] = useState(30);
+  const [hour, setHour] = useState(() => parseTime(initialTime).h);
+  const [minute, setMinute] = useState(() => parseTime(initialTime).m);
+  const [wasOpen, setWasOpen] = useState(isOpen);
 
-  const hoursContainerRef = useRef<HTMLDivElement>(null);
-  const minutesContainerRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
+  // Har ochilishda boshlang'ich vaqt — render paytida (ustunlar to'g'ridan-to'g'ri
+  // kerakli qatorda paydo bo'lsin, 09:00 dan aylanib kelmasin)
+  if (isOpen !== wasOpen) {
+    setWasOpen(isOpen);
     if (isOpen) {
-      const parts = (initialTime || "06:30").split(":");
-      const h = parseInt(parts[0], 10);
-      const m = parseInt(parts[1], 10);
-      const validH = isNaN(h) ? 6 : Math.min(23, Math.max(0, h));
-      // Round minute to nearest 5
-      const validM = isNaN(m) ? 30 : Math.round(m / 5) * 5 % 60;
-      setSelectedHour(validH);
-      setSelectedMinute(validM);
+      const p = parseTime(initialTime);
+      setHour(p.h);
+      setMinute(p.m);
     }
-  }, [isOpen, initialTime]);
+  }
 
-  // Scroll selected items into view when opened
-  useEffect(() => {
-    if (isOpen) {
-      setTimeout(() => {
-        const hourEl = hoursContainerRef.current?.querySelector(`[data-hour="${selectedHour}"]`);
-        if (hourEl) hourEl.scrollIntoView({ block: "center", behavior: "smooth" });
-
-        const minEl = minutesContainerRef.current?.querySelector(`[data-minute="${selectedMinute}"]`);
-        if (minEl) minEl.scrollIntoView({ block: "center", behavior: "smooth" });
-      }, 100);
-    }
-  }, [isOpen, selectedHour, selectedMinute]);
-
-  // Keyboard Escape listener for Android physical back button navigation
+  // Veb: Escape bilan yopish (Android "Orqaga" — data-modal-close-trigger orqali)
   useEffect(() => {
     if (!isOpen) return;
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === "Escape") {
-        haptics.impactLight();
-        onClose();
-      }
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") onClose();
     };
-    window.addEventListener("keydown", handleKeyDown);
-    return () => window.removeEventListener("keydown", handleKeyDown);
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
   }, [isOpen, onClose]);
 
-  if (!isOpen) return null;
+  if (!isOpen || typeof document === "undefined") return null;
 
-  const formattedHours = String(selectedHour).padStart(2, "0");
-  const formattedMinutes = String(selectedMinute).padStart(2, "0");
-
-  const handleHourSelect = (h: number) => {
+  const close = () => {
     haptics.impactLight();
-    setSelectedHour(h);
+    onClose();
   };
-
-  const handleMinuteSelect = (m: number) => {
+  const pickHour = (h: number) => {
     haptics.impactLight();
-    setSelectedMinute(m);
+    setHour(h);
   };
-
-  const applyPreset = (h: number, m: number) => {
+  const pickMinute = (m: number) => {
     haptics.impactLight();
-    setSelectedHour(h);
-    setSelectedMinute(m);
+    setMinute(m);
   };
-
-  const handleConfirm = () => {
+  const confirm = () => {
     haptics.impactLight();
-    const finalTime = `${formattedHours}:${formattedMinutes}`;
-    if (onConfirm) onConfirm(finalTime);
-    else if (onSave) onSave(finalTime);
+    const value = `${pad2(hour)}:${pad2(minute)}`;
+    if (onConfirm) onConfirm(value);
+    else onSave?.(value);
+    onClose();
+  };
+  const clear = () => {
+    haptics.impactLight();
+    onClear?.();
     onClose();
   };
 
-  return (
+  return createPortal(
     <div
       role="dialog"
       aria-modal="true"
-      aria-label={title}
-      className="fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-end sm:items-center justify-center p-4 overscroll-contain touch-none"
-      onClick={() => {
-        haptics.impactLight();
-        onClose();
-      }}
+      aria-label={title || t("tp_title")}
+      className="fixed inset-0 z-[80] bg-black/80 backdrop-blur-md flex items-end sm:items-center justify-center p-4 overscroll-contain"
+      onClick={close}
     >
       <div
-        className="w-full max-w-md bg-slate-900 border border-slate-800/90 rounded-3xl p-5 sm:p-6 shadow-2xl space-y-5 overscroll-contain touch-pan-y animate-in fade-in slide-in-from-bottom-6 duration-200"
+        className="w-full max-w-sm bg-[#090d16] border border-slate-800 rounded-3xl p-5 shadow-2xl space-y-4 animate-in fade-in slide-in-from-bottom-6 duration-200"
         onClick={(e) => e.stopPropagation()}
       >
-        {/* Header Row */}
-        <div className="flex items-center justify-between pb-3 border-b border-slate-800/80">
-          <div className="flex items-center gap-2.5">
+        <div className="flex items-center justify-between gap-3">
+          <div className="flex items-center gap-2.5 min-w-0">
             <div className="p-2 rounded-xl bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 shrink-0">
-              <Clock className="w-4 h-4 stroke-[2.2]" />
+              <Clock className="w-4 h-4" />
             </div>
-            <h3 className="text-base font-bold text-white tracking-wide">{title}</h3>
+            <h3 className="text-base font-bold text-white truncate">{title || t("tp_title")}</h3>
           </div>
-          <button
-            type="button"
-            onClick={() => {
-              haptics.impactLight();
-              onClose();
-            }}
-            data-modal-close-trigger
-            aria-label="yopish"
-            className="text-slate-400 hover:text-white p-2 rounded-xl hover:bg-slate-800/60 transition-colors cursor-pointer"
-          >
-            <X className="w-5 h-5" />
-          </button>
+          <span className="font-mono text-lg font-bold text-emerald-400 tabular-nums shrink-0">
+            {pad2(hour)}:{pad2(minute)}
+          </span>
         </div>
 
-        {/* Dual-Column Scrollable Squircle Selector */}
-        <div className="bg-slate-950/80 border border-slate-800/90 rounded-2xl p-4 flex items-center justify-around relative overflow-hidden">
-          {/* Left Column: Hours (00 to 23) */}
-          <div className="flex flex-col items-center flex-1">
-            <span className="text-[10px] font-['Geist_Mono',monospace] font-mono tracking-widest font-bold text-slate-500 uppercase mb-2">
-              SOAT
-            </span>
-            <div
-              ref={hoursContainerRef}
-              className="h-44 w-full max-w-[100px] overflow-y-auto no-scrollbar space-y-1.5 p-1 scroll-smooth"
-            >
-              {HOURS_LIST.map((h) => {
-                const isSelected = h === selectedHour;
-                const strH = String(h).padStart(2, "0");
-                return (
-                  <button
-                    key={h}
-                    data-hour={h}
-                    type="button"
-                    onClick={() => handleHourSelect(h)}
-                    className={`w-full py-2 px-3 font-['Geist_Mono',monospace] font-mono flex items-center justify-center transition-all cursor-pointer ${
-                      isSelected
-                        ? "bg-emerald-950/60 border border-emerald-500/40 text-emerald-400 font-bold rounded-xl text-lg shadow-sm shadow-emerald-500/10"
-                        : "hover:bg-slate-800/60 text-slate-400 hover:text-slate-200 rounded-xl text-sm"
-                    }`}
-                  >
-                    {strH}
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-
-          {/* Middle: Emerald Glowing Colon Separator */}
-          <div className="flex items-center justify-center px-2">
-            <span className="text-2xl font-['Geist_Mono',monospace] font-mono font-bold text-emerald-400 animate-pulse select-none">
-              :
-            </span>
-          </div>
-
-          {/* Right Column: Minutes (00 to 55 in 5-minute increments) */}
-          <div className="flex flex-col items-center flex-1">
-            <span className="text-[10px] font-['Geist_Mono',monospace] font-mono tracking-widest font-bold text-slate-500 uppercase mb-2">
-              DAQIQA
-            </span>
-            <div
-              ref={minutesContainerRef}
-              className="h-44 w-full max-w-[100px] overflow-y-auto no-scrollbar space-y-1.5 p-1 scroll-smooth"
-            >
-              {MINUTES_LIST.map((m) => {
-                const isSelected = m === selectedMinute;
-                const strM = String(m).padStart(2, "0");
-                return (
-                  <button
-                    key={m}
-                    data-minute={m}
-                    type="button"
-                    onClick={() => handleMinuteSelect(m)}
-                    className={`w-full py-2 px-3 font-['Geist_Mono',monospace] font-mono flex items-center justify-center transition-all cursor-pointer ${
-                      isSelected
-                        ? "bg-emerald-950/60 border border-emerald-500/40 text-emerald-400 font-bold rounded-xl text-lg shadow-sm shadow-emerald-500/10"
-                        : "hover:bg-slate-800/60 text-slate-400 hover:text-slate-200 rounded-xl text-sm"
-                    }`}
-                  >
-                    {strM}
-                  </button>
-                );
-              })}
-            </div>
-          </div>
+        <div className="bg-slate-950 border border-slate-800 rounded-2xl px-3 py-2 flex items-center justify-center gap-1">
+          <WheelColumn
+            label={t("tp_hour")}
+            count={24}
+            value={hour}
+            onChange={pickHour}
+            upLabel={t("tp_up")}
+            downLabel={t("tp_down")}
+          />
+          <span className="font-mono text-3xl font-bold text-emerald-400 select-none pt-4">:</span>
+          <WheelColumn
+            label={t("tp_minute")}
+            count={60}
+            value={minute}
+            onChange={pickMinute}
+            upLabel={t("tp_up")}
+            downLabel={t("tp_down")}
+          />
         </div>
 
-        {/* Quick Presets Row */}
-        <div className="flex items-center gap-2">
-          <button
-            type="button"
-            onClick={() => applyPreset(7, 0)}
-            className="flex-1 py-2 px-2 bg-slate-800/40 hover:bg-slate-800 border border-slate-700/50 rounded-2xl text-center transition-all cursor-pointer group"
-          >
-            <p className="text-xs font-['Geist_Mono',monospace] font-mono font-bold text-white group-hover:text-emerald-400">07:00</p>
-            <p className="text-[10px] font-medium text-slate-400">Ertalab</p>
-          </button>
-          <button
-            type="button"
-            onClick={() => applyPreset(13, 0)}
-            className="flex-1 py-2 px-2 bg-slate-800/40 hover:bg-slate-800 border border-slate-700/50 rounded-2xl text-center transition-all cursor-pointer group"
-          >
-            <p className="text-xs font-['Geist_Mono',monospace] font-mono font-bold text-white group-hover:text-emerald-400">13:00</p>
-            <p className="text-[10px] font-medium text-slate-400">Tushlik</p>
-          </button>
-          <button
-            type="button"
-            onClick={() => applyPreset(21, 0)}
-            className="flex-1 py-2 px-2 bg-slate-800/40 hover:bg-slate-800 border border-slate-700/50 rounded-2xl text-center transition-all cursor-pointer group"
-          >
-            <p className="text-xs font-['Geist_Mono',monospace] font-mono font-bold text-white group-hover:text-emerald-400">21:00</p>
-            <p className="text-[10px] font-medium text-slate-400">Kechqurun</p>
-          </button>
+        <div className="grid grid-cols-4 gap-2">
+          {PRESETS.map((p) => {
+            const active = p.h === hour && p.m === minute;
+            return (
+              <button
+                key={p.key}
+                type="button"
+                onClick={() => {
+                  haptics.impactLight();
+                  setHour(p.h);
+                  setMinute(p.m);
+                }}
+                className={`py-2 rounded-2xl border text-center transition-all active:scale-95 cursor-pointer ${
+                  active
+                    ? "bg-emerald-500/15 border-emerald-500/40"
+                    : "bg-slate-900 border-slate-800 hover:border-slate-700"
+                }`}
+              >
+                <p className={`text-xs font-mono font-bold ${active ? "text-emerald-300" : "text-white"}`}>
+                  {pad2(p.h)}:{pad2(p.m)}
+                </p>
+                <p className="text-[10px] text-slate-400 truncate px-1">{t(p.key)}</p>
+              </button>
+            );
+          })}
         </div>
 
-        {/* Action Footer */}
-        <div className="flex items-center gap-3 pt-2 border-t border-slate-800/80">
+        <div className="flex items-center gap-2 pt-1">
           <button
             type="button"
             data-modal-close-trigger
-            onClick={() => {
-              haptics.impactLight();
-              onClose();
-            }}
-            className="flex-1 py-3 px-4 rounded-2xl text-xs font-semibold text-slate-300 hover:bg-slate-800/60 transition-colors cursor-pointer text-center"
+            onClick={close}
+            className="flex-1 py-3 rounded-2xl text-xs font-semibold text-slate-300 bg-slate-900 border border-slate-800 hover:bg-slate-800 transition-colors cursor-pointer"
           >
-            Bekor qilish
+            {t("tp_cancel")}
           </button>
+          {onClear && (
+            <button
+              type="button"
+              onClick={clear}
+              className="flex-1 py-3 rounded-2xl text-xs font-semibold text-rose-300 bg-rose-500/10 border border-rose-500/25 hover:bg-rose-500/15 transition-colors cursor-pointer flex items-center justify-center gap-1.5"
+            >
+              <X className="w-3.5 h-3.5" /> {t("tp_clear")}
+            </button>
+          )}
           <button
             type="button"
-            onClick={handleConfirm}
-            className="flex-1 py-3 px-4 rounded-2xl text-xs font-bold bg-emerald-500 hover:bg-emerald-400 active:scale-95 text-slate-950 shadow-lg shadow-emerald-500/20 transition-all cursor-pointer text-center"
+            onClick={confirm}
+            className="flex-1 py-3 rounded-2xl text-xs font-bold bg-emerald-500 hover:bg-emerald-400 active:scale-95 text-slate-950 shadow-lg shadow-emerald-500/20 transition-all cursor-pointer"
           >
-            Tanlash
+            {t("tp_set")}
           </button>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }

@@ -21,6 +21,7 @@ import { notificationService } from "../../services/notificationService";
 import { habitSyncQueue } from "../../services/habitSyncQueue";
 import { useNavBack } from "../../hooks/useNavBack";
 import { listHabitReminders } from "../../utils/reminders";
+import { CustomTimePickerModal } from "../../components/CustomTimePickerModal";
 
 type Lang = "uz" | "ru" | "en";
 
@@ -204,6 +205,7 @@ export function SettingsPage({ onLogout, onNavigate, onProfileUpdate, lang, onLa
   const stored = (() => { try { return JSON.parse(localStorage.getItem(notifKey) || "{}"); } catch { return {}; } })();
   const [notifEnabled, setNotifEnabled] = useState<boolean>(stored.enabled ?? false);
   const [notifTime, setNotifTime] = useState<string>(stored.time ?? "09:00");
+  const [notifPickerOpen, setNotifPickerOpen] = useState(false);
   const [notifPerm, setNotifPerm] = useState<"default" | "granted" | "denied">("default");
   const habitReminders = (() => { try { return listHabitReminders(localStorage); } catch { return []; } })();
 
@@ -390,21 +392,26 @@ export function SettingsPage({ onLogout, onNavigate, onProfileUpdate, lang, onLa
         )}
         {notifEnabled && notifPerm !== "denied" && (
           <>
-            <label className="flex items-center justify-between gap-3 p-2.5 rounded-2xl bg-slate-950/40 border border-slate-800">
+            <button
+              type="button"
+              onClick={() => setNotifPickerOpen(true)}
+              className="w-full flex items-center justify-between gap-3 p-2.5 rounded-2xl bg-slate-950/40 border border-slate-800 hover:border-emerald-500/40 transition-colors cursor-pointer"
+            >
               <span className="flex items-center gap-2 text-sm text-slate-200">
                 <Clock className="w-4 h-4 text-emerald-400" /> {t("st_notif_daily_time")}
               </span>
-              <input
-                type="time"
-                value={notifTime}
-                onChange={(e) => {
-                  if (!e.target.value) return;
-                  setNotifTime(e.target.value);
-                  applyNotifications(true, e.target.value);
-                }}
-                className="bg-transparent font-mono text-sm text-white outline-none"
-              />
-            </label>
+              <span className="font-mono text-sm font-bold text-emerald-400">{notifTime}</span>
+            </button>
+            <CustomTimePickerModal
+              isOpen={notifPickerOpen}
+              title={t("st_notif_daily_time")}
+              initialTime={notifTime}
+              onConfirm={(v) => {
+                setNotifTime(v);
+                applyNotifications(true, v);
+              }}
+              onClose={() => setNotifPickerOpen(false)}
+            />
             <button
               type="button"
               onClick={async () => { await notificationService.sendTestNotificationNow(); toast.success(t("st_notif_test_sent")); }}
