@@ -197,6 +197,13 @@ export async function toggleHabitLog(
 // hisoblanadi — qurilma vaqt zonasi ta'sir qilmaydi.
 export const LOG_LOCKED_MESSAGE = "Bu kun uchun belgilash muddati tugagan (ertasi kuni soat 09:00 gacha ochiq edi)."
 
+/** "Bajarilmadi" sababi (054: set_habit_fail_reason) — faqat ochiq kun, bajarilmagan yozuvga. */
+export async function saveHabitFailReason(habitId: string, date: string, reason: string): Promise<boolean> {
+  const { data, error } = await supabase.rpc('set_habit_fail_reason', { p_habit_id: habitId, p_date: date, p_reason: reason })
+  if (error) throw error
+  return !!data
+}
+
 export function isLogDateLocked(dateStr: string, now: Date = new Date()): boolean {
   return !isTashkentDateOpen(dateStr, now)
 }

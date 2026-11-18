@@ -7,6 +7,7 @@ import type { Habit, Profile } from "../../services/supabase";
 import { useProfile } from "../../store/UserContext";
 import { useLang } from "../../store/LangContext";
 import { useHabitDay } from "../../hooks/useHabitDay";
+import { useFailReasonFlow } from "../habits/useFailReasonFlow";
 import { useHabitMutations, type HabitFormData } from "../../hooks/useHabitMutations";
 import { ActiveRoutinePill } from "./components/ActiveRoutinePill";
 import { TipCard } from "./components/TipCard";
@@ -37,6 +38,8 @@ export function Dashboard({ onNavigate, onCompletedChange, onProfileUpdate }: Da
   const { t } = useLang();
   const today = getTashkentToday();
   const day = useHabitDay(profile.id, today);
+  // X — sabab yozish va zanjirni saqlash oynasi (054)
+  const failFlow = useFailReasonFlow(profile.id, today, day);
   const { create } = useHabitMutations(profile.id);
 
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
@@ -196,6 +199,7 @@ export function Dashboard({ onNavigate, onCompletedChange, onProfileUpdate }: Da
                   entry={day.entryOf(habit.id)}
                   streak={day.streaks[habit.id] ?? 0}
                   onCheck={handleCheck}
+                  onFail={failFlow.requestFail}
                   onOpen={setDetailHabit}
                 />
               ))}
@@ -231,6 +235,7 @@ export function Dashboard({ onNavigate, onCompletedChange, onProfileUpdate }: Da
                         entry={day.entryOf(habit.id)}
                         streak={day.streaks[habit.id] ?? 0}
                         onCheck={handleCheck}
+                  onFail={failFlow.requestFail}
                         onOpen={setDetailHabit}
                       />
                     ))}
@@ -276,7 +281,7 @@ export function Dashboard({ onNavigate, onCompletedChange, onProfileUpdate }: Da
                         entry={day.entryOf(habit.id)}
                         streak={day.streaks[habit.id] ?? 0}
                         onCheck={(h) => day.toggleDone(h)}
-                        onFail={(h) => day.toggleFail(h)}
+                        onFail={failFlow.requestFail}
                         onOpen={setDetailHabit}
                       />
                     ))}
@@ -298,6 +303,8 @@ export function Dashboard({ onNavigate, onCompletedChange, onProfileUpdate }: Da
           />
         )}
       </AnimatePresence>
+
+      {failFlow.modal}
 
       {detailHabit && (
         <Suspense fallback={null}>

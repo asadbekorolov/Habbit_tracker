@@ -29,7 +29,7 @@ const EMPTY: HabitDayEntry = { status: 'none', value: 0 };
  * Istalgan (ochiq) kun uchun belgini navbatga qo'yadi — kunlik kesh darhol
  * yangilanadi. Kun ochiqligini chaqiruvchi tekshiradi.
  */
-export function markHabitOnDate(uid: string, habit: Habit, date: string, status: HabitDayStatus, value: number) {
+export function markHabitOnDate(uid: string, habit: Habit, date: string, status: HabitDayStatus, value: number, reason?: string) {
   habitSyncQueue.enqueue({
     habitId: habit.id,
     userId: uid,
@@ -38,6 +38,7 @@ export function markHabitOnDate(uid: string, habit: Habit, date: string, status:
     isDelete: status === 'none',
     isNegative: habit.type === 'negative',
     date,
+    ...(status === 'fail' && reason?.trim() ? { reason: reason.trim() } : {}),
   });
 }
 
@@ -90,13 +91,13 @@ export function useHabitDay(uid: string, date: string) {
   const locked = !isTashkentDateOpen(date);
   const entryOf = (habitId: string) => entries.get(habitId) ?? EMPTY;
 
-  function enqueue(habit: Habit, status: HabitDayStatus, value: number): boolean {
+  function enqueue(habit: Habit, status: HabitDayStatus, value: number, reason?: string): boolean {
     if (locked) {
       toast.error(t('log_locked_error'));
       return false;
     }
     if (status === 'done' && entryOf(habit.id).status !== 'done') soundService.play('task_complete');
-    markHabitOnDate(uid, habit, date, status, value);
+    markHabitOnDate(uid, habit, date, status, value, reason);
     return true;
   }
 
@@ -111,6 +112,11 @@ export function useHabitDay(uid: string, date: string) {
   function toggleFail(habit: Habit) {
     const cur = entryOf(habit.id);
     return enqueue(habit, cur.status === 'fail' ? 'none' : 'fail', 0);
+  }
+
+  /** "Bajarilmadi" + sabab (054) — sabab holatdan keyin serverga yuboriladi */
+  function failWithReason(habit: Habit, reason: string) {
+    return enqueue(habit, 'fail', 0, reason);
   }
 
   /** O'lchanadigan odat qiymati: maqsadga yetsa — bajarildi; 0 — belgisiz. */
@@ -135,6 +141,7 @@ export function useHabitDay(uid: string, date: string) {
     isLoading: habitsQ.isPending || dayQ.isPending,
     toggleDone,
     toggleFail,
+    failWithReason,
     setValue,
   };
 }

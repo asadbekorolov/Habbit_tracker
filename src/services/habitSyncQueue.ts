@@ -5,7 +5,7 @@
 import { Capacitor } from '@capacitor/core';
 import { Haptics, ImpactStyle } from '@capacitor/haptics';
 import { toast } from 'sonner';
-import { setHabitStatus } from './db';
+import { setHabitStatus, saveHabitFailReason } from './db';
 import { getTashkentToday, isTashkentDateOpen } from '../utils/date';
 import { HabitSyncQueueCore } from './habitSyncQueueCore';
 import { patchDayLog, onHabitSyncSuccess, onHabitSyncRejected } from './queryClient';
@@ -16,7 +16,12 @@ export { applyPendingToLogs } from './habitSyncQueueCore';
 const hasWindow = typeof window !== 'undefined';
 
 export const habitSyncQueue = new HabitSyncQueueCore({
-  send: (habitId, status, value, date) => setHabitStatus(habitId, status, value, date),
+  send: async (habitId, status, value, date, reason) => {
+    const res = await setHabitStatus(habitId, status, value, date);
+    // Sabab — holatdan keyin (054). Xatosi belgini bekor qilmaydi.
+    if (status === 'fail' && reason) await saveHabitFailReason(habitId, date, reason).catch(() => {});
+    return res;
+  },
   today: () => getTashkentToday(),
   storage: hasWindow ? window.localStorage : null,
   isOnline: () => !hasWindow || window.navigator.onLine !== false,

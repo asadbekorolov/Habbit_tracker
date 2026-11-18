@@ -39,6 +39,8 @@ export interface HabitQueueItem {
   value: number;
   date?: string;
   isDelete?: boolean;
+  /** "Bajarilmadi" sababi (054) — holat yuborilgach alohida saqlanadi */
+  reason?: string;
   /** Eski maydonlar — endi ishlatilmaydi (hammasini server hal qiladi). */
   prevCompleted?: boolean;
   isNegative?: boolean;
@@ -54,6 +56,7 @@ export interface StoredQueueItem {
   date: string;
   status: QueueStatus;
   value: number;
+  reason?: string;
   seq: number;
   attempts: number;
   nextAt: number;
@@ -70,7 +73,7 @@ export interface SendResult {
 export type ErrorKind = 'transient' | 'permanent';
 
 export interface QueueDeps {
-  send: (habitId: string, status: QueueStatus, value: number, date: string) => Promise<SendResult>;
+  send: (habitId: string, status: QueueStatus, value: number, date: string, reason?: string) => Promise<SendResult>;
   today: () => string;
   storage: Pick<Storage, 'getItem' | 'setItem' | 'removeItem'> | null;
   isOnline: () => boolean;
@@ -211,6 +214,7 @@ export class HabitSyncQueueCore {
       date,
       status,
       value: Number.isFinite(item.value) ? item.value : 1,
+      ...(status === 'fail' && item.reason ? { reason: item.reason } : {}),
       seq: ++this.seqCounter,
       attempts: 0,
       nextAt: 0,
@@ -274,7 +278,7 @@ export class HabitSyncQueueCore {
     let result: SendResult | null = null;
     let error: any = null;
     try {
-      result = await this.deps.send(it.habitId, it.status, it.value, it.date);
+      result = await this.deps.send(it.habitId, it.status, it.value, it.date, it.reason);
     } catch (e) {
       error = e;
     }

@@ -144,8 +144,9 @@ export function HabitItem({ habit, entry, streak, onCheck, onFail, onOpen, locke
         )}
 
         <div className="flex items-center gap-1.5 mt-1.5 flex-wrap">
-          <span className="flex items-center gap-1 text-[10px] font-mono text-emerald-400/90">
-            <Flame className="w-3.5 h-3.5 shrink-0 stroke-[2.2]" />
+          {/* Zanjir — foydalanuvchi mehnati, yorqin ko'rinadi */}
+          <span className={`flex items-center gap-1 px-1.5 py-0.5 rounded-md text-[11px] font-mono font-bold ${streak > 0 ? "text-orange-300 bg-orange-500/15 border border-orange-500/25" : "text-slate-500 bg-slate-800/60"}`}>
+            <Flame className={`w-3.5 h-3.5 shrink-0 stroke-[2.4] ${streak > 0 ? "text-orange-400" : ""}`} />
             {t("dash_streak_days").replace("{n}", String(streak))}
           </span>
           {done ? (

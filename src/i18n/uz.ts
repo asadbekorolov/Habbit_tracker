@@ -1220,6 +1220,17 @@ export const uz = {
   ach_page_sub: "O'z natijalaringizni kuzating va yangi marralarni zabt eting",
   hm_page_sub: "Qo'shish, tahrirlash va tartibga solish",
   store_page_sub: "Himoya vositalari va profil bezaklari",
+  fr_title: "Bajarilmadi deb belgilash",
+  fr_streak_warn: "Diqqat: {n} kunlik o'z mehnatingiz bilan yig'gan zanjir uziladi!",
+  fr_freeze: "Zanjirni qalqon bilan saqlash",
+  fr_freeze_left: "Bu oy qolgan qalqonlar: {n}",
+  fr_frozen: "Zanjir saqlandi — bu kun muzlatildi",
+  fr_question_positive: "Nega bajara olmadingiz?",
+  fr_question_negative: "Nima sabab bo'ldi?",
+  fr_placeholder: "Masalan: kecha tungi 03:00 gacha telefon o'ynaganim uchun erta tura olmadim",
+  fr_hint: "Sabab faqat sizga ko'rinadi va AI tahlilda hisobga olinadi",
+  fr_submit: "Bajarilmadi deb belgilash",
+  fr_submit_broke: "Buzildi deb belgilash",
 }
 
 export type Dict = typeof uz

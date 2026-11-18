@@ -7,6 +7,7 @@ import { QuickLogModal } from "../../components/QuickLogModal";
 import { HabitItem } from "./components/HabitItem";
 import { NumericMetrics } from "./NumericMetrics";
 import { useHabitDay } from "../../hooks/useHabitDay";
+import { useFailReasonFlow } from "./useFailReasonFlow";
 import { isMeasurable } from "../../utils/habitMetrics";
 import { parseDateStr } from "../../utils/date";
 import { MONTHS_FULL, DAYS_FULL } from "../../utils/i18n";
@@ -23,6 +24,7 @@ interface DayHabitsSheetProps {
 export function DayHabitsSheet({ profile, date, onClose, onOpenHabit }: DayHabitsSheetProps) {
   const { t, lang } = useLang();
   const day = useHabitDay(profile.id, date);
+  const failFlow = useFailReasonFlow(profile.id, date, day);
   const [valueHabit, setValueHabit] = useState<Habit | null>(null);
 
   const d = parseDateStr(date);
@@ -54,7 +56,7 @@ export function DayHabitsSheet({ profile, date, onClose, onOpenHabit }: DayHabit
               streak={day.streaks[habit.id] ?? 0}
               locked={day.locked}
               onCheck={handleCheck}
-              onFail={(h) => day.toggleFail(h)}
+              onFail={failFlow.requestFail}
               onOpen={onOpenHabit}
             />
           ))}
@@ -71,7 +73,7 @@ export function DayHabitsSheet({ profile, date, onClose, onOpenHabit }: DayHabit
                 streak={day.streaks[habit.id] ?? 0}
                 locked={day.locked}
                 onCheck={(h) => day.toggleDone(h)}
-                onFail={(h) => day.toggleFail(h)}
+                onFail={failFlow.requestFail}
                 onOpen={onOpenHabit}
               />
             ))}
@@ -80,6 +82,8 @@ export function DayHabitsSheet({ profile, date, onClose, onOpenHabit }: DayHabit
 
         <NumericMetrics inputStyle={{}} profile={profile} logDate={date} locked={day.locked} />
       </Modal>
+
+      {failFlow.modal}
 
       <AnimatePresence>
         {valueHabit && (

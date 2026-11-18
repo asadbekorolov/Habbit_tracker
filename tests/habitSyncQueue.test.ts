@@ -20,15 +20,15 @@ function makeEnv(opts: { online?: boolean; today?: string; storage?: Map<string,
   const store = opts.storage ?? new Map<string, string>();
   const timers: { id: number; at: number; fn: () => void }[] = [];
   let nextId = 1;
-  const sends: { habitId: string; status: QueueStatus; value: number; date: string }[] = [];
+  const sends: { habitId: string; status: QueueStatus; value: number; date: string; reason?: string }[] = [];
   const pendingReplies: { resolve: (v: any) => void; reject: (e: any) => void }[] = [];
   const notices: { kind: string; message: string }[] = [];
   const events: { event: string; detail: any }[] = [];
   let autoReply: ((call: { status: QueueStatus }) => Promise<any>) | null = async () => ({ coins: 10, score: 1, total_xp: 5, level: 1 });
 
   const deps: QueueDeps = {
-    send: (habitId, status, value, date) => {
-      sends.push({ habitId, status, value, date });
+    send: (habitId, status, value, date, reason) => {
+      sends.push({ habitId, status, value, date, ...(reason ? { reason } : {}) });
       if (autoReply) return autoReply({ status });
       return new Promise((resolve, reject) => pendingReplies.push({ resolve, reject }));
     },
@@ -250,4 +250,19 @@ test('applyPendingToLogs: navbatdagi holatlar server loglari ustiga qo\'yiladi',
     out.map((l) => [l.habit_id, l.completed]).sort(),
     [['a', true], ['c', false]],
   );
+});
+
+test("'bajarilmadi' sababi holat bilan birga yuboriladi; boshqa holatda tashlanadi", async () => {
+  const env = makeEnv();
+  const q = new HabitSyncQueueCore(env.deps);
+  q.start(U);
+  q.enqueue({ userId: U, habitId: H, completed: false, value: 0, reason: 'Kech uxladim' });
+  await env.advance(500);
+  assert.equal(env.sends[0].status, 'fail');
+  assert.equal(env.sends[0].reason, 'Kech uxladim');
+  // Keyin bajarildi — sabab yuborilmaydi
+  q.enqueue({ userId: U, habitId: H, completed: true, value: 1, reason: 'eski' });
+  await env.advance(500);
+  assert.equal(env.sends[1].status, 'done');
+  assert.equal(env.sends[1].reason, undefined);
 });
