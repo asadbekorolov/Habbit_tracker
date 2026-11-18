@@ -6,7 +6,7 @@ import {
   Coins, Plus, RotateCcw, Shield, ShieldCheck, Zap, Star,
   BookOpen, CheckSquare, Send, Check, Loader2, Lock, Sparkles,
   ShoppingBag, X, ArrowRight, ExternalLink, Download, CreditCard,
-  Crown, Award, AlertCircle, Flame
+  Crown, Award, AlertCircle, Flame, Info
 } from "lucide-react";
 import { useUser, useProfile } from "../store/UserContext";
 import { useLang } from "../store/LangContext";
@@ -22,6 +22,7 @@ import { FRAMES, PREMIUM_AVATAR_COLORS, USERNAME_GLOW_ID, USERNAME_GLOW_PRICE, g
 import { AvatarFrame } from "../components/AvatarFrame";
 import type { Profile } from "../services/supabase";
 import { useScrollLock } from "../hooks/useScrollLock";
+import { canBuyCoins, type Platform } from "../utils/platformPolicy";
 
 interface StoreProps {
   onProfileUpdate?: (p: Profile) => void;
@@ -98,6 +99,9 @@ export function Store({ onProfileUpdate, onClose, isModal = false }: StoreProps)
   const { setProfile, updateCoins, refreshUserProfile } = useUser();
   const profile = useProfile();
 
+  // Google Play qoidasi: ilovada tanga sotib olinmaydi, faqat ishlanadi (utils/platformPolicy)
+  const coinPurchase = canBuyCoins(Capacitor.getPlatform() as Platform);
+  const [showEarnInfo, setShowEarnInfo] = useState(false);
   const [activeTab, setActiveTab] = useState<CategoryTab>("all");
   const [currentCoins, setCurrentCoins] = useState<number>(profile?.coins ?? 0);
   const [ownedIds, setOwnedIds] = useState<Set<string>>(new Set());
@@ -253,7 +257,7 @@ export function Store({ onProfileUpdate, onClose, isModal = false }: StoreProps)
   // Handle Generic Buy Action with Confirmation Dialog
   function triggerBuyWithConfirmation(item: ShopItem | any, buyFn: () => Promise<void>) {
     if (currentCoins < item.price) {
-      toast.error(t('store_not_enough_coins'));
+      toast.error(coinPurchase ? t('store_not_enough_coins') : t('store_not_enough_coins_earn'));
       return;
     }
     setConfirmItem({
@@ -430,7 +434,8 @@ export function Store({ onProfileUpdate, onClose, isModal = false }: StoreProps)
             </div>
           </div>
 
-          {/* High contrast "Tanga olish" button */}
+          {/* High contrast "Tanga olish" button — faqat vebda; ilovada "qanday ishlanadi" */}
+          {coinPurchase ? (
           <button
             type="button"
             onClick={() => setShowTopUpModal(true)}
@@ -439,7 +444,28 @@ export function Store({ onProfileUpdate, onClose, isModal = false }: StoreProps)
             <Plus size={16} strokeWidth={3} />
             <span>{t('store_get_coins')}</span>
           </button>
+          ) : (
+            <button
+              type="button"
+              onClick={() => setShowEarnInfo((v) => !v)}
+              aria-expanded={showEarnInfo}
+              className="px-3.5 py-2.5 rounded-2xl bg-slate-800 border border-slate-700 text-slate-200 font-bold text-xs flex items-center gap-1.5 active:scale-95 transition-all cursor-pointer"
+            >
+              <Info size={15} className="text-emerald-400" />
+              <span>{t('store_earn_title')}</span>
+            </button>
+          )}
         </div>
+        {!coinPurchase && showEarnInfo && (
+          <div className="mt-3 p-3.5 rounded-2xl bg-emerald-500/10 border border-emerald-500/25 space-y-1.5">
+            <p className="text-xs font-bold text-emerald-300">{t('store_earn_title')}</p>
+            <ul className="space-y-1 text-[12px] text-slate-300">
+              <li className="flex gap-2"><CheckSquare className="w-3.5 h-3.5 mt-0.5 shrink-0 text-emerald-400" />{t('store_earn_habits')}</li>
+              <li className="flex gap-2"><Zap className="w-3.5 h-3.5 mt-0.5 shrink-0 text-amber-400" />{t('store_earn_quests')}</li>
+              <li className="flex gap-2"><Award className="w-3.5 h-3.5 mt-0.5 shrink-0 text-violet-400" />{t('store_earn_badges')}</li>
+            </ul>
+          </div>
+        )}
       </div>
 
       {/* Category Tabs */}
@@ -769,7 +795,7 @@ export function Store({ onProfileUpdate, onClose, isModal = false }: StoreProps)
 
       {/* Real Monetization Top-Up Modal */}
       <AnimatePresence>
-        {showTopUpModal && (
+        {coinPurchase && showTopUpModal && (
           <div
             role="dialog"
             aria-modal="true"

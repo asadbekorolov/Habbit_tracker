@@ -1305,4 +1305,9 @@ export const en: Dict = {
   adm_fb_delete_confirm: "Yes, delete",
   adm_fb_deleted: "Message deleted",
   adm_fb_no_unread: "No unread messages",
+  store_earn_title: "How to earn coins",
+  store_earn_habits: "Coins for every completed habit and every day you avoid a bad one",
+  store_earn_quests: "Bonuses for daily quests and weekly group wins",
+  store_earn_badges: "Rewards for badges (streaks, active days)",
+  store_not_enough_coins_earn: "Not enough coins — earn more by completing habits, daily quests and badges.",
 }

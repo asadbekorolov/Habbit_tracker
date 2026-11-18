@@ -1303,6 +1303,11 @@ export const uz = {
   adm_fb_delete_confirm: "Ha, o'chirilsin",
   adm_fb_deleted: "Xabar o'chirildi",
   adm_fb_no_unread: "O'qilmagan xabar yo'q",
+  store_earn_title: "Tanga qanday ishlanadi",
+  store_earn_habits: "Har bir bajarilgan odat va zararli odatdan tiyilgan kun uchun tanga",
+  store_earn_quests: "Kunlik vazifalar va guruhning haftalik g'olibi uchun bonus",
+  store_earn_badges: "Nishonlar (zanjir, faol kunlar) uchun mukofot",
+  store_not_enough_coins_earn: "Tangalar yetarli emas — odatlarni bajarib, kunlik vazifalar va nishonlar orqali to'plang.",
 }
 
 export type Dict = typeof uz
