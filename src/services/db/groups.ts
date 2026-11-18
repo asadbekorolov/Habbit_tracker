@@ -4,6 +4,7 @@
 import { supabase } from '../supabase'
 import { publicName } from '../../utils/publicName'
 import { tashkentTodayAnchor, toDateStr } from '../../utils/date'
+import { st } from '../../utils/serviceT'
 import { PUBLIC_PROFILE_COLUMNS } from './core'
 import { isStarActive } from './shop'
 
@@ -38,14 +39,14 @@ export async function joinGroup(inviteCode: string, userId: string) {
     .select('*')
     .eq('invite_code', inviteCode)
     .single()
-  if (gErr) throw new Error("Guruh topilmadi. Invite kod noto'g'ri.")
+  if (gErr) throw new Error(st('svc_group_not_found'))
 
   const { error } = await supabase
     .from('group_members')
     .insert({ group_id: group.id, user_id: userId, role: 'member' })
   if (error) {
-    if (error.code === '23505') throw new Error('Siz allaqachon bu guruhdasiz.')
-    throw new Error(error.message || "Guruhga qo'shilishda xatolik yuz berdi.")
+    if (error.code === '23505') throw new Error(st('svc_group_already_member'))
+    throw new Error(error.message || st('svc_group_join_error'))
   }
 
   return group

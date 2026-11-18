@@ -2,6 +2,7 @@
 // Eski importlar uchun hammasi src/services/db.ts orqali qayta eksport qilinadi.
 
 import { supabase } from '../supabase'
+import { st } from '../../utils/serviceT'
 import { tashkentTodayAnchor, toDateStr } from '../../utils/date'
 
 // ─── PUSH NOTIFICATIONS ────────────────────────────────────
@@ -18,12 +19,12 @@ function urlBase64ToUint8Array(base64String: string) {
 
 export async function subscribeToPushNotifications(userId: string) {
   if (!('serviceWorker' in navigator) || !('PushManager' in window)) {
-    throw new Error("Bu brauzer Push xabarlarni qo'llab-quvvatlamaydi");
+    throw new Error(st('svc_push_unsupported'));
   }
 
   const isWebNotifSupported = typeof window !== 'undefined' && 'Notification' in window && typeof (window as any).Notification === 'function';
   if (!isWebNotifSupported) {
-    throw new Error("Bildirishnomalar bu qurilmada qo'llab-quvvatlanmaydi");
+    throw new Error(st('svc_notif_unsupported'));
   }
 
   let permission: string = 'default';
@@ -34,11 +35,11 @@ export async function subscribeToPushNotifications(userId: string) {
     }
   } catch (err) {
     console.warn('Browser Notification.requestPermission failed:', err);
-    throw new Error("Bildirishnomalarga ruxsat berishda xatolik");
+    throw new Error(st('svc_notif_perm_error'));
   }
 
   if (permission !== 'granted') {
-    throw new Error("Bildirishnomalarga ruxsat berilmadi");
+    throw new Error(st('svc_notif_denied'));
   }
 
   const registration = await navigator.serviceWorker.register('/sw.js');
@@ -46,7 +47,7 @@ export async function subscribeToPushNotifications(userId: string) {
 
   const publicVapidKey = import.meta.env.VITE_VAPID_PUBLIC_KEY; 
   if (!publicVapidKey) {
-    throw new Error("VAPID kaliti (VITE_VAPID_PUBLIC_KEY) topilmadi");
+    throw new Error(st('svc_vapid_missing'));
   }
 
   const subscription = await registration.pushManager.subscribe({

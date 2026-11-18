@@ -2,6 +2,7 @@
 // Eski importlar uchun hammasi src/services/db.ts orqali qayta eksport qilinadi.
 
 import { supabase } from '../supabase'
+import { st } from '../../utils/serviceT'
 
 // ─── AI ANALYSIS — COIN-GATED ────────────────────────────────
 // AI tahlil narxi (200 tanga) endi faqat serverda yechiladi:
@@ -18,11 +19,11 @@ export async function purchaseShopItem(itemId: string): Promise<number> {
   const { data, error } = await supabase.rpc('purchase_shop_item', { p_item_id: itemId })
   if (error) {
     const msg = error.message || ''
-    if (msg.includes('insufficient_coins')) throw new Error('Tangalar yetarli emas')
-    if (msg.includes('already_owned')) throw new Error('Bu buyum sizda allaqachon bor')
+    if (msg.includes('insufficient_coins')) throw new Error(st('svc_insufficient_coins'))
+    if (msg.includes('already_owned')) throw new Error(st('svc_already_owned'))
     if (msg.includes('already_active')) throw new Error('already_active') // Do'kon t('store_already_active') ga almashtiradi
-    if (msg.includes('unknown_item')) throw new Error('Bu buyum sotuvda yo\'q')
-    throw new Error(msg || 'Xarid qilishda xatolik yuz berdi')
+    if (msg.includes('unknown_item')) throw new Error(st('svc_unknown_item'))
+    throw new Error(msg || st('svc_purchase_error'))
   }
   return (data as { coins: number }).coins
 }
@@ -54,9 +55,9 @@ export async function claimBadgeReward(badgeId: string): Promise<{ coins: number
   const { data, error } = await supabase.rpc('claim_badge_reward', { p_badge_id: badgeId })
   if (error) {
     const msg = error.message || ''
-    if (msg.includes('already_claimed')) throw new Error('Bu mukofot allaqachon olingan')
-    if (msg.includes('not_eligible')) throw new Error("Nishon shartlari hali bajarilmagan")
-    throw new Error(msg || 'Mukofotni olishda xatolik yuz berdi')
+    if (msg.includes('already_claimed')) throw new Error(st('svc_already_claimed'))
+    if (msg.includes('not_eligible')) throw new Error(st('svc_not_eligible'))
+    throw new Error(msg || st('svc_claim_error'))
   }
   return data as { coins: number; score: number; rewardXp: number; rewardCoins: number }
 }

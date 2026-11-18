@@ -12,26 +12,30 @@
 
 import { supabase } from "./supabase";
 import { postApi } from "./apiClient";
+import { st } from "../utils/serviceT";
+import type { TKey } from "../utils/i18n";
 import { isNetworkError, parseAiReport, type AiReport } from "../utils/aiReport";
 
-const ERROR_MESSAGES: Record<string, string> = {
-  network: "Server bilan bog'lanib bo'lmadi, internetni tekshiring. Tangalar yechilmadi.",
-  unauthorized: "Tahlil uchun qaytadan tizimga kiring.",
-  not_configured: "AI tahlil hozircha sozlanmagan. Tangalar yechilmadi.",
-  rate_limited: "So'rovlar ko'p. Birozdan so'ng qayta urinib ko'ring.",
-  payload_too_large: "Ma'lumot hajmi juda katta.",
-  refused: "AI bu so'rovga javob bera olmadi. Tangalar qaytarildi.",
-  insufficient_coins: "Tangalar yetarli emas.",
-  ai_error: "AI xizmatida xatolik. Tangalar qaytarildi.",
-  empty_response: "AI bo'sh javob qaytardi. Tangalar qaytarildi.",
-  bad_format: "AI javobini o'qib bo'lmadi. Tangalar qaytarildi.",
-  charge_failed: "Server xatosi. Tangalar yechilmadi.",
-  network_error: "Server xatosi. Tangalar qaytarildi.",
+// Server xato kodlari -> foydalanuvchi tilidagi xabar (ai_err_* kalitlari)
+const AI_ERROR_KEYS: Record<string, TKey> = {
+  network: "ai_err_network",
+  unauthorized: "ai_err_unauthorized",
+  not_configured: "ai_err_not_configured",
+  rate_limited: "ai_err_rate_limited",
+  payload_too_large: "ai_err_payload_too_large",
+  refused: "ai_err_refused",
+  insufficient_coins: "ai_err_insufficient_coins",
+  ai_error: "ai_err_ai_error",
+  empty_response: "ai_err_empty_response",
+  bad_format: "ai_err_bad_format",
+  charge_failed: "ai_err_charge_failed",
+  network_error: "ai_err_network_error",
 };
+const aiErrorMessage = (code: string) => st(AI_ERROR_KEYS[code] ?? "ai_err_generic");
 
 export async function requestClaudeHabitAnalysis(telemetryPayload: string): Promise<AiReport> {
   const { data } = await supabase.auth.getSession();
-  if (!data.session?.access_token) throw new Error(ERROR_MESSAGES.unauthorized);
+  if (!data.session?.access_token) throw new Error(aiErrorMessage("unauthorized"));
 
   let response: Response;
   try {
@@ -40,7 +44,7 @@ export async function requestClaudeHabitAnalysis(telemetryPayload: string): Prom
     // fetch() faqat tarmoq darajasida yiqiladi (internet yo'q, server javob
     // bermadi) — so'rov serverga yetmagan, demak tanga ham yechilmagan.
     console.warn("AI analysis request failed:", isNetworkError(e) ? "network" : e);
-    throw new Error(ERROR_MESSAGES.network);
+    throw new Error(aiErrorMessage("network"));
   }
 
   const result = await response.json().catch(() => null);
@@ -52,7 +56,7 @@ export async function requestClaudeHabitAnalysis(telemetryPayload: string): Prom
   if (!report) {
     const code = result?.error || (result?.ok ? "bad_format" : `http_${response.status}`);
     console.warn("AI analysis failed:", code);
-    throw new Error(ERROR_MESSAGES[code] || "Tahlilni yuklashda xatolik yuz berdi.");
+    throw new Error(aiErrorMessage(code));
   }
   return report;
 }

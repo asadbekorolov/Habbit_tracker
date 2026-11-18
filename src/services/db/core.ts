@@ -4,6 +4,7 @@
 import { supabase } from '../supabase'
 import type { Profile } from '../supabase'
 import { FREE_AVATAR_COLORS } from '../../utils/cosmetics'
+import { st } from '../../utils/serviceT'
 export { fetchAllPages, PAGE_SIZE } from '../../utils/pagination'
 
 export const HABIT_SUCCESS_COLOR = "#4ADE80"
@@ -48,6 +49,6 @@ export async function getMyProfile(): Promise<Profile | null> {
 
 export async function getMyProfileOrThrow(): Promise<Profile> {
   const p = await getMyProfile()
-  if (!p) throw new Error('Profil topilmadi')
+  if (!p) throw new Error(st('svc_profile_not_found'))
   return p
 }

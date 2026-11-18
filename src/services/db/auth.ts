@@ -4,6 +4,7 @@
 import { supabase } from '../supabase'
 import type { Profile } from '../supabase'
 import { AVATAR_COLORS, PUBLIC_PROFILE_COLUMNS, getMyProfile, getMyProfileOrThrow } from './core'
+import { st } from '../../utils/serviceT'
 
 // ─── AUTH ──────────────────────────────────────────────────
 export async function signInUser(email: string, password: string): Promise<Profile> {
@@ -14,7 +15,7 @@ export async function signInUser(email: string, password: string): Promise<Profi
 
   if (data.is_banned) {
     await supabase.auth.signOut();
-    throw new Error("Sizning akkauntingiz ma'muriyat tomonidan bloklangan.");
+    throw new Error(st('svc_account_banned'));
   }
 
   return data
@@ -60,13 +61,13 @@ export async function verifyEmailOtpAndCreateAccount(
     .select('username')
     .eq('username', username)
     .maybeSingle();
-  if (existingUsername) throw new Error("Bu username allaqachon band. Iltimos, boshqasini tanlang");
+  if (existingUsername) throw new Error(st('svc_username_taken'));
 
   const { error: otpError } = await supabase.auth.verifyOtp({ email, token, type: 'email' });
   if (otpError) throw otpError;
 
   const { data: { user } } = await supabase.auth.getUser();
-  if (!user) throw new Error("Foydalanuvchi topilmadi");
+  if (!user) throw new Error(st('svc_user_not_found'));
 
   // Agar bu email allaqachon ro'yxatdan o'tgan bo'lsa, signInWithOtp uni
   // shunchaki tizimga kiritadi (login sifatida) — profil borligini
@@ -79,7 +80,7 @@ export async function verifyEmailOtpAndCreateAccount(
     .maybeSingle();
   if (existingProfile) {
     await supabase.auth.signOut();
-    throw new Error("Bu email allaqachon ro'yxatdan o'tgan — Kirish tabiga o'ting");
+    throw new Error(st('svc_email_registered'));
   }
 
   const { error: updateError } = await supabase.auth.updateUser({ password });
@@ -242,7 +243,7 @@ export async function ensureProfileForUser(user: any): Promise<Profile> {
   if (existingProfile) {
     if (existingProfile.is_banned) {
       await supabase.auth.signOut();
-      throw new Error("Sizning akkauntingiz ma'muriyat tomonidan bloklangan.");
+      throw new Error(st('svc_account_banned'));
     }
     return existingProfile;
   }
@@ -279,7 +280,7 @@ export async function createProfileForGoogleUser(
     .eq('username', username)
     .maybeSingle();
   if (existingUsername) {
-    throw new Error("Bu username allaqachon band. Iltimos, boshqasini tanlang");
+    throw new Error(st('svc_username_taken'));
   }
 
   const meta = user.user_metadata || {};
@@ -331,15 +332,15 @@ export async function updateUserProfile(
 // tekshiriladi. Yechish muddatni kuydirmaydi.
 export async function equipCosmetic(kind: 'frame' | 'glow' | 'title', itemId: string | null): Promise<Profile> {
   const { error } = await supabase.rpc('equip_cosmetic', { p_kind: kind, p_item_id: itemId })
-  if (error) throw new Error(error.message.includes('not_owned') ? "Bu buyum sizda yo'q yoki muddati tugagan" : error.message)
+  if (error) throw new Error(error.message.includes('not_owned') ? st('svc_not_owned') : error.message)
   return getMyProfileOrThrow()
 }
 
 export async function uploadAvatar(userId: string, file: File): Promise<string> {
-  if (file.size > 2 * 1024 * 1024) throw new Error("Rasm hajmi 2MB dan oshmasligi kerak")
+  if (file.size > 2 * 1024 * 1024) throw new Error(st('svc_avatar_too_big'))
   const ext = file.name.split('.').pop()?.toLowerCase()
   if (!ext || !['jpg', 'jpeg', 'png', 'webp'].includes(ext))
-    throw new Error("Faqat JPG, PNG yoki WebP formatdagi rasmlar qabul qilinadi")
+    throw new Error(st('svc_avatar_format'))
 
   const fileName = `${userId}/${Date.now()}.${ext}`
   const { error: uploadError } = await supabase.storage.from('avatars').upload(fileName, file, { upsert: true })
@@ -347,10 +348,10 @@ export async function uploadAvatar(userId: string, file: File): Promise<string> 
   if (uploadError) {
     const msg = (uploadError.message || '').toLowerCase()
     if (msg.includes('bucket') || msg.includes('not found'))
-      throw new Error("'avatars' storage bucket topilmadi. Supabase Dashboard → Storage → New Bucket: \"avatars\" (Public: ✓)")
+      throw new Error(st('svc_avatar_bucket'))
     if (msg.includes('policy') || msg.includes('permission') || msg.includes('unauthorized') || msg.includes('403'))
-      throw new Error("Storage ruxsati yo'q. Supabase Dashboard → Storage → avatars → Policies da INSERT ruxsatini bering.")
-    throw new Error("Yuklashda xatolik: " + uploadError.message)
+      throw new Error(st('svc_avatar_policy'))
+    throw new Error(st('svc_upload_failed', { msg: uploadError.message }))
   }
 
   const { data } = supabase.storage.from('avatars').getPublicUrl(fileName)

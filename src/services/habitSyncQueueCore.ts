@@ -81,6 +81,8 @@ export interface QueueDeps {
   setTimer: (fn: () => void, ms: number) => unknown;
   clearTimer: (handle: unknown) => void;
   notify: (kind: 'success' | 'warning' | 'error', message: string) => void;
+  /** Ixtiyoriy tarjima (kalit, o'zbekcha zaxira matn). Berilmasa — zaxira matn. */
+  translate?: (key: string, fallback: string) => string;
   emit: (event: 'habit-sync-rejected' | 'habit-sync-success', detail: unknown) => void;
   haptic?: () => void;
   /** Har bir bosishdan keyin (optimistik kesh yangilanishi uchun). */
@@ -151,6 +153,10 @@ export class HabitSyncQueueCore {
   private timers = new Map<string, unknown>();
   private seqCounter = 0;
   private listeners = new Set<() => void>();
+
+  private tr(key: string, fallback: string): string {
+    return this.deps.translate ? this.deps.translate(key, fallback) : fallback;
+  }
 
   constructor(deps: QueueDeps) {
     this.deps = deps;
@@ -304,7 +310,7 @@ export class HabitSyncQueueCore {
       const revoked = result?.reconciliation?.revokedQuests || [];
       if (revoked.length > 0) {
         const total = revoked.reduce((a, q) => a + (q.rewardCoins || 0), 0);
-        this.deps.notify('warning', `Vazifa sharti buzildi: ${total} tanga qaytarib olindi`);
+        this.deps.notify('warning', this.tr('sync_quest_revoked', 'Vazifa sharti buzildi: {n} tanga qaytarib olindi').replace('{n}', String(total)));
       }
       this.deps.emit('habit-sync-success', { userId: current.userId, habitId: current.habitId, date: current.date, status: current.status, value: current.value, result });
       cb?.onSuccess?.();
@@ -326,7 +332,9 @@ export class HabitSyncQueueCore {
       this.callbacks.delete(key);
       this.save();
       this.changed();
-      this.deps.notify('error', PERMANENT_MESSAGES[code] || `Belgi saqlanmadi: ${error?.message || 'server xatosi'}`);
+      this.deps.notify('error', PERMANENT_MESSAGES[code]
+        ? this.tr(`sync_err_${code}`, PERMANENT_MESSAGES[code])
+        : this.tr('sync_err_generic', 'Belgi saqlanmadi: {msg}').replace('{msg}', error?.message || this.tr('sync_server_error', 'server xatosi')));
       if (cb?.onRollback && cb.snapshot) {
         try { cb.onRollback(cb.snapshot); } catch { /* UI allaqachon yopilgan bo'lishi mumkin */ }
       }

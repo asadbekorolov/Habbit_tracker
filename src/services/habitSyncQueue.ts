@@ -8,6 +8,8 @@ import { toast } from 'sonner';
 import { setHabitStatus, saveHabitFailReason } from './db';
 import { getTashkentToday, isTashkentDateOpen } from '../utils/date';
 import { HabitSyncQueueCore } from './habitSyncQueueCore';
+import { getT, type TKey } from '../utils/i18n';
+import { currentLang } from '../utils/serviceT';
 import { patchDayLog, onHabitSyncSuccess, onHabitSyncRejected } from './queryClient';
 
 export type { HabitQueueItem, HabitSyncSnapshot, QueueStatus } from './habitSyncQueueCore';
@@ -28,6 +30,7 @@ export const habitSyncQueue = new HabitSyncQueueCore({
   now: () => Date.now(),
   setTimer: (fn, ms) => setTimeout(fn, ms),
   clearTimer: (h) => clearTimeout(h as ReturnType<typeof setTimeout>),
+  translate: (key, fallback) => getT(currentLang())(key as TKey, fallback),
   notify: (kind, message) => {
     if (kind === 'error') toast.error(message);
     else if (kind === 'warning') toast.warning(message);

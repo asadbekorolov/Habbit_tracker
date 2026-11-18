@@ -4,6 +4,7 @@
 import { supabase } from '../supabase'
 import type { Routine, RoutineItem } from '../supabase'
 import { normalizeApostrophes } from '../../utils/text'
+import { st } from '../../utils/serviceT'
 import { tashkentTodayAnchor, toDateStr, isTashkentDateOpen } from '../../utils/date'
 import { fetchAllPages } from '../../utils/pagination'
 import { nativeNotificationService } from '../nativeNotificationService'
@@ -136,15 +137,15 @@ export class HabitSyncError extends Error {
 function mapHabitRpcError(error: { message?: string; code?: string }): HabitSyncError {
   const msg = error?.message || ''
   const lower = msg.toLowerCase()
-  if (msg.includes('date_locked')) return new HabitSyncError('date_locked', LOG_LOCKED_MESSAGE)
-  if (msg.includes('habit_not_found')) return new HabitSyncError('habit_not_found', "Odat topilmadi")
-  if (msg.includes('banned')) return new HabitSyncError('banned', "Sizning akkauntingiz bloklangan.")
-  if (msg.includes('invalid_status')) return new HabitSyncError('invalid_status', "Noto'g'ri holat")
+  if (msg.includes('date_locked')) return new HabitSyncError('date_locked', logLockedMessage())
+  if (msg.includes('habit_not_found')) return new HabitSyncError('habit_not_found', st('svc_habit_not_found'))
+  if (msg.includes('banned')) return new HabitSyncError('banned', st('svc_banned_short'))
+  if (msg.includes('invalid_status')) return new HabitSyncError('invalid_status', st('svc_invalid_status'))
   if (msg.includes('not_authenticated') || error?.code === 'PGRST301' || lower.includes('jwt'))
-    return new HabitSyncError('auth', "Qaytadan tizimga kiring.")
+    return new HabitSyncError('auth', st('svc_relogin'))
   if (lower.includes('fetch') || lower.includes('network') || lower.includes('timeout'))
-    return new HabitSyncError('network', "Internet aloqasi yo'q")
-  return new HabitSyncError('unknown', msg || "Saqlashda xatolik yuz berdi")
+    return new HabitSyncError('network', st('svc_offline'))
+  return new HabitSyncError('unknown', msg || st('svc_save_error'))
 }
 
 export async function setHabitStatus(
@@ -154,7 +155,7 @@ export async function setHabitStatus(
   date?: string
 ): Promise<HabitStatusResult> {
   const logDate = date || toDateStr()
-  if (isLogDateLocked(logDate)) throw new HabitSyncError('date_locked', LOG_LOCKED_MESSAGE)
+  if (isLogDateLocked(logDate)) throw new HabitSyncError('date_locked', logLockedMessage())
   let res
   try {
     res = await supabase.rpc('toggle_habit_atomic', {
@@ -164,7 +165,7 @@ export async function setHabitStatus(
       p_value: value,
     })
   } catch (e: any) {
-    throw new HabitSyncError('network', e?.message || "Internet aloqasi yo'q")
+    throw new HabitSyncError('network', e?.message || st('svc_offline'))
   }
   if (res.error) throw mapHabitRpcError(res.error)
   return res.data as HabitStatusResult
@@ -195,7 +196,8 @@ export async function toggleHabitLog(
 // bab-baravar qo'llaniladi, faqat sanaga bog'liq.
 // Qoida server bilan bir xil (047: is_log_date_open) va Toshkent vaqti bo'yicha
 // hisoblanadi — qurilma vaqt zonasi ta'sir qilmaydi.
-export const LOG_LOCKED_MESSAGE = "Bu kun uchun belgilash muddati tugagan (ertasi kuni soat 09:00 gacha ochiq edi)."
+/** Yopilgan kunga belgi qo'yilganda (foydalanuvchi tilida). */
+export const logLockedMessage = () => st('svc_log_locked')
 
 /** "Bajarilmadi" sababi (054: set_habit_fail_reason) — faqat ochiq kun, bajarilmagan yozuvga. */
 export async function saveHabitFailReason(habitId: string, date: string, reason: string): Promise<boolean> {
@@ -581,17 +583,12 @@ export async function cleanupExpiredFrame(userId: string): Promise<string | null
 
 export async function fetchRoutines(userId: string): Promise<Routine[]> {
   try {
-    const authUser = (await supabase.auth.getUser()).data.user?.id;
-    console.log('[DEBUG ROUTINES] Current auth user:', authUser);
-    console.log('[DEBUG ROUTINES] fetchRoutines requested for userId:', userId);
 
     const { data, error } = await supabase
       .from('routines')
       .select('*, routine_items(*)')
       .eq('user_id', userId)
       .order('time_start', { ascending: true });
-
-    console.log('[DEBUG ROUTINES] fetchRoutines query result:', { dataLength: data?.length, data, error });
 
     if (error) {
       console.warn('Silent routines fetch fallback:', error.message);

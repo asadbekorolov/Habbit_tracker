@@ -3,7 +3,7 @@
 
 import { supabase } from '../supabase'
 import { tashkentTodayAnchor, toDateStr } from '../../utils/date'
-import { LOG_LOCKED_MESSAGE, isLogDateLocked } from './habits'
+import { logLockedMessage, isLogDateLocked } from './habits'
 
 // ─── DAILY NOTES ────────────────────────────────────────────
 export async function getDailyNote(userId: string, date: string) {
@@ -143,7 +143,7 @@ export async function upsertHabitMetric(
   logDate: string,
   value: number
 ): Promise<void> {
-  if (isLogDateLocked(logDate)) throw new Error(LOG_LOCKED_MESSAGE)
+  if (isLogDateLocked(logDate)) throw new Error(logLockedMessage())
   await upsertHealthLog(userId, logDate, { [metricKey]: value })
 }
 
