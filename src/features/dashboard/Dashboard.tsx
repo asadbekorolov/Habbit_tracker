@@ -11,7 +11,6 @@ import { useFailReasonFlow } from "../habits/useFailReasonFlow";
 import { useHabitMutations, type HabitFormData } from "../../hooks/useHabitMutations";
 import { ActiveRoutinePill } from "./components/ActiveRoutinePill";
 import { TipCard } from "./components/TipCard";
-import { LifeHabitDotsWidget } from "./components/LifeHabitDotsWidget";
 import { CharacterVideo } from "../../components/CharacterVideo";
 import { Sparkles } from "lucide-react";
 import { buildWidgetData } from "../../utils/widgetData";
@@ -118,9 +117,6 @@ export function Dashboard({ onNavigate, onCompletedChange, onProfileUpdate }: Da
             </span>
           </div>
         </section>
-
-        <LifeHabitDotsWidget done={completedCount} total={totalCount} />
-
 
         <ActiveRoutinePill userId={profile.id} onNavigate={onNavigate} />
 
