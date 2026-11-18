@@ -1,5 +1,4 @@
 import { Trophy, Loader2, BarChart3, Share2 } from "lucide-react";
-import { MiniPipAvatar } from "../../components/MiniPipAvatar";
 import { GlobalLeaderboardPage } from "../leaderboard/GlobalLeaderboardPage";
 import { AnalyticsProps } from "./analyticsShared";
 import { useAnalyticsData } from "./useAnalyticsData";
@@ -22,7 +21,7 @@ import { AiInsights } from "./components/AiInsights";
 
 export function Analytics(props: AnalyticsProps) {
   const s = useAnalyticsData(props);
-  const { totalHabits, onUserClick, onProfileUpdate, profile, downloadingPoster, timeFilter, setTimeFilter, viewMode, setViewMode, showPremiumAI, logs, loading, habitStats, shareAnalytics } = s;
+  const { totalHabits, onUserClick, profile, downloadingPoster, timeFilter, setTimeFilter, viewMode, setViewMode, showPremiumAI, logs, loading, habitStats, shareAnalytics } = s;
   // Oylik matritsada tanlangan kun va ochilgan odat (hook'lar early return'dan oldin)
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
   const [detailHabit, setDetailHabit] = useState<Habit | null>(null);
@@ -43,34 +42,31 @@ export function Analytics(props: AnalyticsProps) {
 
   return (
     <div className="flex flex-col gap-5">
-      {/* Top Header Bar with Mini-PIP Avatar & View Mode Toggle */}
+      {/* Sarlavha: chapda bo'lim nomi, o'ngda Shaxsiy / Reyting */}
       <div className="flex items-center justify-between gap-3 mb-1">
-        <div className="flex items-center gap-3">
-          <MiniPipAvatar profile={profile} onProfileUpdate={onProfileUpdate} />
-          <h2 className="text-xl font-bold text-white">{s.t("analytics_page_title")}</h2>
-        </div>
-        <div className="flex bg-slate-100 dark:bg-white/5 p-1 rounded-2xl border border-slate-200 dark:border-white/10 shrink-0">
+        <h2 className="text-xl font-bold text-white truncate">{s.t("an_title")}</h2>
+        <div className="flex bg-white/5 p-1 rounded-2xl border border-white/10 shrink-0">
           <button
             onClick={() => setViewMode('personal')}
-            className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
+            className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
               viewMode === 'personal'
                 ? "bg-white dark:bg-white/10 text-emerald-600 dark:text-emerald-500 shadow-sm"
                 : "text-slate-500 hover:text-slate-700 dark:hover:text-slate-300"
             }`}
           >
             <BarChart3 size={14} className="text-emerald-500 dark:text-emerald-400" />
-            Shaxsiy
+            {s.t("an_view_personal")}
           </button>
           <button
             onClick={() => setViewMode('leaderboard')}
-            className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
+            className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
               viewMode === 'leaderboard'
                 ? "bg-white dark:bg-white/10 text-emerald-600 dark:text-emerald-500 shadow-sm"
                 : "text-slate-500 hover:text-slate-700 dark:hover:text-slate-300"
             }`}
           >
             <Trophy size={14} className="text-amber-500 dark:text-amber-400" />
-            Reyting
+            {s.t("an_view_rating")}
           </button>
         </div>
       </div>

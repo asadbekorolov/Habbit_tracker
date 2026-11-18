@@ -1268,4 +1268,7 @@ export const ru: Dict = {
   tp_down: "Меньше",
   tp_close: "Закрыть",
   tp_reminder: "Время напоминания",
+  an_title: "Анализ",
+  an_view_personal: "Личное",
+  an_view_rating: "Рейтинг",
 }

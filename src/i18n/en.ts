@@ -1268,4 +1268,7 @@ export const en: Dict = {
   tp_down: "Decrease",
   tp_close: "Close",
   tp_reminder: "Reminder time",
+  an_title: "Analytics",
+  an_view_personal: "Personal",
+  an_view_rating: "Ranking",
 }

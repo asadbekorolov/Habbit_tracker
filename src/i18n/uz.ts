@@ -1266,6 +1266,9 @@ export const uz = {
   tp_down: "Kamaytirish",
   tp_close: "Yopish",
   tp_reminder: "Eslatma vaqti",
+  an_title: "Tahlil",
+  an_view_personal: "Shaxsiy",
+  an_view_rating: "Reyting",
 }
 
 export type Dict = typeof uz
