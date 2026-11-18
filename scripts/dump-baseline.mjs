@@ -11,6 +11,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import pg from 'pg';
+import { pgSsl, sslHint } from './lib/pgSsl.mjs';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const url = process.env.SUPABASE_DB_URL;
@@ -21,12 +22,19 @@ if (!url) {
 
 const client = new pg.Client({
   connectionString: url,
-  ssl: process.env.DB_SSL_NO_VERIFY === '1' ? { rejectUnauthorized: false } : true,
+  ssl: pgSsl(),
 });
 const sql = fs.readFileSync(path.join(root, 'supabase/baseline/generate_baseline.sql'), 'utf8');
 const out = path.join(root, 'supabase/baseline/000_baseline_schema.sql');
 
-await client.connect();
+try {
+  await client.connect();
+} catch (e) {
+  console.error('Ulanib bo\x27lmadi:', e.message);
+  const hint = sslHint(e);
+  if (hint) console.error(hint);
+  process.exit(1);
+}
 try {
   await client.query('BEGIN READ ONLY');
   const { rows } = await client.query(sql);

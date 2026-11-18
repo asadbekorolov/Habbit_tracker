@@ -135,3 +135,11 @@ test("detectApplied: qo'lda qo'llangan bazada --through taklifi va oraliqlar", a
   assert.equal(d.suggest, '056');
   assert.deepEqual(d.gaps, []);
 });
+
+test('pgSsl: CA fayli bilan to\'liq tekshiruv; NO_VERIFY faqat CA bo\'lmasa', async () => {
+  const { pgSsl } = await import('../../scripts/lib/pgSsl.mjs');
+  const ca = path.join(tmpDir({}), 'ca.crt');
+  fs.writeFileSync(ca, '-----BEGIN CERTIFICATE-----\nTEST\n-----END CERTIFICATE-----\n');
+  assert.deepEqual(pgSsl({ DB_SSL_CA: ca }), { ca: fs.readFileSync(ca, 'utf8'), rejectUnauthorized: true });
+  assert.equal(pgSsl({ DB_SSL_CA: ca, DB_SSL_NO_VERIFY: '1' }).rejectUnauthorized, true, 'CA bor bo\'lsa tekshiruv o\'chmaydi');
+});

@@ -8,10 +8,11 @@
 //
 // Ulanish: SUPABASE_DB_URL (Supabase -> Connect -> Session pooler, 5432-port).
 // Parol faqat muhit o'zgaruvchisida — faylga/commit'ga yozilmaydi.
-// "self-signed certificate" xatosi chiqsa: DB_SSL_NO_VERIFY=1
+// "self-signed certificate" xatosi: Supabase CA sertifikati kerak — scripts/lib/pgSsl.mjs
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import pg from 'pg';
+import { pgSsl, sslHint } from './lib/pgSsl.mjs';
 import { status, up, adopt, detectApplied } from './lib/migrator.mjs';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
@@ -28,7 +29,7 @@ if (!url) {
 
 const client = new pg.Client({
   connectionString: url,
-  ssl: process.env.DB_SSL_NO_VERIFY === '1' ? { rejectUnauthorized: false } : true,
+  ssl: pgSsl(),
 });
 const db = {
   query: (sql, params) => client.query(sql, params),
@@ -36,7 +37,14 @@ const db = {
 };
 const log = (s) => console.log(s);
 
-await client.connect();
+try {
+  await client.connect();
+} catch (e) {
+  console.error('Ulanib bo\x27lmadi:', e.message);
+  const hint = sslHint(e);
+  if (hint) console.error(hint);
+  process.exit(1);
+}
 try {
   if (cmd === 'status') {
     const st = await status(db, dir);

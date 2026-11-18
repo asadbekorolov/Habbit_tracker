@@ -31,6 +31,13 @@ npm run db:migrate -- --dry-run    # nima qo'llanishini ko'rish
 npm run db:migrate                 # qo'llash
 ```
 
+**TLS sertifikati.** Supabase pooler o'z ildiz CA'si bilan imzolangan, shuning
+uchun birinchi ulanishda "self-signed certificate in certificate chain" chiqadi.
+Bir marta: Supabase -> Database -> Settings -> SSL Configuration ->
+**Download certificate**, faylni `supabase/certs/prod-ca-2021.crt` ga saqlang
+(ommaviy sertifikat, maxfiy emas — commit qilinadi, CI ham shuni ishlatadi).
+Skriptlar uni avtomatik topadi va ulanishni to'liq tekshiradi.
+
 Tartib: **avval baza, keyin ilova.** Yangi ustun yoki funksiyaga tayanadigan
 kod `main` ga tushishidan oldin migratsiya qo'llangan bo'lsin (yoki CI'dagi
 avtomatik qo'llash yoqilgan bo'lsin — pastda).
