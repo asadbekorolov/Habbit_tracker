@@ -1242,6 +1242,16 @@ export const uz = {
   auto_connect_hint: "Sozlamalarda IDROK uchun \"Foydalanish ma'lumotlariga ruxsat\"ni yoqing va ilovaga qayting",
   auto_web_hint: "Telefon ilovasida avtomatik o'qiladi",
   auto_live: "Jonli",
+  st_dock: "Pastki navigatsiya paneli",
+  st_dock_sub: "Asosiy va Profil doim joyida. O'rtaga ko'pi bilan 3 ta bo'lim tanlang.",
+  st_dock_fixed: "Doim",
+  st_dock_limit: "Ko'pi bilan 3 ta — avval birini o'chiring",
+  pp_user: "Foydalanuvchi",
+  pp_current_streak: "Joriy zanjir",
+  pp_best_streak: "Eng uzun zanjir",
+  pp_total_done: "Bajarilgan",
+  pp_badges_earned: "Nishonlar",
+  pp_private_stats: "Profil yopiq — zanjir va nishonlar ko'rinmaydi",
 }
 
 export type Dict = typeof uz

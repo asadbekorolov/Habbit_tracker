@@ -153,10 +153,10 @@ export function ProfilePage({ onNavigate, lang, onProfileUpdate }: ProfilePagePr
 
         <div className="flex flex-col items-center text-center relative z-10 -mt-12">
           <div className="relative mb-4">
-            <AvatarFrame frameId={profile.active_frame} radius={52}>
-              <div className="w-24 h-24 rounded-3xl overflow-hidden border-2 border-primary/20 shadow-xl bg-card">
+            <AvatarFrame frameId={profile.active_frame}>
+              <div className="w-24 h-24 rounded-full overflow-hidden border-2 border-primary/20 shadow-xl bg-card">
                 {profile.avatar_url ? (
-                  <img src={profile.avatar_url} alt="" className="w-full h-full object-cover" />
+                  <img src={profile.avatar_url} alt="" className="w-full h-full rounded-full object-cover" />
                 ) : (
                   <div className="w-full h-full flex items-center justify-center text-3xl font-bold bg-primary/10 text-primary">
                     {(profile.display_name || profile.full_name || 'A')[0].toUpperCase()}
@@ -164,7 +164,7 @@ export function ProfilePage({ onNavigate, lang, onProfileUpdate }: ProfilePagePr
                 )}
               </div>
             </AvatarFrame>
-            <div className="absolute -bottom-2 -right-2 w-10 h-10 rounded-2xl bg-card border-2 border-border flex items-center justify-center shadow-lg">
+            <div className="absolute -bottom-1 -right-1 w-10 h-10 rounded-full bg-card border-2 border-border flex items-center justify-center shadow-lg">
               <HabitIcon emoji={lv.icon} size={20} noWrapper />
             </div>
           </div>

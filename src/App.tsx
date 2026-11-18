@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef, lazy, Suspense } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import { BottomDock } from "./components/BottomDock";
 import { Routes, Route, Navigate, useNavigate, useLocation } from "react-router-dom";
 import { ProtectedRoute } from "./components/ProtectedRoute";
 import { Capacitor } from "@capacitor/core";
@@ -572,46 +573,7 @@ export default function App() {
 
           {/* Mobile floating bottom navigation (Icon-Only Minimalist Dock) - Dynamically hidden when virtual keyboard opens */}
           {!isKeyboardVisible && (
-            <nav
-              className="fixed bottom-4 left-4 right-4 z-40 max-w-md mx-auto md:hidden bg-slate-900/90 backdrop-blur-xl border border-white/10 shadow-2xl shadow-black/60 rounded-full py-2.5 px-4 transition-all duration-200"
-            >
-              <div className="flex items-center justify-around w-full">
-                {[
-                  { id: "dashboard", label: "Asosiy", icon: Home },
-                  { id: "journal", label: "Kundalik", icon: BookOpen },
-                  { id: "analytics", label: "Tahlil", icon: BarChart3 },
-                  { id: "profile", label: "Profil", icon: UserIcon },
-                ].map((tab) => {
-                  const isActive = activeTab === tab.id;
-                  const Icon = tab.icon;
-                  return (
-                    <motion.button
-                      key={tab.id}
-                      type="button"
-                      onClick={() => setActiveTab(tab.id)}
-                      aria-label={tab.label}
-                      whileTap={{ scale: 0.9 }}
-                      className="relative flex items-center justify-center flex-1 py-2 px-3 rounded-2xl transition-all duration-200 cursor-pointer group"
-                    >
-                      {isActive && (
-                        <motion.div
-                          layoutId="nav-pill"
-                          className="absolute inset-0 bg-emerald-500/15 border border-emerald-500/25 rounded-2xl shadow-[0_0_12px_rgba(16,185,129,0.2)]"
-                          transition={{ type: "spring", stiffness: 400, damping: 30 }}
-                        />
-                      )}
-                      <Icon
-                        className={`w-6 h-6 relative z-10 transition-all duration-200 ${
-                          isActive
-                            ? "text-emerald-400 scale-110"
-                            : "text-slate-400 group-hover:text-slate-200"
-                        }`}
-                      />
-                    </motion.button>
-                  );
-                })}
-              </div>
-            </nav>
+            <BottomDock activeTab={activeTab} search={location.search} onNavigate={setActiveTab} />
           )}
 
           {/* All-done celebration toast */}

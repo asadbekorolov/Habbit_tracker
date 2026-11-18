@@ -6,8 +6,11 @@ import { toast } from "sonner";
 import { useQueryClient } from "@tanstack/react-query";
 import {
   ArrowLeft, User, Shield, Globe, Vibrate, Bell, Clock, RefreshCw, Database, LogOut,
-  ChevronRight, UserPen, Ruler, KeyRound, Eye, EyeOff, Loader2, Save, Send, WifiOff, CheckCircle2,
+  ChevronRight, UserPen, Ruler, KeyRound, Eye, EyeOff, Loader2, Save, Send, WifiOff, CheckCircle2, PanelBottom,
 } from "lucide-react";
+import { useDockSlots } from "../../hooks/useDockSlots";
+import { DOCK_OPTIONS, MAX_DOCK_SLOTS, toggleDockSlot } from "../../utils/dockConfig";
+import { DOCK_ITEMS } from "../../components/BottomDock";
 import { Capacitor } from "@capacitor/core";
 import { LocalNotifications } from "@capacitor/local-notifications";
 import { updateUserPassword, updateUserProfile } from "../../services/db";
@@ -83,6 +86,55 @@ function Row({ icon: Icon, title, sub, onClick, right }: {
     </button>
   ) : (
     <div className="w-full flex items-center gap-3 p-2.5">{body}</div>
+  );
+}
+
+/** "Pastki navigatsiya paneli": Asosiy va Profil doim; o'rtada 0–3 bo'lim. */
+function DockSection() {
+  const { t } = useLang();
+  const [slots, saveSlots] = useDockSlots();
+  const preview = [DOCK_ITEMS.dashboard, ...slots.map((id) => DOCK_ITEMS[id]), DOCK_ITEMS.profile];
+  const full = slots.length >= MAX_DOCK_SLOTS;
+
+  return (
+    <Section icon={PanelBottom} title={t("st_dock")}>
+      <p className="text-[11px] text-slate-400 leading-snug px-1">{t("st_dock_sub")}</p>
+      <div className="flex items-center justify-around rounded-full bg-slate-950/60 border border-slate-800 py-2 px-3" aria-hidden="true">
+        {preview.map((it) => {
+          const Icon = it.icon;
+          const fixed = it.key === "dashboard" || it.key === "profile";
+          return <Icon key={it.key} className={`w-5 h-5 ${fixed ? "text-slate-500" : "text-emerald-400"}`} />;
+        })}
+      </div>
+      <div className="space-y-0.5">
+        {[DOCK_ITEMS.dashboard, DOCK_ITEMS.profile].map((it) => (
+          <Row key={it.key} icon={it.icon} title={t(it.labelKey as any)} right={<span className="text-[10px] font-bold uppercase tracking-wider text-slate-500">{t("st_dock_fixed")}</span>} />
+        ))}
+        {DOCK_OPTIONS.map((id) => {
+          const it = DOCK_ITEMS[id];
+          const on = slots.includes(id);
+          return (
+            <Row
+              key={id}
+              icon={it.icon}
+              title={t(it.labelKey as any)}
+              right={
+                <Switch
+                  on={on}
+                  label={t(it.labelKey as any)}
+                  disabled={!on && full}
+                  onToggle={() => saveSlots(toggleDockSlot(slots, id))}
+                />
+              }
+            />
+          );
+        })}
+      </div>
+      <p className="text-[11px] text-slate-500 px-1 flex justify-between">
+        <span>{full ? t("st_dock_limit") : ""}</span>
+        <span className="font-mono">{slots.length}/{MAX_DOCK_SLOTS}</span>
+      </p>
+    </Section>
   );
 }
 
@@ -318,6 +370,9 @@ export function SettingsPage({ onLogout, onNavigate, onProfileUpdate, lang, onLa
           right={<Switch on={haptics} onToggle={toggleHaptics} label={t("st_haptics")} />}
         />
       </Section>
+
+      {/* Pastki navigatsiya paneli */}
+      <DockSection />
 
       {/* 3. Bildirishnomalar va vaqt */}
       <Section icon={Bell} title={t("st_notif_time")}>

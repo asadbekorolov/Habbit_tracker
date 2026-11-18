@@ -3,6 +3,7 @@ import { Crown, Loader2, CheckCircle2, UserPlus, Clock, UserMinus, Shield, Arrow
 import { isStarActive } from "../../../../services/db";
 import { UserBadge } from "../../../../components/UserBadge";
 import type { GroupDetailState } from "../useGroupDetail";
+import { publicName, nameInitials } from "../../../../utils/publicName";
 
 export function MembersTab({ s }: { s: GroupDetailState }) {
   const { profile, group, card, onUserClick, t, members, isOwner, isAdmin, memberActionId, transferTargetId, setTransferTargetId, handleKickMember, handleToggleCoAdmin, handleTransferOwnership, memberStatsMap } = s;
@@ -18,7 +19,7 @@ export function MembersTab({ s }: { s: GroupDetailState }) {
         members.map((m: any, i) => {
           const p = m.profiles;
           if (!p) return null;
-          const initials = (p.display_name || "??").split(" ").map((n: string) => n[0]).join("").toUpperCase().slice(0, 2);
+          const initials = nameInitials(publicName(p));
           const mStats = memberStatsMap[m.user_id];
           const isThisOwner = m.user_id === group.admin_id;
           const isSelf = m.user_id === profile.id;
@@ -36,7 +37,7 @@ export function MembersTab({ s }: { s: GroupDetailState }) {
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2">
                     <p className="text-sm font-medium truncate" style={{ color: "var(--foreground)" }}>
-                      {p.display_name}
+                      {publicName(p)}
                     </p>
                     <UserBadge active={isStarActive(p)} size={12} />
                     {isThisOwner ? (

@@ -3,8 +3,7 @@ import {
   X, Star, Flame, Loader2, Check, Lock,
   Send, UserPlus, UserCheck, Crown, Instagram,
   AlertTriangle,
-  Trophy, Target, CheckCircle2,
-  type LucideIcon,
+  Trophy, CheckCircle2, Award,
 } from "lucide-react";
 import { HabitIcon } from "./HabitIcon";
 import {
@@ -16,25 +15,12 @@ import { getLevel } from "../utils/levels";
 import { getUsernameGlowStyle } from "../utils/cosmetics";
 import type { Profile } from "../services/supabase";
 import { useLang } from "../store/LangContext";
-import type { T } from "../store/LangContext";
 import { UserBadge } from "./UserBadge";
 import { AvatarFrame } from "./AvatarFrame";
 import { useScrollLock } from "../hooks/useScrollLock";
-
-// icon: Lucide komponenti yoki HabitIcon nomi (masalan daraja ikonkasi)
-interface Badge { icon: LucideIcon | string; label: string; color: string }
-
-function computeBadges(totalCompleted: number, score: number, t: T): Badge[] {
-  const b: Badge[] = [];
-  const lv = getLevel(score);
-  if (lv.level >= 2) b.push({ icon: lv.icon, label: t(`level_${lv.level}` as any), color: lv.color });
-
-  if (totalCompleted >= 100) b.push({ icon: Trophy, label: t('pp_badge_100'), color: "#FBBF24" });
-  else if (totalCompleted >= 50) b.push({ icon: Target, label: t('pp_badge_50'), color: "#4ADE80" });
-  else if (totalCompleted >= 10) b.push({ icon: CheckCircle2, label: t('pp_badge_10'), color: "#4ADE80" });
-
-  return b;
-}
+import { publicName, nameInitials } from "../utils/publicName";
+import { computeNativeBadges } from "./School21BadgesModal";
+import type { PublicProfileStats } from "../services/db";
 
 interface PublicProfileModalProps {
   viewingId: string;
@@ -47,11 +33,7 @@ const LEVEL_LABELS = ["", "level_1", "level_2", "level_3", "level_4", "level_5",
 export function PublicProfileModal({ viewingId, myProfile, onClose }: PublicProfileModalProps) {
   const { t } = useLang();
   useScrollLock(true);
-  const [data, setData] = useState<{
-    profile: Profile;
-    totalCompleted: number;
-    habitsCount: number;
-  } | null>(null);
+  const [data, setData] = useState<PublicProfileStats | null>(null);
   const [followCounts, setFollowCounts] = useState({ followers: 0, following: 0 });
   const [isFollowing, setIsFollowing] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -166,9 +148,12 @@ export function PublicProfileModal({ viewingId, myProfile, onClose }: PublicProf
     );
   }
 
-  const { profile, totalCompleted, habitsCount } = data;
+  const { profile, isPrivate, totalCompleted, activeDays, bestStreak, currentStreak } = data;
   const lv = getLevel(profile.score || 0);
-  const initials = profile.display_name.split(" ").map((n: string) => n[0]).join("").toUpperCase().slice(0, 2);
+  const name = publicName(profile, t('pp_user'));
+  const initials = nameInitials(name);
+  // Nishonlar — o'z profilidagi bilan bir xil shartlar (utils/badges), faqat ochilganlari
+  const earnedBadges = isPrivate ? [] : computeNativeBadges({ score: profile.score || 0, totalCompleted, activeDays, bestStreak }).filter((b) => b.isUnlocked);
   // Telegram identifikatori faqat quyidagi holatlarda DOM'ga chiqariladi:
   // o'zi, yoki profil ochiq (telegram_private=false), yoki so'rov allaqachon
   // tasdiqlangan. Aks holda hech narsa ko'rsatilmaydi — pastdagi "So'rov
@@ -201,12 +186,12 @@ export function PublicProfileModal({ viewingId, myProfile, onClose }: PublicProf
           <div className="flex items-start gap-4">
             {/* Avatar */}
             <div className="relative shrink-0">
-              <AvatarFrame frameId={profile.active_frame} radius={16}>
+              <AvatarFrame frameId={profile.active_frame}>
                 {profile.avatar_url ? (
-                  <img src={profile.avatar_url} alt="" className="w-20 h-20 rounded-2xl object-cover"
+                  <img src={profile.avatar_url} alt="" className="w-20 h-20 rounded-full overflow-hidden object-cover"
                     style={{ border: profile.active_frame ? "none" : `3px solid ${lv.color}55` }} />
                 ) : (
-                  <div className="w-20 h-20 rounded-2xl flex items-center justify-center text-2xl font-bold"
+                  <div className="w-20 h-20 rounded-full overflow-hidden flex items-center justify-center text-2xl font-bold"
                     style={{ background: profile.avatar_color || lv.color, color: "#0E1117", border: profile.active_frame ? "none" : `3px solid ${lv.color}55` }}>
                     {initials}
                   </div>
@@ -221,13 +206,13 @@ export function PublicProfileModal({ viewingId, myProfile, onClose }: PublicProf
             {/* Info */}
             <div className="flex-1 min-w-0 pt-1">
               <div className="flex items-center gap-2">
-                <h2 className="text-lg font-bold leading-tight" style={{ color: "var(--foreground)", ...(profile.username_glow ? getUsernameGlowStyle() : {}) }}>
-                  {profile.display_name}
+                <h2 className="text-lg font-bold leading-tight break-words" style={{ color: "var(--foreground)", ...(profile.username_glow ? getUsernameGlowStyle() : {}) }}>
+                  {name}
                 </h2>
                 <UserBadge active={isStarActive(profile)} size={14} />
                 {profile.is_admin && <Crown size={14} style={{ color: "#FBBF24" }} />}
               </div>
-              {isSelf && (
+              {profile.username && (
                 <p className="text-sm mt-0.5" style={{ color: "var(--muted-foreground)", fontFamily: "'Geist Mono', monospace" }}>
                   @{profile.username}
                 </p>
@@ -235,7 +220,7 @@ export function PublicProfileModal({ viewingId, myProfile, onClose }: PublicProf
               <div className="flex items-center gap-2 mt-2 flex-wrap">
                 <span className="flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-bold"
                   style={{ background: `${lv.color}18`, color: lv.color, border: `1px solid ${lv.color}33` }}>
-                  {lv.icon} LVL {lv.level} {t(LEVEL_LABELS[lv.level] as any)}
+                  <HabitIcon emoji={lv.icon} size={12} noWrapper /> <span className="font-mono">LVL {lv.level}</span> {t(LEVEL_LABELS[lv.level] as any)}
                 </span>
                 <span className="flex items-center gap-1 text-sm font-bold" style={{ color: "#FBBF24" }}>
                   <Star size={13} fill="currentColor" />
@@ -247,7 +232,7 @@ export function PublicProfileModal({ viewingId, myProfile, onClose }: PublicProf
 
           {/* Bio */}
           {profile.bio && (
-            <p className="mt-3 text-sm leading-relaxed" style={{ color: "var(--muted-foreground)" }}>
+            <p className="mt-3 text-sm leading-relaxed line-clamp-3 break-words" style={{ color: "var(--muted-foreground)" }}>
               {profile.bio}
             </p>
           )}
@@ -295,45 +280,44 @@ export function PublicProfileModal({ viewingId, myProfile, onClose }: PublicProf
           </div>
         </div>
 
-        {/* Stats */}
-        <div className="grid grid-cols-2 gap-2 px-5 py-3 border-t"
-          style={{ borderColor: "rgba(255,255,255,0.06)" }}>
-          {[
-            { icon: Star, label: t('pp_points'), value: profile.score || 0, color: "#FBBF24" },
-            { icon: Flame, label: t('nav_habits'), value: habitsCount, color: "#F97316" },
-          ].map((s) => (
-            <div key={s.label} className="flex flex-col items-center gap-1 py-2">
-              <s.icon size={16} style={{ color: s.color }} />
-              <p className="text-base font-bold leading-none" style={{ color: "var(--foreground)", fontFamily: "'Geist Mono', monospace" }}>
-                {s.value}
-              </p>
-              <p className="text-[11px]" style={{ color: "var(--muted-foreground)" }}>{s.label}</p>
-            </div>
-          ))}
-        </div>
-
-        {/* Achievements */}
-        {(() => {
-          const badges = computeBadges(totalCompleted, profile.score || 0, t);
-          if (badges.length === 0) return null;
-          return (
-            <div className="px-5 py-3 border-b"
-              style={{ borderColor: "rgba(255,255,255,0.06)" }}>
-              <p className="text-[11px] font-semibold mb-2 uppercase" style={{ color: "var(--muted-foreground)" }}>
-                {t('ach_title')}
-              </p>
-              <div className="flex flex-wrap gap-2">
-                {badges.map((b) => (
-                  <span key={b.label}
-                    className="flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold"
-                    style={{ background: `${b.color}15`, color: b.color, border: `1px solid ${b.color}30` }}>
-                    {typeof b.icon === "string" ? <HabitIcon emoji={b.icon} size={12} noWrapper /> : <b.icon size={12} />} {b.label}
-                  </span>
-                ))}
+        {/* Statistika — faqat yig'ma raqamlar; odatlar va kunlik belgilar yopiq */}
+        {isPrivate ? (
+          <div className="mx-5 my-3 flex items-center gap-2 rounded-2xl border border-slate-800 bg-slate-950/50 px-3.5 py-3 text-xs text-slate-400">
+            <Lock size={14} className="shrink-0" /> {t('pp_private_stats')}
+          </div>
+        ) : (
+          <div className="grid grid-cols-3 gap-2 px-5 py-3 border-t" style={{ borderColor: "rgba(255,255,255,0.06)" }}>
+            {[
+              { icon: Flame, label: t('pp_current_streak'), value: currentStreak, color: "#F97316" },
+              { icon: Trophy, label: t('pp_best_streak'), value: bestStreak, color: "#FBBF24" },
+              { icon: CheckCircle2, label: t('pp_total_done'), value: totalCompleted, color: "#10B981" },
+            ].map((st) => (
+              <div key={st.label} className="flex flex-col items-center gap-1 py-2 rounded-2xl bg-slate-950/40 border border-slate-800/70">
+                <st.icon size={16} style={{ color: st.color }} />
+                <p className="text-base font-bold leading-none font-mono" style={{ color: "var(--foreground)" }}>{st.value}</p>
+                <p className="text-[10.5px] text-center leading-tight px-1" style={{ color: "var(--muted-foreground)" }}>{st.label}</p>
               </div>
+            ))}
+          </div>
+        )}
+
+        {/* Qo'lga kiritilgan nishonlar */}
+        {earnedBadges.length > 0 && (
+          <div className="px-5 py-3 border-b" style={{ borderColor: "rgba(255,255,255,0.06)" }}>
+            <p className="text-[11px] font-semibold mb-2 uppercase flex items-center gap-1.5" style={{ color: "var(--muted-foreground)" }}>
+              <Award size={12} /> {t('pp_badges_earned')} <span className="font-mono">{earnedBadges.length}</span>
+            </p>
+            <div className="flex flex-wrap gap-2">
+              {earnedBadges.map((b) => (
+                <span key={b.id}
+                  className="flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold"
+                  style={{ background: `${b.color}15`, color: b.color, border: `1px solid ${b.color}30` }}>
+                  <b.icon size={12} /> {b.title}
+                </span>
+              ))}
             </div>
-          );
-        })()}
+          </div>
+        )}
 
         {/* Actions */}
         {!isSelf && (

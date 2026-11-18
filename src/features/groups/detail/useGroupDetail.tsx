@@ -8,6 +8,7 @@ import { supabase } from "../../../services/supabase";
 import type { Profile } from "../../../services/supabase";
 import { postApi } from "../../../services/apiClient";
 import { DetailTab, LogState } from "../groupsShared";
+import { publicName, nameInitials } from "../../../utils/publicName";
 
 export function useGroupDetail({ profile, group, onBack, onGroupRemoved, card, inputStyle, onUserClick
 }: { profile: Profile; group: any; onBack: () => void;
@@ -189,7 +190,7 @@ export function useGroupDetail({ profile, group, onBack, onGroupRemoved, card, i
 
       if (logItem) {
         postApi('/api/notify-group', {
-          completer_name: logItem.profiles?.display_name || "A'zo",
+          completer_name: publicName(logItem.profiles, "A'zo"),
           habit_emoji: logItem.group_habits?.emoji || 'Target',
           habit_name: logItem.group_habits?.name || '',
           group_id: group.id,
@@ -461,7 +462,7 @@ export function useGroupDetail({ profile, group, onBack, onGroupRemoved, card, i
     if (!row.user_id) continue;
     if (!memberStatsMap[row.user_id]) {
       memberStatsMap[row.user_id] = {
-        name: row.profiles?.display_name || "?",
+        name: publicName(row.profiles),
         color: row.profiles?.avatar_color || "#4ADE80",
         avatarUrl: row.profiles?.avatar_url || null,
         approved: 0, pending: 0, rejected: 0, total: 0,

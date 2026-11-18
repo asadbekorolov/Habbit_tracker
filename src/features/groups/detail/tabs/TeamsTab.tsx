@@ -1,6 +1,7 @@
 // Guruh tafsilotlari — TeamsTab.
 import { Users, Plus, Check, Loader2, Trash2, Pencil, AlertTriangle } from "lucide-react";
 import type { GroupDetailState } from "../useGroupDetail";
+import { publicName, nameInitials } from "../../../../utils/publicName";
 
 export function TeamsTab({ s }: { s: GroupDetailState }) {
   const { profile, card, inputStyle, onUserClick, t, members, subteams, error, setError, showCreateTeam, setShowCreateTeam, newTeamName, setNewTeamName, newTeamEmoji, setNewTeamEmoji, creatingTeam, managingTeam, setManagingTeam, managingSelected, setManagingSelected, savingTeamMembers, deletingTeam, isAdmin, handleCreateTeam, openManageTeam, handleSaveTeamMembers, handleDeleteTeam, EMOJI_MAP, TEAM_ICON_NAMES } = s;
@@ -95,7 +96,7 @@ export function TeamsTab({ s }: { s: GroupDetailState }) {
                   {teamMembers.map((m: any) => {
                     const p = m.profiles;
                     if (!p) return null;
-                    const initials = (p.display_name || "?").split(" ").map((n: string) => n[0]).join("").toUpperCase().slice(0, 2);
+                    const initials = nameInitials(publicName(p));
                     return (
                       <div key={m.user_id}
                         onClick={() => onUserClick?.(m.user_id)}
@@ -105,7 +106,7 @@ export function TeamsTab({ s }: { s: GroupDetailState }) {
                           style={{ background: p.avatar_color || "#4ADE80", color: "#0E1117" }}>
                           {p.avatar_url ? <img src={p.avatar_url} alt="" className="w-5 h-5 object-cover" /> : initials}
                         </div>
-                        <span className="text-xs font-medium" style={{ color: "var(--foreground)" }}>{p.display_name}</span>
+                        <span className="text-xs font-medium" style={{ color: "var(--foreground)" }}>{publicName(p)}</span>
                       </div>
                     );
                   })}
@@ -191,7 +192,7 @@ export function TeamsTab({ s }: { s: GroupDetailState }) {
               {members.map((m: any) => {
                 const p = m.profiles;
                 if (!p) return null;
-                const initials = (p.display_name || "?").split(" ").map((n: string) => n[0]).join("").toUpperCase().slice(0, 2);
+                const initials = nameInitials(publicName(p));
                 const isChecked = managingSelected.has(m.user_id);
                 return (
                   <button
@@ -214,7 +215,7 @@ export function TeamsTab({ s }: { s: GroupDetailState }) {
                       {p.avatar_url ? <img src={p.avatar_url} alt="" className="w-8 h-8 object-cover" /> : initials}
                     </div>
                     <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium" style={{ color: "var(--foreground)" }}>{p.display_name}</p>
+                      <p className="text-sm font-medium" style={{ color: "var(--foreground)" }}>{publicName(p)}</p>
                       <p className="text-xs" style={{ color: "var(--muted-foreground)" }}>@{p.username}</p>
                     </div>
                     <div className="w-5 h-5 rounded-md flex items-center justify-center shrink-0"

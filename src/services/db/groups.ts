@@ -2,6 +2,7 @@
 // Eski importlar uchun hammasi src/services/db.ts orqali qayta eksport qilinadi.
 
 import { supabase } from '../supabase'
+import { publicName } from '../../utils/publicName'
 import { tashkentTodayAnchor, toDateStr } from '../../utils/date'
 import { PUBLIC_PROFILE_COLUMNS } from './core'
 import { isStarActive } from './shop'
@@ -131,7 +132,7 @@ export async function setMemberGoal(
 export async function getMemberGoals(groupId: string) {
   const { data, error } = await supabase
     .from('member_goals')
-    .select('*, profiles(display_name), group_habits(name, emoji)')
+    .select('*, profiles(display_name, full_name, username), group_habits(name, emoji)')
     .eq('group_id', groupId)
   if (error) throw error
   return data
@@ -149,7 +150,7 @@ export async function getGroupLeaderboard(groupId: string) {
 
   for (const m of members) {
     scores[m.user_id] = {
-      name: m.profiles.display_name,
+      name: publicName(m.profiles),
       color: m.profiles.avatar_color,
       avatarUrl: m.profiles.avatar_url,
       score: 0,
@@ -273,7 +274,7 @@ export async function getTodayGroupLogs(groupId: string, userId: string) {
 export async function getPendingGroupApprovals(groupId: string) {
   const { data, error } = await supabase
     .from('group_habit_logs')
-    .select('*, profiles!user_id(display_name, avatar_color, avatar_url, username), group_habits(name, emoji)')
+    .select('*, profiles!user_id(display_name, full_name, avatar_color, avatar_url, username), group_habits(name, emoji)')
     .eq('group_id', groupId)
     .eq('approval_status', 'pending')
     .eq('completed', true)
@@ -296,7 +297,7 @@ export async function getGroupSubteams(groupId: string) {
   const { data, error } = await supabase
     .from('group_subteams')
     .select(`id, name, emoji, created_by, created_at,
-      group_subteam_members(user_id, profiles(id, display_name, avatar_color, avatar_url, username))`)
+      group_subteam_members(user_id, profiles(id, display_name, full_name, avatar_color, avatar_url, username))`)
     .eq('group_id', groupId)
     .order('created_at')
   if (error) throw error

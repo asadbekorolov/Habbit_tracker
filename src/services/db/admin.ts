@@ -123,7 +123,7 @@ export async function sendGlobalNotification(title: string, body: string) {
 export async function getAllPendingApprovals() {
   const { data, error } = await supabase
     .from('group_habit_logs')
-    .select('*, profiles!user_id(display_name, avatar_color, avatar_url, username), group_habits(name, emoji), groups(name)')
+    .select('*, profiles!user_id(display_name, full_name, avatar_color, avatar_url, username), group_habits(name, emoji), groups(name)')
     .eq('approval_status', 'pending')
     .eq('completed', true)
     .order('created_at', { ascending: false })
@@ -135,7 +135,7 @@ export async function getAllPendingApprovals() {
 export async function getRecentRejections(limitCount = 30) {
   const { data, error } = await supabase
     .from('group_habit_logs')
-    .select('*, profiles!user_id(display_name, avatar_color, avatar_url, username), group_habits(name, emoji), groups(name)')
+    .select('*, profiles!user_id(display_name, full_name, avatar_color, avatar_url, username), group_habits(name, emoji), groups(name)')
     .eq('approval_status', 'rejected')
     .order('created_at', { ascending: false })
     .limit(limitCount)
@@ -160,7 +160,7 @@ export async function getGroupMembersMonthlyStats(groupId: string) {
   const firstDay = toDateStr(new Date(now.getFullYear(), now.getMonth(), 1))
   const { data, error } = await supabase
     .from('group_habit_logs')
-    .select('user_id, log_date, approval_status, completed, reps, group_habit_id, profiles!user_id(display_name, avatar_color, avatar_url), group_habits(name, emoji)')
+    .select('user_id, log_date, approval_status, completed, reps, group_habit_id, profiles!user_id(display_name, full_name, avatar_color, avatar_url), group_habits(name, emoji)')
     .eq('group_id', groupId)
     .gte('log_date', firstDay)
     .order('log_date')

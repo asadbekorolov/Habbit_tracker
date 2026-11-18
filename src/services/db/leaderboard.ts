@@ -2,6 +2,7 @@
 // Eski importlar uchun hammasi src/services/db.ts orqali qayta eksport qilinadi.
 
 import { supabase } from '../supabase'
+import { publicName } from '../../utils/publicName'
 
 // ─── GLOBAL REYTING ────────────────────────────────────────
 export type LeaderboardEntry = {
@@ -29,13 +30,39 @@ export type LeaderboardPeriod = 'daily' | 'monthly' | '6months' | 'yearly' | 'al
 // (PGRST202: funksiya topilmadi) eski 30 kunlik get_leaderboard ishlatiladi.
 export async function getLeaderboard(period: LeaderboardPeriod = 'monthly'): Promise<LeaderboardEntry[]> {
   const { data, error } = await supabase.rpc('get_leaderboard_period', { p_period: period })
-  if (!error) return (data || []) as LeaderboardEntry[]
+  if (!error) return withFullNames((data || []) as LeaderboardEntry[])
   if (error.code === 'PGRST202') {
     const legacy = await supabase.rpc('get_leaderboard')
     if (legacy.error) throw legacy.error
-    return (legacy.data || []) as LeaderboardEntry[]
+    return withFullNames((legacy.data || []) as LeaderboardEntry[])
   }
   throw error
+}
+
+/**
+ * Reytingda haqiqiy to'liq ism (full_name / display_name). Yopiq profil
+ * (profile_private) — serverdagi qisqartirilgan "Ism F." yorlig'i qoladi.
+ * Ismlarni yuklab bo'lmasa — reyting o'zgarishsiz qaytadi.
+ */
+async function withFullNames(list: LeaderboardEntry[]): Promise<LeaderboardEntry[]> {
+  const ids = list.filter((u) => !u.is_private).map((u) => u.id)
+  if (!ids.length) return list
+  try {
+    const { data, error } = await supabase
+      .from('profiles')
+      .select('id, full_name, display_name, username, profile_private')
+      .in('id', ids.slice(0, 500))
+    if (error || !data) return list
+    const names = new Map<string, string>()
+    for (const p of data as any[]) {
+      if (p.profile_private) continue
+      const n = publicName(p, '')
+      if (n && !n.startsWith('@')) names.set(p.id, n)
+    }
+    return list.map((u) => (names.has(u.id) ? { ...u, display_label: names.get(u.id)! } : u))
+  } catch {
+    return list
+  }
 }
 
 // Joriy foydalanuvchining o'rni (048: get_my_leaderboard_rank). userId faqat

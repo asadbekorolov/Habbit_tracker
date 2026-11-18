@@ -1,6 +1,7 @@
 // Guruh tafsilotlari — ApproveTab.
 import { Check, X, ShieldCheck, MessageSquare, AlertTriangle } from "lucide-react";
 import type { GroupDetailState } from "../useGroupDetail";
+import { publicName, nameInitials } from "../../../../utils/publicName";
 
 export function ApproveTab({ s }: { s: GroupDetailState }) {
   const { card, t, pendingApprovals, error, setRejectLogId, setRejectReason, handleApprove } = s;
@@ -25,7 +26,7 @@ export function ApproveTab({ s }: { s: GroupDetailState }) {
             const p = item.profiles;
             const h = item.group_habits;
             if (!p || !h) return null;
-            const initials = (p.display_name || "?").split(" ").map((n: string) => n[0]).join("").toUpperCase().slice(0, 2);
+            const initials = nameInitials(publicName(p));
             return (
               <div key={item.id} style={{ ...card, border: "1px solid rgba(251,191,36,0.2)" }} className="p-4">
                 <div className="flex items-start gap-3 mb-3">
@@ -34,7 +35,7 @@ export function ApproveTab({ s }: { s: GroupDetailState }) {
                     {p.avatar_url ? <img src={p.avatar_url} alt="" className="w-9 h-9 object-cover" /> : initials}
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm font-semibold" style={{ color: "var(--foreground)" }}>{p.display_name}</p>
+                    <p className="text-sm font-semibold" style={{ color: "var(--foreground)" }}>{publicName(p)}</p>
                     <div className="flex items-center gap-1.5 mt-0.5">
                       <span>{h.emoji}</span>
                       <span className="text-xs" style={{ color: "var(--muted-foreground)" }}>{h.name}</span>

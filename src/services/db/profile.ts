@@ -121,18 +121,62 @@ export async function getUserHabitsAdmin(userId: string) {
 }
 
 // ─── PUBLIC PROFILE ─────────────────────────────────────────
-export async function getPublicProfileStats(userId: string) {
-  const [baseProfile, allLogs, habits, tg] = await Promise.all([
+export interface PublicProfileStats {
+  profile: any
+  /** Yopiq profil — raqamlar ko'rsatilmaydi */
+  isPrivate: boolean
+  totalCompleted: number
+  activeDays: number
+  bestStreak: number
+  currentStreak: number
+  habitsCount: number
+}
+
+/**
+ * Ommaviy profil: faqat yig'ma raqamlar (055: get_public_profile_stats).
+ * Odatlar va kunlik belgilar hech qachon yuklanmaydi. 055 hali qo'llanmagan
+ * bazada (PGRST202) — faqat o'z profilida loglardan hisoblanadi.
+ */
+export async function getPublicProfileStats(userId: string): Promise<PublicProfileStats> {
+  const [baseProfile, tg, rpc] = await Promise.all([
     getProfileById(userId),
-    getAllTimeLogs(userId),
-    getHabits(userId),
     getTelegramContact(userId),
+    supabase.rpc('get_public_profile_stats', { p_user_id: userId }),
   ])
   // telegram_username endi to'g'ridan-to'g'ri o'qilmaydi: server faqat ruxsat
   // bo'lsa (o'zi / ochiq / so'rov tasdiqlangan) qaytaradi.
   const profile = { ...baseProfile, telegram_username: tg.username, has_telegram: tg.has_telegram }
-  const totalCompleted = (allLogs || []).filter((l: any) => l.habits?.type === 'positive').length
-  return { profile, totalCompleted, habitsCount: (habits || []).length }
+  const s: any = rpc.error ? null : rpc.data
+  if (s) {
+    return {
+      profile,
+      isPrivate: s.private === true,
+      totalCompleted: Number(s.total_completed) || 0,
+      activeDays: Number(s.active_days) || 0,
+      bestStreak: Number(s.best_streak) || 0,
+      currentStreak: Number(s.current_streak) || 0,
+      habitsCount: Number(s.habits_count) || 0,
+    }
+  }
+  // Eski server: faqat o'z loglarimiz o'qiladi (051) — boshqalar uchun 0
+  const [allLogs, habits] = await Promise.all([getAllTimeLogs(userId).catch(() => []), getHabits(userId).catch(() => [])])
+  const done = (allLogs || []).filter((l: any) => l.completed)
+  const days = [...new Set(done.map((l: any) => l.log_date as string))].sort()
+  let best = 0, run = 0, prev = ''
+  for (const d of days) {
+    run = prev && Date.parse(d) - Date.parse(prev) === 86_400_000 ? run + 1 : 1
+    best = Math.max(best, run)
+    prev = d
+  }
+  return {
+    profile,
+    isPrivate: false,
+    totalCompleted: done.length,
+    activeDays: days.length,
+    bestStreak: best,
+    currentStreak: 0,
+    habitsCount: (habits || []).length,
+  }
 }
 
 export async function sendContactRequest(
