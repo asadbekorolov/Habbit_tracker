@@ -533,27 +533,44 @@ export async function getOwnedItemIds(userId: string): Promise<Set<string>> {
   return new Set((data || []).map((r) => r.item_id))
 }
 
-// Ramkalar 30 kunga sotib olinadi (doimiy emas) — har bir frame_* item_id
-// uchun ENG SO'NGGI xarid sanasini qaytaradi, shundan CoinShopModal muddat
-// tugash sanasini hisoblaydi va "sizda bor" holatini shunga qarab ko'rsatadi.
-export async function getFramePurchases(userId: string): Promise<Map<string, string>> {
-  const { data } = await supabase
+// Ramkalar va "Yaltiroq ism" muddatli (20 kun) — har bir bezak uchun ENG
+// KECH tugash vaqtini qaytaradi (coin_purchases.expires_at, 056). Do'kon shundan
+// "N kun qoldi" / "Yana sotib olish" holatini ko'rsatadi.
+const COSMETIC_IDS = ['frame_bronze', 'frame_silver', 'frame_gold', 'username_glow']
+export async function getCosmeticExpiries(userId: string): Promise<Map<string, string>> {
+  const map = new Map<string, string>()
+  const { data, error } = await supabase
+    .from('coin_purchases')
+    .select('item_id, expires_at')
+    .eq('user_id', userId)
+    .in('item_id', COSMETIC_IDS)
+  if (!error) {
+    for (const row of (data || []) as { item_id: string; expires_at: string | null }[]) {
+      if (!row.expires_at) continue
+      const prev = map.get(row.item_id)
+      if (!prev || new Date(row.expires_at) > new Date(prev)) map.set(row.item_id, row.expires_at)
+    }
+    return map
+  }
+  // 056 hali qo'llanmagan server: ramka — xariddan 30 kun, yaltirash — doimiy
+  const { data: old } = await supabase
     .from('coin_purchases')
     .select('item_id, purchased_at')
     .eq('user_id', userId)
-    .in('item_id', ['frame_bronze', 'frame_silver', 'frame_gold'])
-    .order('purchased_at', { ascending: false })
-  const map = new Map<string, string>()
-  for (const row of data || []) {
-    if (!map.has(row.item_id)) map.set(row.item_id, row.purchased_at)
+    .in('item_id', COSMETIC_IDS)
+  for (const row of (old || []) as { item_id: string; purchased_at: string }[]) {
+    const exp = row.item_id === 'username_glow'
+      ? '2999-01-01T00:00:00Z'
+      : new Date(new Date(row.purchased_at).getTime() + 30 * 86400000).toISOString()
+    const prev = map.get(row.item_id)
+    if (!prev || new Date(exp) > new Date(prev)) map.set(row.item_id, exp)
   }
   return map
 }
 
-// Foydalanuvchi kirganda yoki do'konni ochganda chaqiriladi — agar hozir
-// faollashtirilgan ramkaning xaridi 30 kundan oshgan bo'lsa, serverda
-// avtomatik yechib tashlaydi (profiles.active_frame = null) va joriy
-// (yechilgandan keyingi) qiymatni qaytaradi.
+// Foydalanuvchi kirganda yoki do'konni ochganda chaqiriladi — muddati o'tgan
+// ramka va "Yaltiroq ism"ni serverda avtomatik yechadi va joriy
+// (yechilgandan keyingi) ramkani qaytaradi.
 export async function cleanupExpiredFrame(userId: string): Promise<string | null> {
   const { data, error } = await supabase.rpc('cleanup_expired_frame', { uid: userId })
   if (error) return null

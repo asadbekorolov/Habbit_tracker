@@ -20,24 +20,44 @@ export const PREMIUM_AVATAR_COLORS: ShopColorItem[] = [
 
 export type ShopFrameItem = { id: string; name: string; price: number; icon: string; border: string; shadow: string };
 export const FRAMES: ShopFrameItem[] = [
-  { id: "frame_bronze", name: "Bronza ramka", price: 8, icon: "Medal", border: "3px solid #CD7F32", shadow: "0 0 10px rgba(205,127,50,0.5)" },
-  { id: "frame_silver", name: "Kumush ramka", price: 20, icon: "Medal", border: "3px solid #C0C0C0", shadow: "0 0 12px rgba(192,192,192,0.6)" },
-  { id: "frame_gold", name: "Oltin ramka", price: 50, icon: "Crown", border: "3px solid #FBBF24", shadow: "0 0 16px rgba(251,191,36,0.7)" },
+  { id: "frame_bronze", name: "Bronza ramka", price: 300, icon: "Medal", border: "3px solid #CD7F32", shadow: "0 0 10px rgba(205,127,50,0.5)" },
+  { id: "frame_silver", name: "Kumush ramka", price: 600, icon: "Medal", border: "3px solid #C0C0C0", shadow: "0 0 12px rgba(192,192,192,0.6)" },
+  { id: "frame_gold", name: "Oltin ramka", price: 1000, icon: "Crown", border: "3px solid #FBBF24", shadow: "0 0 16px rgba(251,191,36,0.7)" },
 ];
 
-// Ramkalar 30 kunlik xarid — coin_purchases.purchased_at + shu muddat orqali
-// hisoblanadi, alohida "expires_at" ustuni shart emas (028-migratsiya).
-export const FRAME_DURATION_DAYS = 30;
+// Ramkalar va "Yaltiroq ism" — 20 kunlik xarid. Tugash vaqti serverda
+// coin_purchases.expires_at ga yoziladi (056-migratsiya); narxlar
+// shop_items katalogi bilan bir xil bo'lishi shart.
+export const COSMETIC_DURATION_DAYS = 20;
+
+const DAY_MS = 24 * 60 * 60 * 1000;
+
+/** Bezak holati: hech sotib olinmagan / amal qilyapti / muddati tugagan. */
+export type CosmeticState = "none" | "active" | "expired";
+
+export function cosmeticState(expiresAt: string | null | undefined, now = Date.now()): CosmeticState {
+  if (!expiresAt) return "none";
+  const t = new Date(expiresAt).getTime();
+  if (!Number.isFinite(t)) return "none";
+  return t > now ? "active" : "expired";
+}
+
+/** Necha kun qoldi (yuqoriga yaxlitlanadi; tugagan bo'lsa 0). */
+export function cosmeticDaysLeft(expiresAt: string | null | undefined, now = Date.now()): number {
+  if (!expiresAt) return 0;
+  const ms = new Date(expiresAt).getTime() - now;
+  return ms > 0 ? Math.ceil(ms / DAY_MS) : 0;
+}
 
 export function getFrameStyle(frameId: string | null | undefined): { border: string; boxShadow: string } | null {
   const f = FRAMES.find((x) => x.id === frameId);
   return f ? { border: f.border, boxShadow: f.shadow } : null;
 }
 
-// "Yaltiroq ism" — doimiy (muddatsiz) kosmetika, profiles.username_glow
-// bayrog'i orqali saqlanadi.
+// "Yaltiroq ism" — 20 kunlik kosmetika; profiles.username_glow — yoqilganmi
+// (muddat tugaguncha o'chirib/yoqib turish mumkin).
 export const USERNAME_GLOW_ID = "username_glow";
-export const USERNAME_GLOW_PRICE = 40;
+export const USERNAME_GLOW_PRICE = 800;
 
 export function getUsernameGlowStyle(): { textShadow: string } {
   return { textShadow: "0 0 6px #4ADE80, 0 0 14px rgba(74,222,128,0.65), 0 0 22px rgba(74,222,128,0.35)" };

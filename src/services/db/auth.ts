@@ -327,8 +327,9 @@ export async function updateUserProfile(
   return getMyProfileOrThrow()
 }
 
-// Ramka yoki unvonni taqish/yechish — egalik serverda tekshiriladi.
-export async function equipCosmetic(kind: 'frame' | 'title', itemId: string | null): Promise<Profile> {
+// Ramka, yaltiroq ism yoki unvonni taqish/yechish — egalik va muddat serverda
+// tekshiriladi. Yechish muddatni kuydirmaydi.
+export async function equipCosmetic(kind: 'frame' | 'glow' | 'title', itemId: string | null): Promise<Profile> {
   const { error } = await supabase.rpc('equip_cosmetic', { p_kind: kind, p_item_id: itemId })
   if (error) throw new Error(error.message.includes('not_owned') ? "Bu buyum sizda yo'q yoki muddati tugagan" : error.message)
   return getMyProfileOrThrow()

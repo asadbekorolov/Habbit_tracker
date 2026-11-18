@@ -20,6 +20,7 @@ export async function purchaseShopItem(itemId: string): Promise<number> {
     const msg = error.message || ''
     if (msg.includes('insufficient_coins')) throw new Error('Tangalar yetarli emas')
     if (msg.includes('already_owned')) throw new Error('Bu buyum sizda allaqachon bor')
+    if (msg.includes('already_active')) throw new Error('already_active') // Do'kon t('store_already_active') ga almashtiradi
     if (msg.includes('unknown_item')) throw new Error('Bu buyum sotuvda yo\'q')
     throw new Error(msg || 'Xarid qilishda xatolik yuz berdi')
   }

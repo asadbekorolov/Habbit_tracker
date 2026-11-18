@@ -1269,6 +1269,17 @@ export const uz = {
   an_title: "Tahlil",
   an_view_personal: "Shaxsiy",
   an_view_rating: "Reyting",
+  store_20_days: "20 kunlik",
+  store_days_left: "{n} kun qoldi",
+  store_rebuy: "Yana sotib olish",
+  store_expired: "Muddati tugadi",
+  store_unequip: "Yechish",
+  store_glow_on: "Yoqilgan",
+  store_glow_off: "O'chirilgan",
+  store_glow_enabled: "Yaltiroq ism yoqildi",
+  store_glow_disabled: "Yaltiroq ism o'chirildi — muddat saqlanadi",
+  store_frame_removed_kept: "Ramka yechildi — muddat saqlanadi",
+  store_already_active: "Bu bezak hali amal qilyapti — muddat tugagach qayta sotib olasiz",
 }
 
 export type Dict = typeof uz

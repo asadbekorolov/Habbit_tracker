@@ -12,13 +12,13 @@ import { useUser, useProfile } from "../store/UserContext";
 import { useLang } from "../store/LangContext";
 import {
   purchaseShopItem, buyStar, isStarActive, getOwnedItemIds,
-  equipCosmetic, getMyProfile, getFramePurchases, cleanupExpiredFrame
+  equipCosmetic, getMyProfile, getCosmeticExpiries, cleanupExpiredFrame
 } from "../services/db";
 import { supabase } from "../services/supabase";
 import { postApi } from "../services/apiClient";
 import { Capacitor } from "@capacitor/core";
 import { Browser } from "@capacitor/browser";
-import { FRAMES, FRAME_DURATION_DAYS, PREMIUM_AVATAR_COLORS, USERNAME_GLOW_ID, USERNAME_GLOW_PRICE, getUsernameGlowStyle } from "../utils/cosmetics";
+import { FRAMES, PREMIUM_AVATAR_COLORS, USERNAME_GLOW_ID, USERNAME_GLOW_PRICE, getUsernameGlowStyle, cosmeticState, cosmeticDaysLeft } from "../utils/cosmetics";
 import { AvatarFrame } from "../components/AvatarFrame";
 import type { Profile } from "../services/supabase";
 import { useScrollLock } from "../hooks/useScrollLock";
@@ -106,7 +106,8 @@ export function Store({ onProfileUpdate, onClose, isModal = false }: StoreProps)
   const [starExpiresAt, setStarExpiresAt] = useState<string | null>(profile?.star_expires_at ?? null);
   const starActive = isStarActive({ has_star: true, star_expires_at: starExpiresAt });
 
-  const [framePurchases, setFramePurchases] = useState<Map<string, string>>(new Map());
+  const [expiries, setExpiries] = useState<Map<string, string>>(new Map());
+  const [glowOn, setGlowOn] = useState<boolean>(!!profile?.username_glow);
   const [loading, setLoading] = useState<boolean>(true);
   const [buying, setBuying] = useState<string | null>(null);
   const [equipping, setEquipping] = useState<string | null>(null);
@@ -130,31 +131,32 @@ export function Store({ onProfileUpdate, onClose, isModal = false }: StoreProps)
 
     Promise.all([
       getOwnedItemIds(profile.id),
-      getFramePurchases(profile.id),
+      getCosmeticExpiries(profile.id),
       cleanupExpiredFrame(profile.id),
-    ]).then(([owned, frames, effectiveFrame]) => {
+    ]).then(([owned, exp, effectiveFrame]) => {
       setOwnedIds(owned);
-      setFramePurchases(frames);
+      setExpiries(exp);
       setActiveFrame(effectiveFrame);
-      if (effectiveFrame !== (profile.active_frame ?? null)) {
-        onProfileUpdate?.({ ...profile, active_frame: effectiveFrame });
+      // Muddati o'tgan yaltirash serverda yechildi — mahalliy holat ham
+      const effectiveGlow = !!profile.username_glow && cosmeticState(exp.get(USERNAME_GLOW_ID)) === "active";
+      setGlowOn(effectiveGlow);
+      if (effectiveFrame !== (profile.active_frame ?? null) || effectiveGlow !== !!profile.username_glow) {
+        onProfileUpdate?.({ ...profile, active_frame: effectiveFrame, username_glow: effectiveGlow });
       }
     }).catch(() => {}).finally(() => setLoading(false));
   }, [profile?.id]);
 
   if (!profile) return null;
 
-  function frameExpiresAt(frameId: string): Date | null {
-    const purchasedAt = framePurchases.get(frameId);
-    if (!purchasedAt) return null;
-    return new Date(new Date(purchasedAt).getTime() + FRAME_DURATION_DAYS * 24 * 60 * 60 * 1000);
-  }
+  const errText = (e: any, fallback: string) =>
+    e?.message === "already_active" ? t("store_already_active") : e?.message || fallback;
 
-  function frameDaysLeft(frameId: string): number | null {
-    const exp = frameExpiresAt(frameId);
-    if (!exp) return null;
-    const days = Math.ceil((exp.getTime() - Date.now()) / (24 * 60 * 60 * 1000));
-    return days > 0 ? days : null;
+  const glowState = cosmeticState(expiries.get(USERNAME_GLOW_ID));
+  const glowDaysLeft = cosmeticDaysLeft(expiries.get(USERNAME_GLOW_ID));
+
+  /** Xariddan keyin yangi tugash sanasi (server 20 kun yozadi) */
+  async function refreshExpiries() {
+    try { setExpiries(await getCosmeticExpiries(profile!.id)); } catch { /* jim */ }
   }
 
   // Handle Top-Up checkout redirection (Opens Click / Payme payment URL safely)
@@ -206,7 +208,24 @@ export function Store({ onProfileUpdate, onClose, isModal = false }: StoreProps)
       setActiveFrame(next);
       setProfile(updated);
       onProfileUpdate?.(updated);
-      toast.success(next ? t('store_frame_equipped') : t('store_frame_removed'));
+      toast.success(next ? t('store_frame_equipped') : t('store_frame_removed_kept'));
+    } catch (e: any) {
+      toast.error(e?.message || t('ep_error'));
+    } finally {
+      setEquipping(null);
+    }
+  }
+
+  // "Yaltiroq ism"ni yoqish / o'chirish (muddat kuymaydi)
+  async function handleToggleGlow() {
+    const next = !glowOn;
+    setEquipping(USERNAME_GLOW_ID);
+    try {
+      const updated = await equipCosmetic('glow', next ? USERNAME_GLOW_ID : null);
+      setGlowOn(next);
+      setProfile(updated);
+      onProfileUpdate?.(updated);
+      toast.success(next ? t('store_glow_enabled') : t('store_glow_disabled'));
     } catch (e: any) {
       toast.error(e?.message || t('ep_error'));
     } finally {
@@ -302,12 +321,14 @@ export function Store({ onProfileUpdate, onClose, isModal = false }: StoreProps)
 
       // Server xarid paytida username_glow ni o'zi yoqadi.
       const updated = (await getMyProfile()) || { ...profile, coins: newBalance, username_glow: true };
+      setGlowOn(true);
       setProfile(updated);
       onProfileUpdate?.(updated);
+      await refreshExpiries();
 
       toast.success(t('store_glow_activated'));
     } catch (e: any) {
-      toast.error(e?.message || t('ep_error'));
+      toast.error(errText(e, t('ep_error')));
     } finally {
       setBuying(null);
     }
@@ -327,6 +348,7 @@ export function Store({ onProfileUpdate, onClose, isModal = false }: StoreProps)
         setActiveFrame(itemId);
         setProfile(updated);
         onProfileUpdate?.(updated);
+        await refreshExpiries();
         toast.success(t('store_frame_bought'));
       } else if (isTitle) {
         const updated = (await getMyProfile()) || { ...profile, coins: newBalance, active_title: itemId };
@@ -338,7 +360,7 @@ export function Store({ onProfileUpdate, onClose, isModal = false }: StoreProps)
         toast.success(t('store_bought'));
       }
     } catch (e: any) {
-      toast.error(e?.message || t('ep_error'));
+      toast.error(errText(e, t('ep_error')));
     } finally {
       setBuying(null);
     }
@@ -512,9 +534,10 @@ export function Store({ onProfileUpdate, onClose, isModal = false }: StoreProps)
 
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-3.5 sm:gap-4 mb-6">
               {FRAMES.map((frame) => {
-                const daysLeft = frameDaysLeft(frame.id);
-                const isOwned = daysLeft !== null || ownedIds.has(frame.id);
-                const isEquipped = activeFrame === frame.id;
+                const state = cosmeticState(expiries.get(frame.id));
+                const daysLeft = cosmeticDaysLeft(expiries.get(frame.id));
+                const isOwned = state === "active";
+                const isEquipped = isOwned && activeFrame === frame.id;
                 const isBuying = buying === frame.id;
                 const isEquipping = equipping === frame.id;
 
@@ -537,7 +560,18 @@ export function Store({ onProfileUpdate, onClose, isModal = false }: StoreProps)
                       <p className="text-xs font-bold text-white tracking-tight mt-3 text-center line-clamp-1">
                         {frame.name}
                       </p>
-                      <p className="text-[11px] text-slate-400 mt-0.5">{t('store_30_days')}</p>
+                      {isEquipped && (
+                        <span className="mt-1 inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-500/15 border border-emerald-500/30 text-[10px] font-bold text-emerald-400">
+                          <Check className="w-3 h-3" /> {t('store_equipped')}
+                        </span>
+                      )}
+                      {isOwned ? (
+                        <p className="text-[11px] font-mono font-bold text-emerald-400 mt-0.5">{t('store_days_left').replace('{n}', String(daysLeft))}</p>
+                      ) : state === "expired" ? (
+                        <p className="text-[11px] text-rose-300 mt-0.5">{t('store_expired')}</p>
+                      ) : (
+                        <p className="text-[11px] text-slate-400 mt-0.5">{t('store_20_days')}</p>
+                      )}
                     </div>
 
                     {/* Bottom Action Footer */}
@@ -549,19 +583,22 @@ export function Store({ onProfileUpdate, onClose, isModal = false }: StoreProps)
                           onClick={() => handleEquipFrame(frame.id)}
                           className={`w-full h-10 px-3 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer whitespace-nowrap ${
                             isEquipped
-                              ? "bg-emerald-500/15 text-emerald-400 border border-emerald-500/30"
-                              : "bg-slate-800 hover:bg-slate-700 text-white border border-slate-700"
+                              ? "bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700"
+                              : "bg-emerald-500 hover:bg-emerald-400 text-slate-950"
                           }`}
                         >
                           {isEquipping ? (
                             <Loader2 className="w-4 h-4 animate-spin" />
                           ) : isEquipped ? (
                             <>
-                              <Check className="w-3.5 h-3.5" />
-                              <span>{t('store_equipped')}</span>
+                              <X className="w-3.5 h-3.5" />
+                              <span>{t('store_unequip')}</span>
                             </>
                           ) : (
-                            <span>{t('store_equip')}</span>
+                            <>
+                              <Check className="w-3.5 h-3.5" />
+                              <span>{t('store_equip')}</span>
+                            </>
                           )}
                         </button>
                       ) : (
@@ -575,8 +612,9 @@ export function Store({ onProfileUpdate, onClose, isModal = false }: StoreProps)
                             <Loader2 className="w-4 h-4 animate-spin" />
                           ) : (
                             <>
-                              <Coins className="w-3.5 h-3.5 fill-slate-950" />
-                              <span>{frame.price} · {t('shop_buy')}</span>
+                              {state === "expired" ? <RotateCcw className="w-3.5 h-3.5" /> : <Coins className="w-3.5 h-3.5 fill-slate-950" />}
+                              <span className="font-mono">{frame.price}</span>
+                              <span>· {state === "expired" ? t('store_rebuy') : t('shop_buy')}</span>
                             </>
                           )}
                         </button>
@@ -591,8 +629,8 @@ export function Store({ onProfileUpdate, onClose, isModal = false }: StoreProps)
             <div className="space-y-3">
               <div
                 className={`p-4 rounded-2xl flex items-center justify-between gap-3 border transition-all ${
-                  ownedIds.has(USERNAME_GLOW_ID)
-                    ? "bg-slate-900/80 border-slate-800"
+                  glowState === "active" && glowOn
+                    ? "bg-emerald-500/10 border-emerald-500/40"
                     : "bg-slate-900/60 border-slate-800"
                 }`}
               >
@@ -604,15 +642,38 @@ export function Store({ onProfileUpdate, onClose, isModal = false }: StoreProps)
                     <p className="text-xs font-bold text-white truncate" style={getUsernameGlowStyle()}>
                       {profile.display_name || "Yaltiroq Ism Effekti"}
                     </p>
-                    <p className="text-[11px] text-slate-400 truncate mt-0.5">{t('store_glow_desc')}</p>
+                    {glowState === "active" ? (
+                      <p className="text-[11px] font-mono font-bold text-emerald-400 truncate mt-0.5">{t('store_days_left').replace('{n}', String(glowDaysLeft))}</p>
+                    ) : glowState === "expired" ? (
+                      <p className="text-[11px] text-rose-300 truncate mt-0.5">{t('store_expired')}</p>
+                    ) : (
+                      <p className="text-[11px] text-slate-400 truncate mt-0.5">{t('store_glow_desc')} · {t('store_20_days')}</p>
+                    )}
                   </div>
                 </div>
 
                 <div className="shrink-0">
-                  {ownedIds.has(USERNAME_GLOW_ID) ? (
-                    <span className="h-9 px-3.5 rounded-xl text-xs font-bold bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 flex items-center gap-1.5 whitespace-nowrap">
-                      <Check className="w-3.5 h-3.5" /> {t('store_active')}
-                    </span>
+                  {glowState === "active" ? (
+                    <button
+                      type="button"
+                      role="switch"
+                      aria-checked={glowOn}
+                      aria-label={t('store_glow_name')}
+                      disabled={equipping === USERNAME_GLOW_ID}
+                      onClick={handleToggleGlow}
+                      className="flex items-center gap-2 cursor-pointer disabled:opacity-60"
+                    >
+                      <span className={`text-[11px] font-bold ${glowOn ? "text-emerald-400" : "text-slate-400"}`}>
+                        {glowOn ? t('store_glow_on') : t('store_glow_off')}
+                      </span>
+                      <span className={`w-12 h-6 rounded-full relative transition-colors ${glowOn ? "bg-emerald-500" : "bg-slate-700"}`}>
+                        {equipping === USERNAME_GLOW_ID ? (
+                          <Loader2 className="absolute top-1 left-4 w-4 h-4 animate-spin text-white" />
+                        ) : (
+                          <span className={`absolute top-1 w-4 h-4 rounded-full bg-white transition-all ${glowOn ? "left-7" : "left-1"}`} />
+                        )}
+                      </span>
+                    </button>
                   ) : (
                     <button
                       type="button"
@@ -624,8 +685,9 @@ export function Store({ onProfileUpdate, onClose, isModal = false }: StoreProps)
                         <Loader2 className="w-3.5 h-3.5 animate-spin" />
                       ) : (
                         <>
-                          <Coins className="w-3.5 h-3.5 fill-slate-950" />
-                          <span>{USERNAME_GLOW_PRICE} · {t('shop_buy')}</span>
+                          {glowState === "expired" ? <RotateCcw className="w-3.5 h-3.5" /> : <Coins className="w-3.5 h-3.5 fill-slate-950" />}
+                          <span className="font-mono">{USERNAME_GLOW_PRICE}</span>
+                          <span>· {glowState === "expired" ? t('store_rebuy') : t('shop_buy')}</span>
                         </>
                       )}
                     </button>
