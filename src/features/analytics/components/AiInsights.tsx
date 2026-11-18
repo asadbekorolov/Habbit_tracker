@@ -1,6 +1,7 @@
 // Tahlil (Analytics) — AiInsights.
 import { Loader2, Brain, Sparkles, RotateCw, Coins, AlertTriangle, TrendingUp, TrendingDown, ListChecks } from "lucide-react";
 import type { AnalyticsData } from "../useAnalyticsData";
+import { CharacterVideo } from "../../../components/CharacterVideo";
 
 export function AiInsights({ s }: { s: AnalyticsData }) {
   const { t, aiCardRef, coachNote, coachGeneratedAt, coachLoading, coachError, PREMIUM_AI_COST, insights, canGenerateCoachNote, handleGenerateCoachNote, handlePremiumAI } = s;
@@ -38,12 +39,13 @@ export function AiInsights({ s }: { s: AnalyticsData }) {
             <div className="flex flex-col items-center justify-center py-8">
                <Sparkles className="w-8 h-8 text-amber-400 animate-spin mb-4" />
                <p className="text-sm font-bold text-amber-400 uppercase tracking-widest text-center">
-                 AI murabbiy sizning barcha ko'rsatkichlaringizni chuqur tahlil qilmoqda...
+                 {t("ai_twin_loading")}
                </p>
             </div>
           )}
           {!coachLoading && coachNote ? (
             <>
+              <TwinHeader title={t("ai_twin_title")} sub={t("ai_twin_sub")} />
               <div className="space-y-2.5">
                 {coachNote.summary && !coachNote.strengths.length && !coachNote.weaknesses.length && !coachNote.actions.length && (
                   <ReportCard icon={Brain} tone="violet" title={t("ai_report_summary")} items={[coachNote.summary]} />
@@ -128,6 +130,19 @@ export function AiInsights({ s }: { s: AnalyticsData }) {
             ))}
           </>
         )}
+      </div>
+    </div>
+  );
+}
+
+/** "Sening Aksing" — natija tepasidagi personaj (raqamli egizak). */
+function TwinHeader({ title, sub }: { title: string; sub: string }) {
+  return (
+    <div className="relative mb-3 h-44 rounded-2xl overflow-hidden border border-white/10" style={{ background: "#cdad84" }}>
+      <CharacterVideo position="50% 35%" />
+      <div className="absolute inset-x-0 bottom-0 px-3.5 pb-3 pt-10 bg-gradient-to-t from-[#090d16] via-[#090d16]/70 to-transparent">
+        <h4 className="text-base font-black text-white tracking-tight">{title}</h4>
+        <p className="text-[11px] text-slate-300">{sub}</p>
       </div>
     </div>
   );

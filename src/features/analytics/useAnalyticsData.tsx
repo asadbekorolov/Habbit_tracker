@@ -8,7 +8,8 @@ import { Filesystem, Directory } from "@capacitor/filesystem";
 import { toPng } from "html-to-image";
 import { useNavigate } from "react-router-dom";
 import { getHabitDomain, HABIT_DOMAINS, type HabitDomain } from "../../utils/habitCategory";
-import { getCoachNote, upsertCoachNote, isHabitLogSuccess } from "../../services/db";
+import { getCoachNote, upsertCoachNote, isHabitLogSuccess, getHabits, getLogsBetween, getRecentFailReasons, getStreakFreezes } from "../../services/db";
+import { findBrokenStreaks, formatBrokenStreaks, formatFailReasons } from "../../utils/aiTwin";
 import { useHabitsMetaQuery, useLogsRangeQuery, useHealthRangeQuery, useMonthNotesQuery } from "../../hooks/queries";
 import { supabase } from "../../services/supabase";
 import { requestClaudeHabitAnalysis } from "../../services/aiService";
@@ -394,6 +395,26 @@ export function useAnalyticsData({ completedToday, totalHabits, onUserClick, onP
         .map((d) => `${WD[d]}: ${wdCnt[d] ? Math.round((wdSum[d] / wdCnt[d]) * 100) : 0}%`)
         .join("\n");
 
+      // "Sening Aksing": so'nggi 30 kunlik "bajarilmadi" sabablari va uzilgan zanjirlar
+      const twinFrom = addDays(today, -30);
+      const [activeHabits, twinLogs, failRows, freezeDates] = await Promise.all([
+        getHabits(profile.id).catch(() => [] as any[]),
+        getLogsBetween(profile.id, addDays(twinFrom, -30), today).catch(() => []),
+        getRecentFailReasons(profile.id, twinFrom),
+        getStreakFreezes(profile.id).catch(() => [] as string[]),
+      ]);
+      const nameOf = (id: string) => habitMeta.get(id)?.name;
+      const broken = findBrokenStreaks({
+        logs: twinLogs,
+        habitIds: (activeHabits as any[]).map((h) => h.id),
+        schedules: Object.fromEntries((activeHabits as any[]).map((h) => [h.id, h.days_of_week ?? null])),
+        freezeDates,
+        from: addDays(twinFrom, -30),
+        to: addDays(today, -1),
+      }).filter((b) => b.date >= twinFrom);
+      const failReasonLines = formatFailReasons(failRows, nameOf);
+      const brokenLines = formatBrokenStreaks(broken, nameOf);
+
       const avgCalories = healthLogs.length > 0
         ? Math.round(healthLogs.reduce((acc, curr) => acc + (curr.calories || 0), 0) / healthLogs.length)
         : 0;
@@ -413,6 +434,12 @@ ${habitDataSummary}
 
 HAFTA KUNLARI BO'YICHA O'RTACHA BAJARILISH (so'nggi 8 hafta):
 ${weekdaySummary}
+
+UZILGAN ZANJIRLAR (so'nggi 30 kun; sana | odat | uzunlik):
+${brokenLines.length ? brokenLines.join("\n") : "Yo'q"}
+
+"BAJARILMADI" SABABLARI — FOYDALANUVCHINING O'Z SO'ZLARI (so'nggi 30 kun; sana | odat | sabab):
+${failReasonLines.length ? failReasonLines.join("\n") : "Sabab yozilmagan"}
 `;
 
       const report = await requestClaudeHabitAnalysis(telemetryPayload);

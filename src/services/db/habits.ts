@@ -204,6 +204,24 @@ export async function saveHabitFailReason(habitId: string, date: string, reason:
   return !!data
 }
 
+/**
+ * So'nggi "bajarilmadi" sabablari (AI "Sening Aksing" uchun).
+ * 054 hali qo'llanmagan bo'lsa (ustun yo'q) — bo'sh ro'yxat.
+ */
+export async function getRecentFailReasons(userId: string, fromDate: string): Promise<{ habit_id: string; log_date: string; fail_reason: string | null }[]> {
+  const { data, error } = await supabase
+    .from('habit_logs')
+    .select('habit_id, log_date, fail_reason')
+    .eq('user_id', userId)
+    .eq('completed', false)
+    .gte('log_date', fromDate)
+    .not('fail_reason', 'is', null)
+    .order('log_date', { ascending: false })
+    .limit(60)
+  if (error) return []
+  return (data || []) as any
+}
+
 export function isLogDateLocked(dateStr: string, now: Date = new Date()): boolean {
   return !isTashkentDateOpen(dateStr, now)
 }

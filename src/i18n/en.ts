@@ -1148,7 +1148,7 @@ export const en: Dict = {
   tip_reminder_title: "Reminders",
   tip_reminder_body: "Tap a habit card and turn on 'Reminder' — your phone will nudge you at that time.",
   ai_report_strengths: "Strengths",
-  ai_report_weaknesses: "Weak spots",
+  ai_report_weaknesses: "Weak spots and reasons",
   ai_report_actions: "3-step action plan",
   ai_report_summary: "Coach summary",
   ai_report_saved_hint: "Last report is saved — viewing it is free",
@@ -1233,4 +1233,7 @@ export const en: Dict = {
   fr_hint: "Only you see this; it's used in your AI analysis",
   fr_submit: "Mark as missed",
   fr_submit_broke: "Mark as broken",
+  ai_twin_title: "Your Reflection",
+  ai_twin_sub: "A mirror built from your habits and your own reasons",
+  ai_twin_loading: "Your reflection is reading your habits and reasons...",
 }

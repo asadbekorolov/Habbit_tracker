@@ -1146,7 +1146,7 @@ export const uz = {
   tip_reminder_title: "Eslatmalar",
   tip_reminder_body: "Odat kartasini bosing va 'Eslatma'ni yoqing — belgilagan vaqtingizda telefon eslatadi.",
   ai_report_strengths: "Kuchli tomonlar",
-  ai_report_weaknesses: "Zaif nuqtalar",
+  ai_report_weaknesses: "Zaif nuqtalar va sabablar",
   ai_report_actions: "3 ta harakat rejasi",
   ai_report_summary: "Murabbiy xulosasi",
   ai_report_saved_hint: "Oxirgi hisobot saqlangan — qayta ko'rish bepul",
@@ -1231,6 +1231,9 @@ export const uz = {
   fr_hint: "Sabab faqat sizga ko'rinadi va AI tahlilda hisobga olinadi",
   fr_submit: "Bajarilmadi deb belgilash",
   fr_submit_broke: "Buzildi deb belgilash",
+  ai_twin_title: "Sening Aksing",
+  ai_twin_sub: "Odatlaring va o'z sabablaringdan tug'ilgan ko'zgu",
+  ai_twin_loading: "Aksing sening odat va sabablaringni o'qiyapti...",
 }
 
 export type Dict = typeof uz

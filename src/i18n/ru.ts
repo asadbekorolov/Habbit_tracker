@@ -1148,7 +1148,7 @@ export const ru: Dict = {
   tip_reminder_title: "Напоминания",
   tip_reminder_body: "Нажмите на карточку привычки и включите «Напоминание» — телефон напомнит в нужное время.",
   ai_report_strengths: "Сильные стороны",
-  ai_report_weaknesses: "Слабые места",
+  ai_report_weaknesses: "Слабые места и причины",
   ai_report_actions: "3 шага на завтра",
   ai_report_summary: "Вывод тренера",
   ai_report_saved_hint: "Последний отчёт сохранён — просмотр бесплатный",
@@ -1233,4 +1233,7 @@ export const ru: Dict = {
   fr_hint: "Причину видите только вы; она учитывается в AI-анализе",
   fr_submit: "Отметить невыполненной",
   fr_submit_broke: "Отметить срыв",
+  ai_twin_title: "Твоё отражение",
+  ai_twin_sub: "Зеркало из твоих привычек и твоих же причин",
+  ai_twin_loading: "Твоё отражение читает твои привычки и причины...",
 }
