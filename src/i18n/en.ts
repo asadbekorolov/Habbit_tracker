@@ -1229,7 +1229,7 @@ export const en: Dict = {
   fr_frozen: "Streak saved — this day is frozen",
   fr_question_positive: "Why couldn't you do it?",
   fr_question_negative: "What caused it?",
-  fr_placeholder: "e.g. I was on my phone until 3 AM and couldn't wake up early",
+  fr_placeholder: "Schedule changed today and couldn't make enough time for this...",
   fr_hint: "Only you see this; it's used in your AI analysis",
   fr_submit: "Mark as missed",
   fr_submit_broke: "Mark as broken",

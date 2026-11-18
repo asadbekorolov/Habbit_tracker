@@ -1227,7 +1227,7 @@ export const uz = {
   fr_frozen: "Zanjir saqlandi — bu kun muzlatildi",
   fr_question_positive: "Nega bajara olmadingiz?",
   fr_question_negative: "Nima sabab bo'ldi?",
-  fr_placeholder: "Masalan: kecha tungi 03:00 gacha telefon o'ynaganim uchun erta tura olmadim",
+  fr_placeholder: "Bugun rejam o'zgarib, bunga yetarli vaqt ajrata olmadim...",
   fr_hint: "Sabab faqat sizga ko'rinadi va AI tahlilda hisobga olinadi",
   fr_submit: "Bajarilmadi deb belgilash",
   fr_submit_broke: "Buzildi deb belgilash",
