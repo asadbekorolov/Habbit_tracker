@@ -363,3 +363,311 @@ GRANT  EXECUTE ON FUNCTION public.equip_cosmetic(text, text)     TO authenticate
 GRANT  EXECUTE ON FUNCTION public.cleanup_expired_frame(uuid)    TO authenticated;
 
 COMMIT;
+
+-- ============================================================================
+-- 2-QISM. FIKR VA TAKLIFLAR (user_feedback) — admin paneli
+-- ============================================================================
+--   * Yagona jadval — user_feedback (016). Eski mijoz avval "feedback_reports"
+--     ga yozishga urinardi (migratsiyalarda yo'q jadval) — agar u bazada
+--     qo'lda yaratilgan bo'lsa, undagi yozuvlar user_feedback ga ko'chiriladi
+--     va yangilari ham avtomatik o'tkaziladi (eski APK'lar uchun).
+--   * Yangi ustunlar: type ('bug' | 'suggestion' | 'question' | 'feedback'),
+--     is_read, read_at.
+--   * RLS: foydalanuvchi faqat o'z fikrini YOZADI; o'qish, "o'qildi" belgisi va
+--     o'chirish — faqat sayt admini (asadbekorolov0@gmail.com + is_admin).
+--   * AFTER INSERT trigger: har bir yangi fikr adminga bildirishnoma
+--     ("Yangi fikr va taklif") bo'lib tushadi.
+--   * RPC: get_all_feedback (to'liq ism, email, tur, holat bilan),
+--     set_feedback_read, delete_feedback, reply_to_feedback (emoji'siz).
+-- ============================================================================
+
+BEGIN;
+
+-- ----------------------------------------------------------------------------
+-- 2.1 Ustunlar
+-- ----------------------------------------------------------------------------
+ALTER TABLE public.user_feedback ADD COLUMN IF NOT EXISTS type text NOT NULL DEFAULT 'feedback';
+ALTER TABLE public.user_feedback ADD COLUMN IF NOT EXISTS is_read boolean NOT NULL DEFAULT false;
+ALTER TABLE public.user_feedback ADD COLUMN IF NOT EXISTS read_at timestamptz;
+
+ALTER TABLE public.user_feedback DROP CONSTRAINT IF EXISTS user_feedback_type_check;
+ALTER TABLE public.user_feedback ADD CONSTRAINT user_feedback_type_check
+  CHECK (type IN ('bug', 'suggestion', 'question', 'feedback'));
+
+ALTER TABLE public.user_feedback DROP CONSTRAINT IF EXISTS user_feedback_content_len;
+ALTER TABLE public.user_feedback ADD CONSTRAINT user_feedback_content_len
+  CHECK (char_length(content) BETWEEN 1 AND 4000) NOT VALID;
+
+CREATE INDEX IF NOT EXISTS user_feedback_created_idx ON public.user_feedback (created_at DESC);
+
+-- ----------------------------------------------------------------------------
+-- 2.2 Admin tekshiruvi: email (051) VA profiles.is_admin
+-- ----------------------------------------------------------------------------
+CREATE OR REPLACE FUNCTION public._is_feedback_admin()
+RETURNS boolean
+LANGUAGE sql
+STABLE
+SECURITY DEFINER
+SET search_path = public
+AS $$
+  SELECT public.is_site_admin()
+     AND EXISTS (SELECT 1 FROM profiles p WHERE p.id = auth.uid() AND p.is_admin = true);
+$$;
+REVOKE EXECUTE ON FUNCTION public._is_feedback_admin() FROM PUBLIC, anon;
+GRANT  EXECUTE ON FUNCTION public._is_feedback_admin() TO authenticated;
+
+-- ----------------------------------------------------------------------------
+-- 2.3 RLS va ustun huquqlari
+-- ----------------------------------------------------------------------------
+ALTER TABLE public.user_feedback ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "feedback_insert_own" ON public.user_feedback;
+CREATE POLICY "feedback_insert_own" ON public.user_feedback
+  FOR INSERT TO authenticated WITH CHECK (auth.uid() = user_id);
+
+DROP POLICY IF EXISTS "feedback_admin_select" ON public.user_feedback;
+CREATE POLICY "feedback_admin_select" ON public.user_feedback
+  FOR SELECT TO authenticated USING (public._is_feedback_admin());
+
+DROP POLICY IF EXISTS "feedback_admin_update" ON public.user_feedback;
+CREATE POLICY "feedback_admin_update" ON public.user_feedback
+  FOR UPDATE TO authenticated USING (public._is_feedback_admin()) WITH CHECK (public._is_feedback_admin());
+
+DROP POLICY IF EXISTS "feedback_admin_delete" ON public.user_feedback;
+CREATE POLICY "feedback_admin_delete" ON public.user_feedback
+  FOR DELETE TO authenticated USING (public._is_feedback_admin());
+
+REVOKE ALL ON public.user_feedback FROM PUBLIC, anon, authenticated;
+GRANT SELECT, DELETE ON public.user_feedback TO authenticated;
+GRANT INSERT (user_id, content, type) ON public.user_feedback TO authenticated;
+GRANT UPDATE (is_read, read_at) ON public.user_feedback TO authenticated;
+
+-- ----------------------------------------------------------------------------
+-- 2.4 Eski "feedback_reports" (agar bazada bo'lsa) — ko'chirish
+--     (bildirishnoma triggeridan OLDIN, eski xabarlar adminga yog'ilmasin)
+-- ----------------------------------------------------------------------------
+CREATE OR REPLACE FUNCTION public._feedback_type_norm(p text)
+RETURNS text
+LANGUAGE sql
+IMMUTABLE
+AS $$
+  SELECT CASE WHEN lower(btrim(p)) IN ('bug', 'suggestion', 'question') THEN lower(btrim(p)) ELSE 'feedback' END;
+$$;
+
+DO $$
+BEGIN
+  IF to_regclass('public.feedback_reports') IS NOT NULL THEN
+    EXECUTE $q$
+      INSERT INTO public.user_feedback (user_id, content, type, created_at)
+      SELECT x.uid, x.msg, public._feedback_type_norm(x.typ), COALESCE(x.created, now())
+      FROM (
+        SELECT (to_jsonb(r)->>'user_id')::uuid AS uid,
+               btrim(COALESCE(to_jsonb(r)->>'message', to_jsonb(r)->>'content')) AS msg,
+               to_jsonb(r)->>'type' AS typ,
+               (to_jsonb(r)->>'created_at')::timestamptz AS created
+        FROM public.feedback_reports r
+      ) x
+      WHERE x.uid IS NOT NULL AND x.msg IS NOT NULL AND x.msg <> ''
+        AND EXISTS (SELECT 1 FROM public.profiles p WHERE p.id = x.uid)
+        AND NOT EXISTS (SELECT 1 FROM public.user_feedback f WHERE f.user_id = x.uid AND f.content = x.msg)
+    $q$;
+  END IF;
+END $$;
+
+-- Eski APK'lar feedback_reports ga yozishda davom etsa — user_feedback ga o'tkazish
+CREATE OR REPLACE FUNCTION public._forward_feedback_report()
+RETURNS trigger
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+DECLARE
+  j jsonb := to_jsonb(NEW);
+  v_msg text := btrim(COALESCE(j->>'message', j->>'content'));
+BEGIN
+  IF (j->>'user_id') IS NOT NULL AND v_msg IS NOT NULL AND v_msg <> '' THEN
+    INSERT INTO user_feedback (user_id, content, type)
+    VALUES ((j->>'user_id')::uuid, left(v_msg, 4000), _feedback_type_norm(j->>'type'));
+  END IF;
+  RETURN NEW;
+END;
+$$;
+REVOKE EXECUTE ON FUNCTION public._forward_feedback_report() FROM PUBLIC, anon, authenticated;
+
+DO $$
+BEGIN
+  IF to_regclass('public.feedback_reports') IS NOT NULL THEN
+    EXECUTE 'DROP TRIGGER IF EXISTS feedback_reports_forward ON public.feedback_reports';
+    EXECUTE 'CREATE TRIGGER feedback_reports_forward AFTER INSERT ON public.feedback_reports
+             FOR EACH ROW EXECUTE FUNCTION public._forward_feedback_report()';
+  END IF;
+END $$;
+
+-- ----------------------------------------------------------------------------
+-- 2.5 Yangi fikr — adminga bildirishnoma
+-- ----------------------------------------------------------------------------
+CREATE OR REPLACE FUNCTION public._notify_admin_new_feedback()
+RETURNS trigger
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+DECLARE
+  v_name text;
+  v_kind text;
+  v_text text;
+BEGIN
+  SELECT COALESCE(NULLIF(btrim(p.full_name), ''), NULLIF(btrim(p.display_name), ''), '@' || p.username)
+    INTO v_name
+  FROM profiles p WHERE p.id = NEW.user_id;
+
+  v_kind := CASE NEW.type
+    WHEN 'bug' THEN 'Xatolik'
+    WHEN 'suggestion' THEN 'Taklif'
+    WHEN 'question' THEN 'Savol'
+    ELSE 'Fikr'
+  END;
+
+  v_text := regexp_replace(btrim(NEW.content), '\s+', ' ', 'g');
+  IF char_length(v_text) > 140 THEN
+    v_text := left(v_text, 140) || '…';
+  END IF;
+
+  INSERT INTO notifications (user_id, title, body, type, link)
+  SELECT p.id,
+         'Yangi fikr va taklif',
+         COALESCE(v_name, 'Foydalanuvchi') || ' · ' || v_kind || ': ' || v_text,
+         'feedback_new',
+         'admin?tab=feedback'
+  FROM profiles p
+  WHERE p.is_admin = true AND public._is_site_admin_uid(p.id);
+
+  RETURN NEW;
+END;
+$$;
+REVOKE EXECUTE ON FUNCTION public._notify_admin_new_feedback() FROM PUBLIC, anon, authenticated;
+
+DROP TRIGGER IF EXISTS user_feedback_notify_admin ON public.user_feedback;
+CREATE TRIGGER user_feedback_notify_admin
+  AFTER INSERT ON public.user_feedback
+  FOR EACH ROW EXECUTE FUNCTION public._notify_admin_new_feedback();
+
+-- ----------------------------------------------------------------------------
+-- 2.6 Admin RPC'lari
+-- ----------------------------------------------------------------------------
+DROP FUNCTION IF EXISTS public.get_all_feedback();
+CREATE FUNCTION public.get_all_feedback()
+RETURNS TABLE (
+  id uuid,
+  user_id uuid,
+  content text,
+  type text,
+  is_read boolean,
+  created_at timestamptz,
+  display_name text,
+  full_name text,
+  username text,
+  email text,
+  admin_reply text,
+  admin_replied_at timestamptz
+)
+LANGUAGE plpgsql
+STABLE
+SECURITY DEFINER
+SET search_path = public, auth
+AS $$
+BEGIN
+  IF NOT public._is_feedback_admin() THEN
+    RAISE EXCEPTION 'Faqat sayt admini bu amalni bajara oladi';
+  END IF;
+
+  RETURN QUERY
+    SELECT f.id, f.user_id, f.content, f.type, f.is_read, f.created_at,
+           p.display_name, p.full_name, p.username, u.email::text,
+           f.admin_reply, f.admin_replied_at
+    FROM public.user_feedback f
+    JOIN public.profiles p ON p.id = f.user_id
+    LEFT JOIN auth.users u ON u.id = f.user_id
+    ORDER BY f.is_read ASC, f.created_at DESC;
+END;
+$$;
+
+CREATE OR REPLACE FUNCTION public.set_feedback_read(p_feedback_id uuid, p_read boolean DEFAULT true)
+RETURNS void
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+BEGIN
+  IF NOT public._is_feedback_admin() THEN
+    RAISE EXCEPTION 'Faqat sayt admini bu amalni bajara oladi';
+  END IF;
+  UPDATE user_feedback
+     SET is_read = p_read,
+         read_at = CASE WHEN p_read THEN now() ELSE NULL END
+   WHERE id = p_feedback_id;
+  IF NOT FOUND THEN
+    RAISE EXCEPTION 'Fikr-mulohaza topilmadi';
+  END IF;
+END;
+$$;
+
+CREATE OR REPLACE FUNCTION public.delete_feedback(p_feedback_id uuid)
+RETURNS void
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+BEGIN
+  IF NOT public._is_feedback_admin() THEN
+    RAISE EXCEPTION 'Faqat sayt admini bu amalni bajara oladi';
+  END IF;
+  DELETE FROM user_feedback WHERE id = p_feedback_id;
+  IF NOT FOUND THEN
+    RAISE EXCEPTION 'Fikr-mulohaza topilmadi';
+  END IF;
+END;
+$$;
+
+-- Javob berish (041 dagidek) — endi o'qildi deb ham belgilaydi, sarlavha emoji'siz
+CREATE OR REPLACE FUNCTION public.reply_to_feedback(p_feedback_id uuid, p_reply text)
+RETURNS void
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+DECLARE
+  v_author_id uuid;
+BEGIN
+  IF NOT public._is_feedback_admin() THEN
+    RAISE EXCEPTION 'Faqat sayt admini bu amalni bajara oladi';
+  END IF;
+  IF p_reply IS NULL OR btrim(p_reply) = '' THEN
+    RAISE EXCEPTION 'Javob matni bo''sh bo''lishi mumkin emas';
+  END IF;
+
+  SELECT user_id INTO v_author_id FROM user_feedback WHERE id = p_feedback_id;
+  IF v_author_id IS NULL THEN
+    RAISE EXCEPTION 'Fikr-mulohaza topilmadi';
+  END IF;
+
+  UPDATE user_feedback
+     SET admin_reply = btrim(p_reply), admin_replied_at = now(),
+         is_read = true, read_at = COALESCE(read_at, now())
+   WHERE id = p_feedback_id;
+
+  INSERT INTO notifications (user_id, title, body, type, link)
+  VALUES (v_author_id, 'Fikr-mulohazangizga javob keldi', btrim(p_reply), 'feedback_reply', NULL);
+END;
+$$;
+
+REVOKE EXECUTE ON FUNCTION public.get_all_feedback()                FROM PUBLIC, anon;
+REVOKE EXECUTE ON FUNCTION public.set_feedback_read(uuid, boolean)  FROM PUBLIC, anon;
+REVOKE EXECUTE ON FUNCTION public.delete_feedback(uuid)             FROM PUBLIC, anon;
+REVOKE EXECUTE ON FUNCTION public.reply_to_feedback(uuid, text)     FROM PUBLIC, anon;
+GRANT  EXECUTE ON FUNCTION public.get_all_feedback()                TO authenticated;
+GRANT  EXECUTE ON FUNCTION public.set_feedback_read(uuid, boolean)  TO authenticated;
+GRANT  EXECUTE ON FUNCTION public.delete_feedback(uuid)             TO authenticated;
+GRANT  EXECUTE ON FUNCTION public.reply_to_feedback(uuid, text)     TO authenticated;
+
+COMMIT;

@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { createPortal } from "react-dom";
-import { X, Send, Loader2, CheckCircle2, Bug, Sparkles, MessageSquare } from "lucide-react";
+import { X, Send, Loader2, CheckCircle2, Bug, Sparkles, HelpCircle } from "lucide-react";
 import { submitFeedback } from "../../../services/db";
 import type { Profile } from "../../../services/supabase";
 import { useLang } from "../../../store/LangContext";
@@ -13,7 +13,7 @@ interface FeedbackModalProps {
   profile: Profile;
 }
 
-export type FeedbackType = "bug" | "suggestion" | "feedback";
+export type FeedbackType = "bug" | "suggestion" | "question";
 
 export function FeedbackModal({ isOpen, onClose, profile }: FeedbackModalProps) {
   const { t } = useLang();
@@ -56,16 +56,16 @@ export function FeedbackModal({ isOpen, onClose, profile }: FeedbackModalProps) 
         onClose();
       }, 1500);
     } catch (e: any) {
-      setError(e?.message || "Yuborishda xatolik yuz berdi. Qayta urinib ko'ring.");
+      setError(e?.message || t("feedback_error"));
     } finally {
       setSending(false);
     }
   }
 
   const typeOptions: { id: FeedbackType; label: string; icon: React.ElementType; color: string }[] = [
-    { id: "bug", label: "Xatolik", icon: Bug, color: "#F87171" },
-    { id: "suggestion", label: "Taklif", icon: Sparkles, color: "#FBBF24" },
-    { id: "feedback", label: "Fikr", icon: MessageSquare, color: "#38BDF8" },
+    { id: "bug", label: t("fb_type_bug"), icon: Bug, color: "#F87171" },
+    { id: "suggestion", label: t("fb_type_suggestion"), icon: Sparkles, color: "#FBBF24" },
+    { id: "question", label: t("fb_type_question"), icon: HelpCircle, color: "#38BDF8" },
   ];
 
   return createPortal(
@@ -82,14 +82,14 @@ export function FeedbackModal({ isOpen, onClose, profile }: FeedbackModalProps) 
         {/* Header */}
         <div className="flex items-center justify-between mb-5">
           <div>
-            <h3 className="text-base font-bold text-white">Fikr va Takliflar</h3>
-            <p className="text-xs text-slate-400 mt-0.5">Ilovani yaxshilashda yordam bering</p>
+            <h3 className="text-base font-bold text-white">{t("fb_modal_title")}</h3>
+            <p className="text-xs text-slate-400 mt-0.5">{t("fb_modal_sub")}</p>
           </div>
           <button
             type="button"
             onClick={onClose}
             data-modal-close-trigger
-            aria-label="Yopish"
+            aria-label={t("tp_close")}
             className="p-2 rounded-xl bg-slate-800/80 hover:bg-slate-700/80 text-slate-400 hover:text-white transition-all cursor-pointer"
           >
             <X size={16} />
@@ -102,8 +102,8 @@ export function FeedbackModal({ isOpen, onClose, profile }: FeedbackModalProps) 
               <CheckCircle2 size={28} />
             </div>
             <div>
-              <p className="text-sm font-bold text-white">Rahmat! Xabaringiz yuborildi</p>
-              <p className="text-xs text-slate-400 mt-1">Sizning fikringiz ilovani yaxshilashga yordam beradi.</p>
+              <p className="text-sm font-bold text-white">{t("fb_sent_title")}</p>
+              <p className="text-xs text-slate-400 mt-1">{t("fb_sent_sub")}</p>
             </div>
           </div>
         ) : (
@@ -111,7 +111,7 @@ export function FeedbackModal({ isOpen, onClose, profile }: FeedbackModalProps) 
             {/* Segmented Selector for Type */}
             <div>
               <label className="text-xs font-semibold text-slate-400 uppercase tracking-wider block mb-2">
-                Murojaat turi
+                {t("fb_type_label")}
               </label>
               <div className="grid grid-cols-3 gap-2 bg-slate-950/60 p-1.5 rounded-2xl border border-slate-800">
                 {typeOptions.map((opt) => {
@@ -143,7 +143,7 @@ export function FeedbackModal({ isOpen, onClose, profile }: FeedbackModalProps) 
             <div>
               <div className="flex items-center justify-between mb-1.5">
                 <label className="text-xs font-semibold text-slate-400 uppercase tracking-wider">
-                  Xabar matni
+                  {t("fb_msg_label")}
                 </label>
                 <span className="text-[10px] font-mono text-slate-500">
                   {message.length}/500
@@ -154,10 +154,10 @@ export function FeedbackModal({ isOpen, onClose, profile }: FeedbackModalProps) 
                 onChange={(e) => setMessage(e.target.value.slice(0, 500))}
                 placeholder={
                   feedbackType === "bug"
-                    ? "Xatolik haqida batafsil yozing..."
+                    ? t("fb_ph_bug")
                     : feedbackType === "suggestion"
-                    ? "Qanday yangi imkoniyat qo'shilishini xohlaysiz?"
-                    : "Fikringizni qoldiring..."
+                    ? t("fb_ph_suggestion")
+                    : t("fb_ph_question")
                 }
                 rows={4}
                 maxLength={500}
@@ -178,7 +178,7 @@ export function FeedbackModal({ isOpen, onClose, profile }: FeedbackModalProps) 
                 onClick={onClose}
                 className="flex-1 py-3 px-4 rounded-2xl border border-slate-800 text-slate-400 hover:text-white font-semibold text-sm transition-all cursor-pointer active:scale-95"
               >
-                Bekor qilish
+                {t("tp_cancel")}
               </button>
               <button
                 type="submit"
@@ -186,7 +186,7 @@ export function FeedbackModal({ isOpen, onClose, profile }: FeedbackModalProps) 
                 className="flex-1 py-3 px-4 rounded-2xl bg-emerald-500 hover:bg-emerald-400 disabled:opacity-50 disabled:cursor-not-allowed text-slate-950 font-bold text-sm flex items-center justify-center gap-2 transition-all cursor-pointer active:scale-95 shadow-lg shadow-emerald-500/20"
               >
                 {sending ? <Loader2 size={16} className="animate-spin" /> : <Send size={16} />}
-                <span>{sending ? "Yuborilmoqda..." : "Yuborish"}</span>
+                <span>{sending ? t("feedback_sending") : t("feedback_submit")}</span>
               </button>
             </div>
           </form>

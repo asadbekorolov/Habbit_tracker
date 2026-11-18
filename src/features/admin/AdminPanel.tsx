@@ -48,6 +48,11 @@ export function AdminPanel(props: AdminPanelProps) {
             }}
           >
             <tb.icon size={13} /> {tb.label}
+            {!!tb.badge && (
+              <span className="min-w-[18px] h-[18px] px-1 rounded-full bg-emerald-500 text-slate-950 text-[10px] font-mono font-bold flex items-center justify-center">
+                {tb.badge > 99 ? "99+" : tb.badge}
+              </span>
+            )}
           </button>
         ))}
       </div>

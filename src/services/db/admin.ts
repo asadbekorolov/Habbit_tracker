@@ -5,45 +5,40 @@ import { supabase } from '../supabase'
 import { tashkentTodayAnchor, toDateStr } from '../../utils/date'
 
 // ─── USER FEEDBACK ──────────────────────────────────────────
+export type FeedbackKind = 'bug' | 'suggestion' | 'question' | 'feedback'
+
+// Yagona jadval — user_feedback (admin paneli shuni o'qiydi; 056 dan keyin
+// har bir yangi yozuv adminga bildirishnoma bo'lib tushadi).
 export async function submitFeedback(
   userId: string,
-  typeOrContent: 'bug' | 'suggestion' | 'feedback' | string,
+  typeOrContent: FeedbackKind | string,
   message?: string
 ) {
-  let type: 'bug' | 'suggestion' | 'feedback' = 'feedback';
-  let content = '';
+  const type: FeedbackKind = message !== undefined ? (typeOrContent as FeedbackKind) : 'feedback'
+  const content = (message !== undefined ? message : typeOrContent).trim()
 
-  if (message !== undefined) {
-    type = typeOrContent as 'bug' | 'suggestion' | 'feedback';
-    content = message;
-  } else {
-    content = typeOrContent as string;
+  const { error } = await supabase.from('user_feedback').insert({ user_id: userId, content, type })
+  if (!error) return
+  // 056 hali qo'llanmagan server: "type" ustuni yo'q
+  if (/type/i.test(error.message || '')) {
+    const { error: e2 } = await supabase.from('user_feedback').insert({ user_id: userId, content })
+    if (!e2) return
+    throw e2
   }
-
-  // 1. Try inserting into feedback_reports table
-  const { error } = await supabase.from('feedback_reports').insert({
-    user_id: userId,
-    type,
-    message: content,
-  });
-
-  if (error) {
-    // 2. Fallback to user_feedback table if feedback_reports doesn't exist
-    const { error: fallbackErr } = await supabase.from('user_feedback').insert({
-      user_id: userId,
-      content,
-    });
-    if (fallbackErr) throw error;
-  }
+  throw error
 }
 
 export type FeedbackEntry = {
   id: string
   user_id: string
   content: string
+  type: FeedbackKind
+  is_read: boolean
   created_at: string
-  display_name: string
-  username: string
+  display_name: string | null
+  full_name: string | null
+  username: string | null
+  email: string | null
   admin_reply: string | null
   admin_replied_at: string | null
 }
@@ -56,6 +51,16 @@ export async function getAllFeedback(): Promise<FeedbackEntry[]> {
 
 export async function replyToFeedback(feedbackId: string, reply: string) {
   const { error } = await supabase.rpc('reply_to_feedback', { p_feedback_id: feedbackId, p_reply: reply });
+  if (error) throw error;
+}
+
+export async function setFeedbackRead(feedbackId: string, read = true) {
+  const { error } = await supabase.rpc('set_feedback_read', { p_feedback_id: feedbackId, p_read: read });
+  if (error) throw error;
+}
+
+export async function deleteFeedback(feedbackId: string) {
+  const { error } = await supabase.rpc('delete_feedback', { p_feedback_id: feedbackId });
   if (error) throw error;
 }
 

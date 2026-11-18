@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { createPortal } from "react-dom";
-import { X, Send, Loader2, CheckCircle2, AlertTriangle } from "lucide-react";
+import { X, Send, Loader2, CheckCircle2, AlertTriangle, Bug, Sparkles, HelpCircle } from "lucide-react";
 import { submitFeedback } from "../services/db";
 import type { Profile } from "../services/supabase";
 import { useLang } from "../store/LangContext";
@@ -15,6 +15,7 @@ export function FeedbackModal({ profile, onClose }: FeedbackModalProps) {
   const { t } = useLang();
   useScrollLock(true);
   const [content, setContent] = useState("");
+  const [kind, setKind] = useState<"bug" | "suggestion" | "question">("suggestion");
   const [sending, setSending] = useState(false);
   const [sent, setSent] = useState(false);
   const [error, setError] = useState("");
@@ -24,7 +25,7 @@ export function FeedbackModal({ profile, onClose }: FeedbackModalProps) {
     setSending(true);
     setError("");
     try {
-      await submitFeedback(profile.id, content.trim());
+      await submitFeedback(profile.id, kind, content.trim());
       setSent(true);
       setTimeout(onClose, 1500);
     } catch (e: any) {
@@ -74,6 +75,24 @@ export function FeedbackModal({ profile, onClose }: FeedbackModalProps) {
             </div>
           ) : (
             <>
+              <div className="grid grid-cols-3 gap-2 mb-3" role="radiogroup" aria-label={t('fb_type_label')}>
+                {([
+                  { id: "bug", label: t('fb_type_bug'), Icon: Bug, color: "#F87171" },
+                  { id: "suggestion", label: t('fb_type_suggestion'), Icon: Sparkles, color: "#FBBF24" },
+                  { id: "question", label: t('fb_type_question'), Icon: HelpCircle, color: "#38BDF8" },
+                ] as const).map(({ id, label, Icon, color }) => (
+                  <button
+                    key={id}
+                    type="button"
+                    role="radio"
+                    aria-checked={kind === id}
+                    onClick={() => setKind(id)}
+                    className={`flex items-center justify-center gap-1.5 py-2 rounded-xl text-xs font-bold border transition-all cursor-pointer ${kind === id ? "bg-slate-800 border-slate-700 text-white" : "border-white/5 text-slate-400"}`}
+                  >
+                    <Icon size={13} style={{ color: kind === id ? color : undefined }} /> {label}
+                  </button>
+                ))}
+              </div>
               <textarea
                 value={content}
                 onChange={(e) => setContent(e.target.value)}

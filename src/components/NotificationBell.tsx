@@ -36,6 +36,7 @@ const TYPE_CONFIG: Record<string, { icon: any; color: string; bg: string }> = {
   telegram_request_done: { icon: CheckCheck, color: '#4ADE80', bg: 'rgba(74,222,128,0.12)' },
   telegram_rejected:     { icon: Lock, color: '#F87171', bg: 'rgba(248,113,113,0.13)' },
   feedback_reply:        { icon: MessageSquare, color: '#4ADE80', bg: 'rgba(74,222,128,0.12)' },
+  feedback_new:          { icon: MessageSquare, color: '#FBBF24', bg: 'rgba(251,191,36,0.13)' },
   contact_request:       { icon: Users, color: '#60A5FA', bg: 'rgba(96,165,250,0.15)' },
   follow:                { icon: UserPlus, color: '#A78BFA', bg: 'rgba(167,139,250,0.13)' },
   group_approval:        { icon: Target, color: '#34D399', bg: 'rgba(52,211,153,0.12)' },

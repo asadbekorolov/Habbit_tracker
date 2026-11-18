@@ -1,7 +1,8 @@
 // Admin panel — holat va mantiq (UI'dan ajratilgan).
 import { useState, useEffect } from "react";
+import { useLocation } from "react-router-dom";
 import { Users, ListChecks, ShieldAlert, Activity, HeartPulse, MessageSquare, TrendingUp } from "lucide-react";
-import { getGlobalStats, getAllProfiles, toggleUserBan, resetAllData, sendGlobalNotification, getAllPendingApprovals, approveGroupLog, rejectGroupLog, getAdminMonitoringStats, getInactiveGroups, adminDeleteGroup, getAllFeedback, replyToFeedback, getAllHabitsAdmin, getAnalyticsSummary, getAdminAnalyticsDashboard, getAdminUsersEfficiency, adminGrantBalance, getUserHabitsAdmin, getAllTimeLogs, type AdminMonitoringStats, type InactiveGroup, type FeedbackEntry, type AnalyticsSummaryRow, type AdminAnalyticsDashboard, type AdminHabitEntry } from "../../services/db";
+import { getGlobalStats, getAllProfiles, toggleUserBan, resetAllData, sendGlobalNotification, getAllPendingApprovals, approveGroupLog, rejectGroupLog, getAdminMonitoringStats, getInactiveGroups, adminDeleteGroup, getAllFeedback, replyToFeedback, setFeedbackRead, deleteFeedback, getAllHabitsAdmin, getAnalyticsSummary, getAdminAnalyticsDashboard, getAdminUsersEfficiency, adminGrantBalance, getUserHabitsAdmin, getAllTimeLogs, type AdminMonitoringStats, type InactiveGroup, type FeedbackEntry, type AnalyticsSummaryRow, type AdminAnalyticsDashboard, type AdminHabitEntry } from "../../services/db";
 import type { Profile } from "../../services/supabase";
 import { useLang } from "../../store/LangContext";
 import { downloadCsv } from "../../utils/csv";
@@ -9,7 +10,20 @@ import { AdminPanelProps, DATE_LOCALE, AdminTab } from "./adminShared";
 
 export function useAdminPanelState({ profile }: AdminPanelProps) {
   const { t, lang } = useLang();
-  const [activeTab, setActiveTab] = useState<AdminTab>("overview");
+  // Bildirishnomadan "admin?tab=feedback" bilan kelinsa — darhol shu bo'lim
+  const [activeTab, setActiveTab] = useState<AdminTab>(() => {
+    try {
+      return new URLSearchParams(window.location.search).get("tab") === "feedback" ? "feedback" : "overview";
+    } catch {
+      return "overview";
+    }
+  });
+
+  // Panel ochiq turganda bildirishnoma bosilsa ham bo'limga o'tadi
+  const location = useLocation();
+  useEffect(() => {
+    if (new URLSearchParams(location.search).get("tab") === "feedback") setActiveTab("feedback");
+  }, [location.search]);
 
   const [stats, setStats] = useState({ users: 0, habits: 0 });
   const [users, setUsers] = useState<Profile[]>([]);
@@ -123,6 +137,38 @@ export function useAdminPanelState({ profile }: AdminPanelProps) {
     }
   }
 
+  const unreadFeedback = feedback.filter((f) => !f.is_read).length;
+  const [feedbackBusyId, setFeedbackBusyId] = useState<string | null>(null);
+
+  async function handleToggleFeedbackRead(feedbackId: string) {
+    const item = feedback.find((f) => f.id === feedbackId);
+    if (!item) return;
+    const next = !item.is_read;
+    setFeedbackBusyId(feedbackId);
+    setReplyError("");
+    try {
+      await setFeedbackRead(feedbackId, next);
+      setFeedback((prev) => prev.map((f) => (f.id === feedbackId ? { ...f, is_read: next } : f)));
+    } catch (e: any) {
+      setReplyError(e?.message || t('err_loading'));
+    } finally {
+      setFeedbackBusyId(null);
+    }
+  }
+
+  async function handleDeleteFeedback(feedbackId: string) {
+    setFeedbackBusyId(feedbackId);
+    setReplyError("");
+    try {
+      await deleteFeedback(feedbackId);
+      setFeedback((prev) => prev.filter((f) => f.id !== feedbackId));
+    } catch (e: any) {
+      setReplyError(e?.message || t('err_loading'));
+    } finally {
+      setFeedbackBusyId(null);
+    }
+  }
+
   async function handleSendReply(feedbackId: string) {
     const reply = (replyDrafts[feedbackId] || "").trim();
     if (!reply) return;
@@ -131,7 +177,7 @@ export function useAdminPanelState({ profile }: AdminPanelProps) {
     try {
       await replyToFeedback(feedbackId, reply);
       const now = new Date().toISOString();
-      setFeedback((prev) => prev.map((f) => f.id === feedbackId ? { ...f, admin_reply: reply, admin_replied_at: now } : f));
+      setFeedback((prev) => prev.map((f) => f.id === feedbackId ? { ...f, admin_reply: reply, admin_replied_at: now, is_read: true } : f));
       setReplyDrafts((prev) => { const next = { ...prev }; delete next[feedbackId]; return next; });
     } catch (e: any) {
       setReplyError(e?.message || t('err_loading'));
@@ -183,12 +229,14 @@ export function useAdminPanelState({ profile }: AdminPanelProps) {
   function exportFeedbackCsv() {
     downloadCsv(
       `tracker_feedback_${new Date().toISOString().slice(0, 10)}.csv`,
-      [t('admin_col_name'), t('admin_col_username'), t('admin_col_content'), t('admin_col_date')],
+      [t('admin_col_name'), t('admin_col_username'), 'Email', t('admin_col_type'), t('admin_col_content'), t('admin_col_date')],
       feedback.map((f) => [
-        f.display_name,
-        f.username,
+        f.full_name || f.display_name || "",
+        f.username || "",
+        f.email || "",
+        f.type || "feedback",
         f.content,
-        new Date(f.created_at).toLocaleDateString(DATE_LOCALE[lang] || "uz-UZ"),
+        new Date(f.created_at).toLocaleString(DATE_LOCALE[lang] || "uz-UZ"),
       ])
     );
   }
@@ -401,11 +449,11 @@ export function useAdminPanelState({ profile }: AdminPanelProps) {
     padding: 20,
   };
 
-  const tabs: { id: AdminTab; label: string; icon: any }[] = [
+  const tabs: { id: AdminTab; label: string; icon: any; badge?: number }[] = [
     { id: "overview", label: t('admin_tab_stats'), icon: ShieldAlert },
     { id: "users", label: t('admin_tab_users'), icon: Users },
     { id: "habits", label: t('admin_tab_habits'), icon: ListChecks },
-    { id: "feedback", label: t('admin_tab_feedback'), icon: MessageSquare },
+    { id: "feedback", label: t('admin_tab_feedback'), icon: MessageSquare, badge: unreadFeedback },
     { id: "analytics", label: t('admin_tab_analytics'), icon: TrendingUp },
     { id: "monitoring", label: t('admin_tab_monitoring'), icon: Activity },
     { id: "health", label: t('admin_tab_health'), icon: HeartPulse },
@@ -520,6 +568,10 @@ export function useAdminPanelState({ profile }: AdminPanelProps) {
     loadDashboard,
     exportUsersCsv,
     exportFeedbackCsv,
+    unreadFeedback,
+    feedbackBusyId,
+    handleToggleFeedbackRead,
+    handleDeleteFeedback,
     exportHabitsCsv,
     loadModeration,
     loadMonitoring,
