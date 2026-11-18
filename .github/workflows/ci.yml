@@ -1,0 +1,56 @@
+# IDROK — CI
+#   check   : typecheck, unit + migratsiya testlari (PGlite), build — har push/PR
+#   migrate : main'ga push bo'lganda kutilayotgan Supabase migratsiyalarini
+#             qo'llaydi. FAQAT repo o'zgaruvchisi DB_AUTO_MIGRATE = 'true' va
+#             SUPABASE_DB_URL secret'i o'rnatilganda ishlaydi (supabase/MIGRATIONS.md).
+name: CI
+
+on:
+  push:
+    branches: [main, 'idrok/**']
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      # capacitor-google-auth eski @capacitor/core peer'ini talab qiladi
+      - run: npm ci --legacy-peer-deps
+      - run: npm run typecheck
+      - run: npm test
+      - run: npm run build
+
+  migrate:
+    needs: check
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main' && vars.DB_AUTO_MIGRATE == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    environment: production
+    concurrency:
+      group: db-migrate
+      cancel-in-progress: false
+    env:
+      SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci --legacy-peer-deps
+      - name: Holat (oldin)
+        run: npm run db:status
+      - name: Kutilayotgan migratsiyalarni qo'llash
+        run: npm run db:migrate
+      - name: Holat (keyin)
+        run: npm run db:status
