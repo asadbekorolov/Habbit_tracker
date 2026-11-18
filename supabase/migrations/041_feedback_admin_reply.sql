@@ -11,6 +11,9 @@
 ALTER TABLE user_feedback ADD COLUMN IF NOT EXISTS admin_reply text;
 ALTER TABLE user_feedback ADD COLUMN IF NOT EXISTS admin_replied_at timestamptz;
 
+-- Qaytish turi o'zgaradi (016 dagidan ko'p ustun) — avval DROP qilinmasa,
+-- toza bazada "cannot change return type" xatosi chiqadi.
+DROP FUNCTION IF EXISTS get_all_feedback();
 CREATE OR REPLACE FUNCTION get_all_feedback()
 RETURNS TABLE (
   id uuid,
