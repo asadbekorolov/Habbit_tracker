@@ -1236,4 +1236,12 @@ export const ru: Dict = {
   ai_twin_title: "Твоё отражение",
   ai_twin_sub: "Зеркало из твоих привычек и твоих же причин",
   ai_twin_loading: "Твоё отражение читает твои привычки и причины...",
+  auto_metrics_title: "Автоматические показатели",
+  auto_sleep: "Сон",
+  auto_screen: "Экранное время",
+  auto_connect_screen: "Подключить доступ Samsung / Android",
+  auto_connect_sleep: "Подключить Health Connect для сна",
+  auto_connect_hint: "В настройках включите \"Доступ к истории использования\" для IDROK и вернитесь в приложение",
+  auto_web_hint: "Считывается автоматически в приложении на телефоне",
+  auto_live: "Сейчас",
 }

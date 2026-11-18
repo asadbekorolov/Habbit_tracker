@@ -1,7 +1,8 @@
 import { Health } from '@capgo/capacitor-health';
 import { Capacitor } from '@capacitor/core';
 import { upsertHealthLog, getHabits, toggleHabitLog, getTodayLogs, computeHabitProgress } from './db';
-import { toDateStr } from '../utils/date';
+import { toDateStr, getTashkentToday } from '../utils/date';
+import { lastNightWindow, mergeSleepMinutes } from '../utils/autoMetrics';
 
 export interface HealthSyncData {
   steps: number;
@@ -48,6 +49,34 @@ class HealthSyncService {
     }
   }
 
+  /** Faqat uyqu ruxsati (qadamlarsiz ham uyqu avtomatik o'qilsin). */
+  async checkSleepPermission(): Promise<boolean> {
+    if (!Capacitor.isNativePlatform()) return false;
+    try {
+      const { readAuthorized } = await Health.checkAuthorization({ read: ['sleep'], write: [] });
+      return readAuthorized.includes('sleep');
+    } catch {
+      return false;
+    }
+  }
+
+  /** O'tgan tun uxlangan daqiqalar (kecha 18:00 — bugun 14:00, Toshkent); bosqichlar ikki marta sanalmaydi. */
+  async readLastNightSleepMinutes(): Promise<number> {
+    if (!Capacitor.isNativePlatform()) return 0;
+    try {
+      const window = lastNightWindow(getTashkentToday(), Date.now());
+      const { samples } = await Health.readSamples({
+        dataType: 'sleep',
+        startDate: new Date(window.startMs).toISOString(),
+        endDate: new Date(window.endMs).toISOString(),
+      });
+      return mergeSleepMinutes(samples || [], window);
+    } catch (e) {
+      console.warn('Sleep read failed:', e);
+      return 0;
+    }
+  }
+
   async syncData(): Promise<HealthSyncData | null> {
     // Veb'da Health Connect yo'q — soxta raqam qaytarmaymiz.
     if (!Capacitor.isNativePlatform()) return null;
@@ -70,21 +99,8 @@ class HealthSyncService {
 
       const steps = stepSamples.length > 0 ? (stepSamples[0].value || 0) : 0;
 
-      // Fetch Sleep (Last 24 hours samples)
-      const { samples: sleepSamples } = await Health.readSamples({
-        dataType: 'sleep',
-        startDate: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString(),
-        endDate: now.toISOString(),
-      });
-
-      let totalSleepMinutes = 0;
-      sleepSamples.forEach(sample => {
-        if (sample.sleepState === 'asleep' || sample.sleepState === 'deep' || sample.sleepState === 'light' || sample.sleepState === 'rem') {
-            totalSleepMinutes += sample.value || 0;
-        } else if (!sample.sleepState) {
-            totalSleepMinutes += sample.value || 0;
-        }
-      });
+      // O'tgan tun uyqusi — avtomatik karta (DailyNotes) bilan bir xil hisob
+      const totalSleepMinutes = await this.readLastNightSleepMinutes();
 
       const sleepHours = Math.floor(totalSleepMinutes / 60);
       const sleepMinutes = Math.round(totalSleepMinutes % 60);

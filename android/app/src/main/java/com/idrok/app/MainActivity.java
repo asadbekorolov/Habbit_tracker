@@ -7,6 +7,7 @@ import com.getcapacitor.BridgeActivity;
 import com.capacitorjs.plugins.localnotifications.LocalNotificationsPlugin;
 import com.codetrixstudio.capacitor.GoogleAuth.GoogleAuth;
 import com.idrok.app.widget.IdrokWidgetPlugin;
+import com.idrok.app.screentime.IdrokScreenTimePlugin;
 
 public class MainActivity extends BridgeActivity {
     @Override
@@ -14,6 +15,7 @@ public class MainActivity extends BridgeActivity {
         registerPlugin(LocalNotificationsPlugin.class);
         registerPlugin(GoogleAuth.class);
         registerPlugin(IdrokWidgetPlugin.class); // bosh ekran vidjeti ko'prigi (widgetSync.ts)
+        registerPlugin(IdrokScreenTimePlugin.class); // ekran vaqti (screenTimeService.ts)
         super.onCreate(savedInstanceState);
         
         boolean isDebug = (0 != (getApplicationInfo().flags & ApplicationInfo.FLAG_DEBUGGABLE));

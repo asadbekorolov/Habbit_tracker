@@ -1234,6 +1234,14 @@ export const uz = {
   ai_twin_title: "Sening Aksing",
   ai_twin_sub: "Odatlaring va o'z sabablaringdan tug'ilgan ko'zgu",
   ai_twin_loading: "Aksing sening odat va sabablaringni o'qiyapti...",
+  auto_metrics_title: "Avtomatik ko'rsatkichlar",
+  auto_sleep: "Uyqu",
+  auto_screen: "Ekran vaqti",
+  auto_connect_screen: "Samsung / Android ruxsatini ulash",
+  auto_connect_sleep: "Uyqu uchun Health Connect'ni ulash",
+  auto_connect_hint: "Sozlamalarda IDROK uchun \"Foydalanish ma'lumotlariga ruxsat\"ni yoqing va ilovaga qayting",
+  auto_web_hint: "Telefon ilovasida avtomatik o'qiladi",
+  auto_live: "Jonli",
 }
 
 export type Dict = typeof uz

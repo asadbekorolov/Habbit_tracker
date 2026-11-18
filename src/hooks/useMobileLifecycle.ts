@@ -6,6 +6,8 @@ import { healthSyncService } from '../services/healthSyncService';
 import { useHardwareBackButton } from './useHardwareBackButton';
 import { App as CapacitorApp } from '@capacitor/app';
 import { habitSyncQueue } from '../services/habitSyncQueue';
+import { syncAutoMetrics } from '../services/autoMetricsService';
+import { queryClient, queryKeys } from '../services/queryClient';
 
 interface UseMobileLifecycleOptions {
   profileId?: string;
@@ -21,6 +23,24 @@ export function useMobileLifecycle({ profileId }: UseMobileLifecycleOptions) {
     const handle = CapacitorApp.addListener('resume', () => habitSyncQueue.flush());
     return () => { handle.then((h) => h.remove()).catch(() => {}); };
   }, []);
+
+  // Avtomatik uyqu + ekran vaqti: ochilganda, fondan qaytganda va fonga o'tganda (kun oxiri yaqinidagi qiymat)
+  useEffect(() => {
+    if (!profileId || !Capacitor.isNativePlatform()) return;
+    const run = () => {
+      syncAutoMetrics(profileId).then(() => {
+        queryClient.invalidateQueries({ queryKey: ['autoMetrics', profileId] });
+        queryClient.invalidateQueries({ queryKey: queryKeys.health(profileId) });
+      }).catch(() => {});
+    };
+    run();
+    const resume = CapacitorApp.addListener('resume', run);
+    const pause = CapacitorApp.addListener('pause', () => { syncAutoMetrics(profileId).catch(() => {}); });
+    return () => {
+      resume.then((h) => h.remove()).catch(() => {});
+      pause.then((h) => h.remove()).catch(() => {});
+    };
+  }, [profileId]);
 
   // Status bar — doim qorong'i
   useEffect(() => {

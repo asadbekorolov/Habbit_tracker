@@ -2,13 +2,14 @@ import { useState, useEffect, useCallback } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { queryKeys } from "../../hooks/queries";
 import { toast } from "sonner";
-import { Save, Moon, Monitor, Smile, Lock, Laugh, Meh, Frown, Angry } from "lucide-react";
-import { getDailyNote, upsertDailyNote, getHealthLog, upsertHealthLog } from "../../services/db";
+import { Save, Smile, Lock, Laugh, Meh, Frown, Angry } from "lucide-react";
+import { getDailyNote, upsertDailyNote, getHealthLog } from "../../services/db";
 import type { Profile } from "../../services/supabase";
 import { tashkentTodayAnchor, toDateStr } from "../../utils/date";
 import { useLang } from "../../store/LangContext";
 import { MONTHS_FULL, DAYS_SHORT, DAYS_FULL } from "../../utils/i18n";
 import { HabitIcon } from "../../components/HabitIcon";
+import { AutoMetricsCard } from "./AutoMetricsCard";
 
 interface DailyNotesProps {
   profile: Profile;
@@ -75,20 +76,13 @@ export function DailyNotes({ profile, date }: DailyNotesProps) {
     // 1. Optimistic local update
     const cacheKey = `daily_note_cache_${profile.id}_${selectedDate}`;
     try {
-      localStorage.setItem(cacheKey, JSON.stringify({ content, mood, sleepHours, screenHours }));
+      localStorage.setItem(cacheKey, JSON.stringify({ content, mood }));
     } catch (e) {
       console.warn("Failed to update local cache", e);
     }
 
     try {
-      const healthFields: { sleep_hours?: number; screen_time_hours?: number } = {};
-      if (sleepHours !== undefined) healthFields.sleep_hours = sleepHours;
-      if (screenHours !== undefined) healthFields.screen_time_hours = screenHours;
-
       const writes: Promise<any>[] = [upsertDailyNote(profile.id, selectedDate, content, mood)];
-      if (Object.keys(healthFields).length > 0) {
-        writes.push(upsertHealthLog(profile.id, selectedDate, healthFields));
-      }
 
       // 2. Network sync with 5-second timeout race
       const syncPromise = Promise.all(writes);
@@ -131,20 +125,14 @@ export function DailyNotes({ profile, date }: DailyNotesProps) {
     borderRadius: 14,
   };
 
-  const formatDecimalTime = (val: number = 0) => {
-    const h = Math.floor(val);
-    const m = Math.round((val % 1) * 60);
-    return `${h}s ${m}d`;
-  };
-
   return (
     <div className="flex flex-col gap-4">
-      {/* Mood + Sleep + Screen */}
+      {/* Mood */}
       <div style={cardStyle} className="p-5">
         <p className="text-[10px] font-black uppercase tracking-[0.2em] mb-5 text-slate-500">
           {t('notes_metrics')}
         </p>
-        <div className="space-y-8">
+        <div>
           {/* Mood */}
           <div>
             <div className="flex items-center gap-2 mb-3">
@@ -186,56 +174,18 @@ export function DailyNotes({ profile, date }: DailyNotesProps) {
               ))}
             </div>
           </div>
-
-          {/* Sleep row */}
-          <div>
-            <div className="flex justify-between items-center mb-3">
-              <div className="flex items-center gap-2">
-                <Moon className="w-4 h-4 text-indigo-400" />
-                <span className="text-[11px] font-bold uppercase tracking-widest text-slate-400">{t('notes_sleep_label')}</span>
-              </div>
-              <div className="font-bold text-indigo-400 text-xs bg-indigo-500/10 px-2.5 py-1 rounded-lg border border-indigo-500/20">
-                {formatDecimalTime(sleepHours)}
-              </div>
-            </div>
-            <input
-              type="range"
-              min={0}
-              max={12}
-              step={0.5}
-              value={sleepHours ?? 0}
-              onChange={(e) => setSleepHours(parseFloat(e.target.value))}
-              disabled={isReadOnly}
-              className="w-full accent-indigo-500 h-2 bg-white/5 rounded-lg cursor-pointer transition-all"
-              style={{ opacity: isReadOnly ? 0.5 : 1 }}
-            />
-          </div>
-
-          {/* Screen row */}
-          <div>
-            <div className="flex justify-between items-center mb-3">
-              <div className="flex items-center gap-2">
-                <Monitor className="w-4 h-4 text-rose-400" />
-                <span className="text-[11px] font-bold uppercase tracking-widest text-slate-400">{t('notes_screen_label')}</span>
-              </div>
-              <div className="font-bold text-rose-400 text-xs bg-rose-500/10 px-2.5 py-1 rounded-lg border border-rose-500/20">
-                {formatDecimalTime(screenHours)}
-              </div>
-            </div>
-            <input
-              type="range"
-              min={0}
-              max={12}
-              step={0.5}
-              value={screenHours ?? 0}
-              onChange={(e) => setScreenHours(parseFloat(e.target.value))}
-              disabled={isReadOnly}
-              className="w-full accent-rose-500 h-2 bg-white/5 rounded-lg cursor-pointer transition-all"
-              style={{ opacity: isReadOnly ? 0.5 : 1 }}
-            />
-          </div>
         </div>
       </div>
+
+      {/* Uyqu va ekran vaqti — avtomatik (Health Connect + UsageStats) */}
+      {!isFuture && (
+        <AutoMetricsCard
+          userId={profile.id}
+          isToday={isToday}
+          storedSleepHours={sleepHours}
+          storedScreenHours={screenHours}
+        />
+      )}
 
       {/* Notes textarea */}
       <div style={cardStyle} className="p-4">

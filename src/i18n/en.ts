@@ -1236,4 +1236,12 @@ export const en: Dict = {
   ai_twin_title: "Your Reflection",
   ai_twin_sub: "A mirror built from your habits and your own reasons",
   ai_twin_loading: "Your reflection is reading your habits and reasons...",
+  auto_metrics_title: "Automatic metrics",
+  auto_sleep: "Sleep",
+  auto_screen: "Screen time",
+  auto_connect_screen: "Connect Samsung / Android access",
+  auto_connect_sleep: "Connect Health Connect for sleep",
+  auto_connect_hint: "In Settings, turn on \"Usage access\" for IDROK and come back to the app",
+  auto_web_hint: "Read automatically in the phone app",
+  auto_live: "Live",
 }
