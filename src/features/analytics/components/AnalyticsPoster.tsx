@@ -5,7 +5,7 @@ import { forwardRef } from "react";
 import { ShieldCheck, Flame, CheckCircle2, Sparkles, Zap } from "lucide-react";
 import { CHARACTER_POSTER_SRC } from "../../../components/CharacterVideo";
 import { getFrameStyle, getUsernameGlowStyle } from "../../../utils/cosmetics";
-import { PUBLIC_SITE_HOST } from "../../../utils/referral";
+import { PUBLIC_SITE_HOST } from "../../../config/site";
 
 export type PosterFormat = "story" | "post";
 

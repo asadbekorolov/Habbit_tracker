@@ -2,11 +2,12 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { packLink, parsePackFromSearch, defaultPackSelection, habitPackErrorCode } from '../src/utils/habitPack.ts';
+import { PUBLIC_SITE_URL } from '../src/config/site.ts';
 
 test("to'plam havolasi: pack va ixtiyoriy ref", () => {
-  assert.equal(packLink('ABC1234'), 'https://habit-tracker-asadbek.vercel.app/?pack=ABC1234');
-  assert.equal(packLink('ABC1234', 'X7K9P2A'), 'https://habit-tracker-asadbek.vercel.app/?pack=ABC1234&ref=X7K9P2A');
-  assert.equal(packLink('ABC1234', null), 'https://habit-tracker-asadbek.vercel.app/?pack=ABC1234');
+  assert.equal(packLink('ABC1234'), `${PUBLIC_SITE_URL}/?pack=ABC1234`);
+  assert.equal(packLink('ABC1234', 'X7K9P2A'), `${PUBLIC_SITE_URL}/?pack=ABC1234&ref=X7K9P2A`);
+  assert.equal(packLink('ABC1234', null), `${PUBLIC_SITE_URL}/?pack=ABC1234`);
 });
 
 test("?pack ni olib, ref va boshqalar qoladi (ref'ni referral.ts alohida oladi)", () => {

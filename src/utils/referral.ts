@@ -1,7 +1,7 @@
 // Taklif (referral) kodi: havoladagi ?ref=KOD ni ushlash, saqlash va
 // server xatolarini tanish. Mukofotlar serverda (058: apply_referral_code).
-export const PUBLIC_SITE_URL = "https://habit-tracker-asadbek.vercel.app";
-export const PUBLIC_SITE_HOST = "habit-tracker-asadbek.vercel.app";
+import { PUBLIC_SITE_URL } from "../config/site.ts";
+
 export const REFERRER_BONUS = 100;
 export const REFERRED_BONUS = 50;
 /** Ro'yxatdan o'tgandan keyin kod kiritish muddati (serverda ham shu) */

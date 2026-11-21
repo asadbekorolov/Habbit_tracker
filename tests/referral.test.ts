@@ -8,6 +8,7 @@ import {
   referralErrorCode,
   isFinalReferralError,
 } from '../src/utils/referral.ts';
+import { PUBLIC_SITE_URL, PUBLIC_SITE_HOST, SITE_URL, normalizeSiteUrl } from '../src/config/site.ts';
 
 test('taklif kodi: normallashtirish va format', () => {
   assert.equal(normalizeReferralCode('  x7k9p2a '), 'X7K9P2A');
@@ -26,7 +27,7 @@ test("taklif havolasi: ?ref ni olib, qolgan parametrlar saqlanadi", () => {
   assert.deepEqual(parseReferralFromSearch('?ref=bad!'), { code: null, rest: '' }, "noto'g'ri kod ham manzildan olinadi");
   assert.deepEqual(parseReferralFromSearch('?x=1'), { code: null, rest: '?x=1' });
   assert.deepEqual(parseReferralFromSearch(''), { code: null, rest: '' });
-  assert.equal(referralLink('X7K9P2A'), 'https://habit-tracker-asadbek.vercel.app/?ref=X7K9P2A');
+  assert.equal(referralLink('X7K9P2A'), `${PUBLIC_SITE_URL}/?ref=X7K9P2A`);
 });
 
 test('taklif xatolari: server xabaridan kod va qayta urinish', () => {
@@ -37,4 +38,18 @@ test('taklif xatolari: server xabaridan kod va qayta urinish', () => {
   assert.equal(isFinalReferralError('already_referred'), true);
   assert.equal(isFinalReferralError('not_authenticated'), false, 'sessiya yangilangach qayta urinadi');
   assert.equal(isFinalReferralError(null), false, 'tarmoq xatosi — kod saqlanadi');
+});
+
+test("sayt manzili: bitta joyda, https, oxirida / yo'q", () => {
+  assert.equal(PUBLIC_SITE_URL, normalizeSiteUrl(SITE_URL));
+  assert.ok(PUBLIC_SITE_URL.startsWith('https://'));
+  assert.ok(!PUBLIC_SITE_URL.endsWith('/'));
+  assert.equal(PUBLIC_SITE_HOST, new URL(PUBLIC_SITE_URL).host);
+  assert.equal(normalizeSiteUrl('https://idrok.uz/'), 'https://idrok.uz');
+  assert.equal(normalizeSiteUrl(' https://www.idrok.uz '), 'https://www.idrok.uz');
+  assert.equal(normalizeSiteUrl('http://idrok.uz'), null);
+  assert.equal(normalizeSiteUrl('https://idrok.uz/app'), null);
+  assert.equal(normalizeSiteUrl('https://idrok.uz/?x=1'), null);
+  assert.equal(normalizeSiteUrl('idrok.uz'), null);
+  assert.equal(normalizeSiteUrl(''), null);
 });

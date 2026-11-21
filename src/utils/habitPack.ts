@@ -1,6 +1,7 @@
 // Odatlar to'plami havolasi: ?pack=KOD (va ixtiyoriy &ref=TAKLIF_KODI).
 // Kod ilova ochilishida saqlanadi, tizimga kirgach qabul qilish oynasi ochiladi.
-import { PUBLIC_SITE_URL, normalizeReferralCode } from "./referral.ts";
+import { PUBLIC_SITE_URL } from "../config/site.ts";
+import { normalizeReferralCode } from "./referral.ts";
 
 const STORAGE_KEY = "pending_habit_pack";
 

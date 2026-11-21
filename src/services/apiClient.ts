@@ -10,8 +10,9 @@
 
 import { Capacitor } from "@capacitor/core";
 import { supabase } from "./supabase";
+import { API_SITE_URL } from "../config/site";
 
-export const REMOTE_API_BASE = import.meta.env.VITE_API_BASE_URL || "https://habit-tracker-asadbek.vercel.app";
+export const REMOTE_API_BASE = import.meta.env.VITE_API_BASE_URL || API_SITE_URL;
 
 /**
  * API manzili har chaqiruvda aniqlanadi: modul yuklanishida Capacitor
