@@ -11,7 +11,7 @@ Narx va tanga soni faqat serverda (`coin_packs`, migratsiya 049). Mijoz faqat
 | `SUPABASE_SERVICE_ROLE_KEY` | Supabase → Settings → API (allaqachon kerak) |
 | `CLICK_SERVICE_ID`, `CLICK_MERCHANT_ID`, `CLICK_SECRET_KEY` | Click merchant kabineti |
 | `PAYME_MERCHANT_ID`, `PAYME_KEY` | Payme biznes kabineti (KEY — kassa kaliti) |
-| `APP_PUBLIC_URL` (ixtiyoriy) | To'lovdan qaytish sayti, standart: habit-tracker-asadbek.vercel.app |
+| `APP_PUBLIC_URL` (ixtiyoriy) | To'lovdan qaytish sayti, standart: habit-tracker-asadbek.vercel.app. `.uz` domen ulanganda shu domenga o'rnating (`docs/DOMAIN.md`) |
 
 Biror tizim kalitlari kiritilmagan bo'lsa, `create-invoice` 503
 `payments_not_configured` qaytaradi va ilova "To'lovlar tez kunda ishga

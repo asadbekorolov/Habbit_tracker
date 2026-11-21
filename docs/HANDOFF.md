@@ -198,9 +198,19 @@ noto'g'ri edi — foydalanuvchi almashtirdi, AI tahlil jonli serverda ishlaydi.
 - `d287ccc` — `HabitsManager`: "+ + Yangi odat"dagi ortiqcha `+` olib tashlandi; 4 tugma `grid-cols-2 gap-2.5` panjarada (Yangi odat / Paket, Odatlarni ulashish / Kod orqali olish). Matnlar `t()` orqali; 360px'da uchala tilda sig'adi (ruscha "Поделиться привычками" ikki qatorga o'raladi). Odat bo'lmasa ulashish tugmasi o'chirilgan holatda.
 - `7b0bf82` — `InviteFriendsModal`: kartadagi xom `habit-tracker-asadbek.vercel.app/?ref=...` qatori olib tashlandi; havola "Ulashish" va "Telegram" matnida yuborilishda davom etadi.
 
+### 3.16. `.uz` domenga tayyorgarlik — `1d1441f`
+
+- Sayt manzili bitta joyda: `src/config/site.ts`.
+  - `SITE_URL` — taklif va to'plam havolalari, poster;
+  - `API_SITE_URL` — ilovadan `/api` chaqiruvlari, ataylab vercel.app'da qoladi, chunki o'rnatilgan eski versiyalar ham shu manzilga murojaat qiladi.
+- `privacy.html` va `delete-account.html` nisbiy havolalarda — istalgan domenda ishlaydi.
+- Testlar manzilni qattiq yozmaydi (141/141).
+- Domen olingach bosqichma-bosqich tartib: `docs/DOMAIN.md` (Vercel, Supabase Auth Redirect URLs, `APP_PUBLIC_URL`, bitta qator kod, `versionCode` oshirish).
+- Muhim: vercel.app'ni yangi domenga redirect qilmaslik kerak.
+
 ## 4. Joriy holat
 
-- Kod: `main` = `idrok/refactor`, oxirgi kod commiti `7b0bf82`. Testlar **140/140**, typecheck 0 xato.
+- Kod: `main` = `idrok/refactor`, oxirgi kod commiti `1d1441f`. Testlar **141/141**, typecheck 0 xato.
 - Vercel: deploy yana ishlaydi (`4e63a43` dan beri). `privacy.html` va `delete-account.html` ochiq, `/api/ai-analysis` javob beradi.
 - Prod baza: 002–059 qo'llangan va jurnalda (059 — CI `migrate` job, 2026-11-21). Ilova `kiwrqzetpyobaemrsquq` loyihasiga ulangan (`ccjtciguxjogeadmstnd` — boshqa, bo'sh loyiha, ishlatilmaydi).
 - Baza parollari almashtirilgan; yangi parol faqat GitHub secret'da va foydalanuvchida.
@@ -212,6 +222,7 @@ noto'g'ri edi — foydalanuvchi almashtirdi, AI tahlil jonli serverda ishlaydi.
 
 ## 5. Qilinmagan / keyingi ishlar
 
+0. **`.uz` domen:** domenni sotib olib, `docs/DOMAIN.md` bo'yicha ulash. Closed testing'dan oldin qilinsa, testerlar tarqatadigan havolalar darhol yangi domenda bo'ladi.
 1. **Play Market:** `app-release.aab` ni Internal testing trekiga yuklash; Play Console'da Data safety, Health apps, App access (reviewer test hisobi), Target audience formalarini `docs/PLAY_STORE.md` bo'yicha to'ldirish; keyin Closed testing (12 tester, 14 kun).
 2. **Keyingi migratsiyalar:** `main` ga push'dan keyin GitHub Actions → CI → `migrate` (kerak bo'lsa "Review deployments"), keyin `npm run db:status` — kutilayotgan 0.
 3. **Tanga sotish (B variant, keyinroq):** Google Play Billing (consumable) + serverda Google Play Developer API orqali xaridni tekshirish + `credit_payment` kabi RPC; yoqish — `platformPolicy.ts`.
