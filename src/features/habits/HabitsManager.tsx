@@ -30,7 +30,9 @@ import { useHabitMutations, getHabitReminder } from "../../hooks/useHabitMutatio
 import { HabitDetailModal } from "./HabitDetailModal";
 import { useProfile } from "../../store/UserContext";
 import { ShareHabitsModal } from "./ShareHabitsModal";
-import { Share2 } from "lucide-react";
+import { EnterPackCodeModal } from "./EnterPackCodeModal";
+import { ImportHabitPackModal } from "./ImportHabitPackModal";
+import { Share2, KeyRound } from "lucide-react";
 
 interface HabitsManagerProps {
 }
@@ -108,6 +110,8 @@ export function HabitsManager({}: HabitsManagerProps) {
 
   const [showGoalPack, setShowGoalPack] = useState(false);
   const [showShareHabits, setShowShareHabits] = useState(false);
+  const [showPackCode, setShowPackCode] = useState(false);
+  const [importPackCode, setImportPackCode] = useState<string | null>(null);
   const [selectedGoal, setSelectedGoal] = useState<string | null>(null);
   const [checkedPack, setCheckedPack] = useState<Set<number>>(new Set());
   const [bulkAdding, setBulkAdding] = useState(false);
@@ -280,7 +284,18 @@ export function HabitsManager({}: HabitsManagerProps) {
       ) : (
         <>
           <div className="flex items-center justify-between gap-2 mb-1">
-            <div className="flex-1 min-w-0">
+            <div className="flex-1 min-w-0 flex items-center gap-2">
+              {/* Do'st yuborgan to'plamni kod orqali olish (brauzerga o'tmasdan) */}
+              <button
+                type="button"
+                onClick={() => setShowPackCode(true)}
+                aria-label={t("pack_code_btn")}
+                title={t("pack_code_btn")}
+                className="h-10 rounded-xl px-3 bg-slate-900 border border-slate-800 text-slate-300 hover:text-white text-xs font-medium flex items-center justify-center gap-1.5 transition-all cursor-pointer active:scale-95"
+              >
+                <KeyRound className="w-3.5 h-3.5 text-emerald-400" />
+                <span className={habits.length === 0 ? "" : "hidden min-[430px]:inline"}>{t("pack_code_btn")}</span>
+              </button>
               {/* Odatlar to'plamini havola orqali ulashish (059) */}
               {habits.length > 0 && (
                 <button
@@ -321,6 +336,16 @@ export function HabitsManager({}: HabitsManagerProps) {
 
       {showShareHabits && (
         <ShareHabitsModal isOpen={showShareHabits} onClose={() => setShowShareHabits(false)} habits={habits} />
+      )}
+      {showPackCode && (
+        <EnterPackCodeModal
+          isOpen={showPackCode}
+          onClose={() => setShowPackCode(false)}
+          onFound={(code) => { setShowPackCode(false); setImportPackCode(code); }}
+        />
+      )}
+      {importPackCode && (
+        <ImportHabitPackModal code={importPackCode} onClose={() => setImportPackCode(null)} />
       )}
 
       <AddHabitModal

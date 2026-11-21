@@ -1457,4 +1457,9 @@ export const en: Dict = {
   pack_import_btn: "Copy to my habits",
   pack_import_note: "Copies are independent: streaks start at zero and the sender's data is not copied",
   pack_imported_toast: "{n} habits added",
+  pack_code_btn: "Get by code",
+  pack_code_modal_title: "Get a pack by code",
+  pack_code_modal_hint: "Enter the 6–8 character pack code your friend sent — review the habits and copy the ones you want.",
+  pack_code_open: "Open",
+  pack_code_invalid: "The code must be 6–8 Latin letters and digits",
 }

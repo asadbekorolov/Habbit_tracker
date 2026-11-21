@@ -1455,6 +1455,11 @@ export const uz = {
   pack_import_btn: "O'zimga nusxalash",
   pack_import_note: "Nusxalar mustaqil: zanjir noldan boshlanadi, yuboruvchining ma'lumotlari ko'chmaydi",
   pack_imported_toast: "{n} ta odat qo'shildi",
+  pack_code_btn: "Kod orqali olish",
+  pack_code_modal_title: "Kod orqali olish",
+  pack_code_modal_hint: "Do'stingiz yuborgan 6–8 belgili to'plam kodini kiriting — odatlarni ko'rib, keraklilarini o'zingizga nusxalaysiz.",
+  pack_code_open: "Ochish",
+  pack_code_invalid: "Kod 6–8 ta lotin harfi va raqamdan iborat bo'lishi kerak",
 }
 
 export type Dict = typeof uz
