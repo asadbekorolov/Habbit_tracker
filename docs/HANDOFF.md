@@ -192,15 +192,21 @@ noto'g'ri edi — foydalanuvchi almashtirdi, AI tahlil jonli serverda ishlaydi.
 - `9d2263a` — `versionName 1.0.2`, `versionCode 2`. Telefonda tasdiqlangan:
   9:16 / 1:1 posterlar, ramka, yaltiroq ism va PNG eksporti.
 
+### 3.15. Telefon sinovidan keyingi 3 ta UI tuzatish
+
+- `b5945ec` — `PublicProfileModal`: yuqoridagi takroriy "Telegram orqali bog'lanish" tugmasi olib tashlandi; faqat pastdagi ("Kuzatilmoqda" ostidagi) Telegram tugmasi qoldi.
+- `d287ccc` — `HabitsManager`: "+ + Yangi odat"dagi ortiqcha `+` olib tashlandi; 4 tugma `grid-cols-2 gap-2.5` panjarada (Yangi odat / Paket, Odatlarni ulashish / Kod orqali olish). Matnlar `t()` orqali; 360px'da uchala tilda sig'adi (ruscha "Поделиться привычками" ikki qatorga o'raladi). Odat bo'lmasa ulashish tugmasi o'chirilgan holatda.
+- `7b0bf82` — `InviteFriendsModal`: kartadagi xom `habit-tracker-asadbek.vercel.app/?ref=...` qatori olib tashlandi; havola "Ulashish" va "Telegram" matnida yuborilishda davom etadi.
+
 ## 4. Joriy holat
 
-- Kod: `main` = `idrok/refactor`, oxirgi kod commiti `9d2263a`. Testlar **140/140**, typecheck 0 xato.
+- Kod: `main` = `idrok/refactor`, oxirgi kod commiti `7b0bf82`. Testlar **140/140**, typecheck 0 xato.
 - Vercel: deploy yana ishlaydi (`4e63a43` dan beri). `privacy.html` va `delete-account.html` ochiq, `/api/ai-analysis` javob beradi.
 - Prod baza: 002–059 qo'llangan va jurnalda (059 — CI `migrate` job, 2026-11-21). Ilova `kiwrqzetpyobaemrsquq` loyihasiga ulangan (`ccjtciguxjogeadmstnd` — boshqa, bo'sh loyiha, ishlatilmaydi).
 - Baza parollari almashtirilgan; yangi parol faqat GitHub secret'da va foydalanuvchida.
-- **Paketlar** (`versionName 1.0.2`, `versionCode 2`, `com.idrok.app`, `9d2263a`):
+- **Paketlar** (`versionName 1.0.2`, `versionCode 2`, `com.idrok.app`, `7b0bf82` dan yig'ilgan):
   - sinov: `android\app\build\outputs\apk\debug\app-debug.apk` (~9.7 MB);
-  - Play Console: `android\app\build\outputs\bundle\release\app-release.aab` (~7.2 MB, barcha funksiyalar bilan — taklif, poster, to'plamlar, kod orqali olish), release kaliti bilan imzolangan (`jarsigner`: `jar verified`, `CN=Tracker, O=Tracker, C=UZ`). Imzo `android/keystore.properties` (git-ignored) dan o'qiladi.
+  - Play Console: `android\app\build\outputs\bundle\release\app-release.aab` (~7.2 MB, barcha funksiyalar bilan — taklif, poster, to'plamlar, kod orqali olish, 3.15 UI tuzatishlari), release kaliti bilan imzolangan (`jarsigner`: `jar verified`, `CN=Tracker, O=Tracker, C=UZ`). Imzo `android/keystore.properties` (git-ignored) dan o'qiladi.
 - Ma'lum ogohlantirish: release build'da `@capgo/capacitor-health` uchun "Kotlin metadata 2.4.0, expected 2.2.0" xabarlari chiqadi — build muvaffaqiyatli, lekin Kotlin/AGP versiyasini keyinroq moslash kerak.
 - Play Console'ga hali hech narsa yuklanmagan: birinchi yuklash `versionCode 2` bilan bo'lishi mumkin, keyingilarida oshiring.
 
