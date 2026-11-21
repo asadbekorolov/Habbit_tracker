@@ -3,7 +3,7 @@ import { GlobalLeaderboardPage } from "../leaderboard/GlobalLeaderboardPage";
 import { AnalyticsProps } from "./analyticsShared";
 import { useAnalyticsData } from "./useAnalyticsData";
 import { PremiumAiModal } from "./components/PremiumAiModal";
-import { SharePoster } from "./components/SharePoster";
+import { ShareAnalyticsModal } from "./components/ShareAnalyticsModal";
 import { KpiGrid } from "./components/KpiGrid";
 import { WeeklyChart } from "./components/WeeklyChart";
 import { WeeklyComparison } from "./components/WeeklyComparison";
@@ -21,7 +21,8 @@ import { AiInsights } from "./components/AiInsights";
 
 export function Analytics(props: AnalyticsProps) {
   const s = useAnalyticsData(props);
-  const { totalHabits, onUserClick, profile, downloadingPoster, timeFilter, setTimeFilter, viewMode, setViewMode, showPremiumAI, logs, loading, habitStats, shareAnalytics } = s;
+  const { t, totalHabits, onUserClick, profile, timeFilter, setTimeFilter, viewMode, setViewMode, showPremiumAI, logs, loading, habitStats } = s;
+  const [showShare, setShowShare] = useState(false);
   // Oylik matritsada tanlangan kun va ochilgan odat (hook'lar early return'dan oldin)
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
   const [detailHabit, setDetailHabit] = useState<Habit | null>(null);
@@ -101,23 +102,17 @@ export function Analytics(props: AnalyticsProps) {
             </div>
           </div>
 
-          {/* Full-width Share CTA Banner */}
+          {/* Tahlilni ulashish: Story (9:16) / Post (1:1) posteri */}
           <button
             type="button"
-            onClick={shareAnalytics}
-            disabled={downloadingPoster}
-            className="w-full py-3 px-4 rounded-2xl bg-emerald-500/15 hover:bg-emerald-500/25 border border-emerald-500/30 text-emerald-400 font-semibold text-sm flex items-center justify-center gap-2 shadow-sm my-3 active:scale-[0.99] transition-all disabled:opacity-50"
+            onClick={() => setShowShare(true)}
+            className="w-full py-3 px-4 rounded-2xl bg-emerald-500/15 hover:bg-emerald-500/25 border border-emerald-500/30 text-emerald-400 font-semibold text-sm flex items-center justify-center gap-2 shadow-sm my-3 active:scale-[0.99] transition-all"
           >
-            {downloadingPoster ? (
-              <Loader2 className="w-4 h-4 animate-spin text-emerald-400" />
-            ) : (
-              <Share2 className="w-4 h-4 text-emerald-400" />
-            )}
-            <span>{downloadingPoster ? "Tahlil tayyorlanmoqda..." : "Tahlilni ulashish"}</span>
+            <Share2 className="w-4 h-4 text-emerald-400" />
+            <span>{t("analytics_share_cta")}</span>
           </button>
 
-      {/* ── HIGH-IMPACT 9:16 SOCIAL SHARE CARD TEMPLATE (1080x1920 @ 2x) ── */}
-      <SharePoster s={s} />
+      {showShare && <ShareAnalyticsModal isOpen={showShare} onClose={() => setShowShare(false)} s={s} />}
 
       <div id="analytics-content" className="flex flex-col gap-5 p-1 -m-1 rounded-xl" style={{ background: "transparent" }}>
 

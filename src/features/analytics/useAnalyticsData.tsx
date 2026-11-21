@@ -2,10 +2,6 @@
 import { useState, useEffect, useMemo, useRef } from "react";
 import { toast } from "sonner";
 import { Flame, BarChart2, Brain, CheckCircle2, Moon, Activity as ActivityIcon, ShieldCheck } from "lucide-react";
-import { Capacitor } from "@capacitor/core";
-import { Share } from "@capacitor/share";
-import { Filesystem, Directory } from "@capacitor/filesystem";
-import { toPng } from "html-to-image";
 import { useNavigate } from "react-router-dom";
 import { getHabitDomain, HABIT_DOMAINS, type HabitDomain } from "../../utils/habitCategory";
 import { getCoachNote, upsertCoachNote, isHabitLogSuccess, getHabits, getLogsBetween, getRecentFailReasons, getStreakFreezes } from "../../services/db";
@@ -26,8 +22,6 @@ export function useAnalyticsData({ completedToday, totalHabits, onUserClick, onP
   const { updateCoins, refreshUserProfile } = useUser();
   const profile = useProfile();
 
-  const [downloadingPoster, setDownloadingPoster] = useState(false);
-  const posterRef = useRef<HTMLDivElement | null>(null);
   const aiCardRef = useRef<HTMLDivElement | null>(null);
   const [timeFilter, setTimeFilter] = useState<'weekly' | 'monthly' | 'yearly' | 'all'>('monthly');
   const [viewMode, setViewMode] = useState<'personal' | 'leaderboard'>('personal');
@@ -644,71 +638,6 @@ ${failReasonLines.length ? failReasonLines.join("\n") : "Sabab yozilmagan"}
     },
   ];
 
-  const handleNativeShare = async (dataUrl: string) => {
-    if (Capacitor.isNativePlatform()) {
-      try {
-        const fileName = `tahlil_${Date.now()}.png`;
-        const base64Content = dataUrl.replace(/^data:image\/\w+;base64,/, '');
-
-        const writeResult = await Filesystem.writeFile({
-          path: fileName,
-          data: base64Content,
-          directory: Directory.Cache,
-        });
-
-        await Share.share({
-          title: 'Mening Oylik Intizom Tahlilim',
-          text: "IDROK ilovasida mening yangi marralarim!",
-          url: writeResult.uri,
-          dialogTitle: 'Tahlilni ulashish',
-        });
-        toast.success("Tahlil ulashish uchun tayyorlandi!");
-      } catch (nativeErr: any) {
-        console.error("Capacitor Native Share Error:", nativeErr);
-        const link = document.createElement("a");
-        link.download = "tahlil.png";
-        link.href = dataUrl;
-        link.click();
-        toast.success("Tahlil rasmi yuklab olindi!");
-      }
-    } else {
-      const link = document.createElement("a");
-      link.download = "tahlil.png";
-      link.href = dataUrl;
-      link.click();
-      toast.success("Tahlil rasmi yuklab olindi!");
-    }
-  };
-
-  const shareAnalytics = async () => {
-    if (!posterRef.current || downloadingPoster) return;
-    setDownloadingPoster(true);
-    try {
-      if (!posterRef.current) throw new Error("Poster DOM reference not found");
-
-      // Small delay to ensure styles and layouts are settled
-      await new Promise((r) => setTimeout(r, 150));
-
-      const base64Data = await Promise.race([
-        toPng(posterRef.current, {
-          pixelRatio: 2,
-          cacheBust: true,
-          skipFonts: true,
-        }),
-        new Promise<never>((_, reject) =>
-          setTimeout(() => reject(new Error("Poster tayyorlash vaqti tugadi (timeout)")), 5000)
-        ),
-      ]);
-
-      await handleNativeShare(base64Data);
-    } catch (err: any) {
-      console.error("Share error:", err);
-      toast.error(`Tahlil tayyorlashda xatolik: ${err?.message || "Noma'lum xato"}`);
-    } finally {
-      setDownloadingPoster(false);
-    }
-  };
-
   const lv = getLevel(profile.score || 0);
   const initials = profile.display_name.split(" ").map((n: string) => n[0]).join("").toUpperCase().slice(0, 2);
   const now = tashkentTodayAnchor();
@@ -725,9 +654,6 @@ ${failReasonLines.length ? failReasonLines.join("\n") : "Sabab yozilmagan"}
     updateCoins,
     refreshUserProfile,
     profile,
-    downloadingPoster,
-    setDownloadingPoster,
-    posterRef,
     aiCardRef,
     timeFilter,
     setTimeFilter,
@@ -785,8 +711,6 @@ ${failReasonLines.length ? failReasonLines.join("\n") : "Sabab yozilmagan"}
     card,
     getHeatColor,
     kpis,
-    handleNativeShare,
-    shareAnalytics,
     lv,
     initials,
     now,
