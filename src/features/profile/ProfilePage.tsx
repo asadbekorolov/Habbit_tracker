@@ -19,6 +19,7 @@ import { useIsSiteAdmin } from "../../hooks/useIsSiteAdmin";
 import { CoinShopModal } from "./CoinShopModal";
 import { FeedbackModal } from "./components/FeedbackModal";
 import { GuideModal } from "./components/GuideModal";
+import { InviteFriendsCard } from "./components/InviteFriendsCard";
 import { BiometricsOnboardingModal } from "../../components/BiometricsOnboardingModal";
 import { MiniPipAvatar } from "../../components/MiniPipAvatar";
 import { getLevel } from "../../utils/levels";
@@ -230,6 +231,9 @@ export function ProfilePage({ onNavigate, lang, onProfileUpdate }: ProfilePagePr
           </button>
         )}
       </section>
+
+      {/* Do'stlarni taklif qilish (058) */}
+      <InviteFriendsCard />
 
       {/* Anthropometrics / Biometrics Card */}
       <div

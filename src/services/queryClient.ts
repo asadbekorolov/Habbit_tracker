@@ -60,6 +60,7 @@ export const queryKeys = {
   routines: (uid: string) => ['routines', uid] as const,
   freezes: (uid: string) => ['freezes', uid] as const,
   monthNotes: (uid: string, year: number, month: number) => ['notes', uid, year, month] as const,
+  referral: (uid: string) => ['referral', uid] as const,
 };
 
 // ─── ODAT BELGILARI → KESH ──────────────────────────────────────────────

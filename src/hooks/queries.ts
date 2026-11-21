@@ -16,6 +16,8 @@ import {
   getStreakFreezes,
   getMonthlyFreezeCount,
   getExtraFreezeCount,
+  getMyReferralInfo,
+  type ReferralInfo,
   type CompactLog,
   type HabitMeta,
   type LeaderboardEntry,
@@ -218,4 +220,16 @@ function daysBetween(from: string, to: string): number {
   const a = Date.UTC(+from.slice(0, 4), +from.slice(5, 7) - 1, +from.slice(8, 10));
   const b = Date.UTC(+to.slice(0, 4), +to.slice(5, 7) - 1, +to.slice(8, 10));
   return Math.round((b - a) / 86_400_000) + 1;
+}
+
+// ─── Taklif tizimi (058) ─────────────────────────────────────────────
+export const referralInfoQuery = (uid: string) =>
+  queryOptions<ReferralInfo>({
+    queryKey: queryKeys.referral(uid),
+    queryFn: () => getMyReferralInfo(),
+    staleTime: 5 * 60_000,
+  });
+
+export function useReferralInfoQuery(uid: string | null | undefined) {
+  return useQuery({ ...referralInfoQuery(uid || ''), enabled: enabledFor(uid) });
 }

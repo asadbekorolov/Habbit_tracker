@@ -36,6 +36,7 @@ import { MONTHS_FULL, DAYS_FULL, isLangLoaded, loadLang } from "./utils/i18n";
 import { trackEvent } from "./utils/analytics";
 import { Toaster, toast } from "sonner";
 import { useMobileLifecycle } from "./hooks/useMobileLifecycle";
+import { useReferralAutoApply } from "./hooks/useReferralAutoApply";
 import { nativeNotificationService } from "./services/nativeNotificationService";
 import { notificationService } from "./services/notificationService";
 import { useHaptics } from "./hooks/useHaptics";
@@ -220,6 +221,9 @@ export default function App() {
 
   // Mobile lifecycle management (status bar, hardware back button, health sync)
   useMobileLifecycle({ profileId: profile?.id });
+
+  // Taklif havolasi (?ref=KOD) bilan kelgan bo'lsa — kirgandan keyin kod qo'llanadi
+  useReferralAutoApply();
 
   // Navbat serverdan haqiqiy balans/darajani qaytarganda header'dagi
   // optimistik qiymatlarni server qiymati bilan almashtiramiz.

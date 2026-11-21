@@ -8,6 +8,7 @@
   import App from "./App.tsx";
   import "./styles/index.css";
   import { Capacitor } from "@capacitor/core";
+  import { capturePendingReferral } from "./utils/referral";
 
   // Global polyfill/guard to prevent "TypeError: Illegal constructor" for Web Notifications in Android WebViews
   if (typeof window !== 'undefined' && Capacitor.getPlatform() === 'android') {
@@ -83,6 +84,9 @@
       </PersistQueryClientProvider>
     );
   }
+
+  // Taklif havolasi (?ref=KOD): router ishga tushishidan oldin saqlab olamiz
+  capturePendingReferral();
 
   createRoot(document.getElementById("root")!).render(
     <ErrorBoundary>
