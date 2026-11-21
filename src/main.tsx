@@ -9,6 +9,7 @@
   import "./styles/index.css";
   import { Capacitor } from "@capacitor/core";
   import { capturePendingReferral } from "./utils/referral";
+  import { capturePendingPack } from "./utils/habitPack";
 
   // Global polyfill/guard to prevent "TypeError: Illegal constructor" for Web Notifications in Android WebViews
   if (typeof window !== 'undefined' && Capacitor.getPlatform() === 'android') {
@@ -87,6 +88,8 @@
 
   // Taklif havolasi (?ref=KOD): router ishga tushishidan oldin saqlab olamiz
   capturePendingReferral();
+  // Odatlar to'plami havolasi (?pack=KOD) — kirgach qabul qilish oynasi ochiladi
+  capturePendingPack();
 
   createRoot(document.getElementById("root")!).render(
     <ErrorBoundary>

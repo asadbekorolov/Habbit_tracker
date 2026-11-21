@@ -37,6 +37,7 @@ import { trackEvent } from "./utils/analytics";
 import { Toaster, toast } from "sonner";
 import { useMobileLifecycle } from "./hooks/useMobileLifecycle";
 import { useReferralAutoApply } from "./hooks/useReferralAutoApply";
+import { HabitPackImportGate } from "./features/habits/HabitPackImportGate";
 import { nativeNotificationService } from "./services/nativeNotificationService";
 import { notificationService } from "./services/notificationService";
 import { useHaptics } from "./hooks/useHaptics";
@@ -762,6 +763,8 @@ export default function App() {
   return (
     <LangContext.Provider value={langVal}>
       <Toaster position="top-right" richColors theme={"dark"} />
+      {/* ?pack=KOD havolasi bilan kelgan bo'lsa — kirgach to'plamni qabul qilish oynasi */}
+      {profile && <HabitPackImportGate />}
       <Routes>
         <Route path="/login" element={
           profile ? <Navigate to="/dashboard" replace /> : (

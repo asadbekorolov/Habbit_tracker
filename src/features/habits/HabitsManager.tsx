@@ -29,6 +29,8 @@ import { AddHabitModal } from "../../components/AddHabitModal";
 import { useHabitMutations, getHabitReminder } from "../../hooks/useHabitMutations";
 import { HabitDetailModal } from "./HabitDetailModal";
 import { useProfile } from "../../store/UserContext";
+import { ShareHabitsModal } from "./ShareHabitsModal";
+import { Share2 } from "lucide-react";
 
 interface HabitsManagerProps {
 }
@@ -105,6 +107,7 @@ export function HabitsManager({}: HabitsManagerProps) {
   const [analyticsHabit, setAnalyticsHabit] = useState<Habit | null>(null);
 
   const [showGoalPack, setShowGoalPack] = useState(false);
+  const [showShareHabits, setShowShareHabits] = useState(false);
   const [selectedGoal, setSelectedGoal] = useState<string | null>(null);
   const [checkedPack, setCheckedPack] = useState<Set<number>>(new Set());
   const [bulkAdding, setBulkAdding] = useState(false);
@@ -277,7 +280,20 @@ export function HabitsManager({}: HabitsManagerProps) {
       ) : (
         <>
           <div className="flex items-center justify-between gap-2 mb-1">
-            <div className="flex-1 min-w-0" />
+            <div className="flex-1 min-w-0">
+              {/* Odatlar to'plamini havola orqali ulashish (059) */}
+              {habits.length > 0 && (
+                <button
+                  type="button"
+                  onClick={() => setShowShareHabits(true)}
+                  aria-label={t("pack_share_btn")}
+                  className="h-10 rounded-xl px-3 bg-slate-900 border border-slate-800 text-slate-300 hover:text-white text-xs font-medium flex items-center justify-center gap-1.5 transition-all cursor-pointer active:scale-95"
+                >
+                  <Share2 className="w-3.5 h-3.5 text-emerald-400" />
+                  <span className="hidden min-[380px]:inline">{t("pack_share_btn")}</span>
+                </button>
+              )}
+            </div>
 
             {/* Right: Actions Group */}
             <div className="flex items-center gap-2 shrink-0">
@@ -302,6 +318,10 @@ export function HabitsManager({}: HabitsManagerProps) {
               </button>
             </div>
           </div>
+
+      {showShareHabits && (
+        <ShareHabitsModal isOpen={showShareHabits} onClose={() => setShowShareHabits(false)} habits={habits} />
+      )}
 
       <AddHabitModal
         isOpen={showForm}
