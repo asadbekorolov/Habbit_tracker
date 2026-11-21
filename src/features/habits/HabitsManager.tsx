@@ -283,55 +283,48 @@ export function HabitsManager({}: HabitsManagerProps) {
         <RoutinesManager profile={profile} userHabits={habits} />
       ) : (
         <>
-          <div className="flex items-center justify-between gap-2 mb-1">
-            <div className="flex-1 min-w-0 flex items-center gap-2">
-              {/* Do'st yuborgan to'plamni kod orqali olish (brauzerga o'tmasdan) */}
-              <button
-                type="button"
-                onClick={() => setShowPackCode(true)}
-                aria-label={t("pack_code_btn")}
-                title={t("pack_code_btn")}
-                className="h-10 rounded-xl px-3 bg-slate-900 border border-slate-800 text-slate-300 hover:text-white text-xs font-medium flex items-center justify-center gap-1.5 transition-all cursor-pointer active:scale-95"
-              >
-                <KeyRound className="w-3.5 h-3.5 text-emerald-400" />
-                <span className={habits.length === 0 ? "" : "hidden min-[430px]:inline"}>{t("pack_code_btn")}</span>
-              </button>
-              {/* Odatlar to'plamini havola orqali ulashish (059) */}
-              {habits.length > 0 && (
-                <button
-                  type="button"
-                  onClick={() => setShowShareHabits(true)}
-                  aria-label={t("pack_share_btn")}
-                  className="h-10 rounded-xl px-3 bg-slate-900 border border-slate-800 text-slate-300 hover:text-white text-xs font-medium flex items-center justify-center gap-1.5 transition-all cursor-pointer active:scale-95"
-                >
-                  <Share2 className="w-3.5 h-3.5 text-emerald-400" />
-                  <span className="hidden min-[380px]:inline">{t("pack_share_btn")}</span>
-                </button>
-              )}
-            </div>
+          {/* Amallar: 2x2 simmetrik panjara — har bir tugma matni to'liq sig'adi */}
+          <div className="grid grid-cols-2 gap-2.5 mb-1">
+            {/* Primary Habit Creation CTA */}
+            <button
+              type="button"
+              onClick={() => { setEditingId(null); setShowForm(true); }}
+              className="min-h-11 py-2 w-full min-w-0 rounded-2xl px-2.5 bg-emerald-500 hover:bg-emerald-400 text-slate-950 text-xs font-semibold shadow-sm flex items-center justify-center gap-1.5 transition-all active:scale-95 cursor-pointer"
+            >
+              <Plus className="w-4 h-4 shrink-0 stroke-[2.5]" />
+              <span className="text-center leading-tight">{t("plus_new_habit")}</span>
+            </button>
 
-            {/* Right: Actions Group */}
-            <div className="flex items-center gap-2 shrink-0">
-              {/* Paket Button */}
-              <button
-                type="button"
-                onClick={() => { setShowGoalPack(true); setSelectedGoal(null); setCheckedPack(new Set()); setAddError(""); }}
-                className="h-10 rounded-xl px-4 bg-slate-900 border border-slate-800 text-slate-300 hover:text-white text-xs font-medium flex items-center justify-center gap-1.5 transition-all cursor-pointer"
-              >
-                <Sparkles className="w-3.5 h-3.5 text-amber-400" />
-                <span>+ Paket</span>
-              </button>
+            {/* Maqsad bo'yicha paket */}
+            <button
+              type="button"
+              onClick={() => { setShowGoalPack(true); setSelectedGoal(null); setCheckedPack(new Set()); setAddError(""); }}
+              className="min-h-11 py-2 w-full min-w-0 rounded-2xl px-2.5 bg-slate-900 border border-slate-800 text-slate-300 hover:text-white text-xs font-medium flex items-center justify-center gap-1.5 transition-all cursor-pointer active:scale-95"
+            >
+              <Sparkles className="w-3.5 h-3.5 shrink-0 text-amber-400" />
+              <span className="text-center leading-tight">{t("habits_bundle")}</span>
+            </button>
 
-              {/* Primary Habit Creation CTA */}
-              <button
-                type="button"
-                onClick={() => { setEditingId(null); setShowForm(true); }}
-                className="h-10 rounded-xl px-4 bg-emerald-500 hover:bg-emerald-400 text-slate-950 text-xs font-semibold shadow-sm flex items-center justify-center gap-1.5 transition-all active:scale-95 cursor-pointer"
-              >
-                <Plus className="w-4 h-4 stroke-[2.5]" />
-                <span>+ Yangi odat</span>
-              </button>
-            </div>
+            {/* Odatlar to'plamini havola orqali ulashish (059) */}
+            <button
+              type="button"
+              onClick={() => setShowShareHabits(true)}
+              disabled={habits.length === 0}
+              className="min-h-11 py-2 w-full min-w-0 rounded-2xl px-2.5 bg-slate-900 border border-slate-800 text-slate-300 hover:text-white text-xs font-medium flex items-center justify-center gap-1.5 transition-all cursor-pointer active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed disabled:active:scale-100"
+            >
+              <Share2 className="w-3.5 h-3.5 shrink-0 text-emerald-400" />
+              <span className="text-center leading-tight">{t("pack_share_btn")}</span>
+            </button>
+
+            {/* Do'st yuborgan to'plamni kod orqali olish (brauzerga o'tmasdan) */}
+            <button
+              type="button"
+              onClick={() => setShowPackCode(true)}
+              className="min-h-11 py-2 w-full min-w-0 rounded-2xl px-2.5 bg-slate-900 border border-slate-800 text-slate-300 hover:text-white text-xs font-medium flex items-center justify-center gap-1.5 transition-all cursor-pointer active:scale-95"
+            >
+              <KeyRound className="w-3.5 h-3.5 shrink-0 text-emerald-400" />
+              <span className="text-center leading-tight">{t("pack_code_btn")}</span>
+            </button>
           </div>
 
       {showShareHabits && (
