@@ -2,7 +2,7 @@
 
 > Bu hujjat loyihada ishlaydigan keyingi yordamchi (AI yoki dasturchi) uchun.
 > Avval shuni to'liq o'qing — qoidalar, joriy holat va qilinmagan ishlar shu yerda.
-> Sana: 2026-11-18. Oxirgi kod commiti: `0930f42` (`main` = `idrok/refactor`).
+> Sana: 2026-11-21. Oxirgi kod commiti: `4d0e0a4` (`main` = `idrok/refactor`).
 
 ---
 
@@ -41,16 +41,16 @@ Endi bazaga o'zgarish **faqat** `supabase/migrations/NNN_nom.sql` orqali va
 **jurnal bilan** kiradi. SQL Editor'da qo'lda ishga tushirish shart emas.
 To'liq qo'llanma: `supabase/MIGRATIONS.md`.
 
-- **Jurnal:** `app_meta.schema_migrations` (anon/authenticated uchun yopiq). Prod bazada **002–056 `adopt` qilingan** (55 ta, SQL qayta ishga tushirilmagan). **057** — `main` ga push'dan keyin CI `migrate` job orqali qo'llanadi (`production` environment tasdig'i yoqilgan bo'lsa — GitHub Actions'da "Review deployments" tasdig'idan keyin). Tekshirish: `npm run db:status`.
+- **Jurnal:** `app_meta.schema_migrations` (anon/authenticated uchun yopiq). Prod bazada **002–056 `adopt` qilingan** (55 ta, SQL qayta ishga tushirilmagan). **057** CI orqali qo'llangan. **058** — `main` ga push'dan keyin CI `migrate` job orqali qo'llanadi (`production` environment tasdig'i yoqilgan bo'lsa — GitHub Actions'da "Review deployments" tasdig'idan keyin). Tekshirish: `npm run db:status`.
 - **Buyruqlar:** `npm run db:status` · `npm run db:migrate` (`-- --dry-run`) · `npm run db:adopt -- --through NNN` (faqat bir martalik edi, bajarilgan).
 - **Ulanish:** `SUPABASE_DB_URL` muhit o'zgaruvchisi (Session pooler). TLS Supabase CA bilan to'liq tekshiriladi: `supabase/certs/prod-ca-2021.crt` (ommaviy sertifikat, commit qilingan).
 - **CI** (`.github/workflows/ci.yml`): har push/PR'da `typecheck`, `npm test`, `build`. `main` ga push'da `migrate` job kutilayotgan migratsiyalarni qo'llaydi — GitHub'da `SUPABASE_DB_URL` secret va `DB_AUTO_MIGRATE=true` o'zgaruvchisi **o'rnatilgan**, `production` environment (ixtiyoriy tasdiq) bilan.
-- **Yangi migratsiya qoidasi:** keyingi raqam `057_…`; `BEGIN; … COMMIT;`; qayta ishga tushirishga chidamli (`IF NOT EXISTS`, `CREATE OR REPLACE`, qaytish turi o'zgarsa avval `DROP FUNCTION IF EXISTS`); test `tests/db/057-….test.mjs`. Qo'llangan faylni tahrirlamang — yangi raqam qo'shing.
+- **Yangi migratsiya qoidasi:** keyingi raqam `059_…`; `BEGIN; … COMMIT;`; qayta ishga tushirishga chidamli (`IF NOT EXISTS`, `CREATE OR REPLACE`, qaytish turi o'zgarsa avval `DROP FUNCTION IF EXISTS`); test `tests/db/059-….test.mjs`. Qo'llangan faylni tahrirlamang — yangi raqam qo'shing.
 - **Tartib:** avval baza, keyin kod (Vercel `main` ni parallel deploy qiladi).
 - Repoda `001` yo'q; 002–046 jonli bazada qo'lda qo'llangan. To'liq sxema: `npm run db:baseline` (`supabase/baseline/`).
 
 ### Testlar
-- `npm test` = unit (`tests/*.test.ts`) + migratsiya testlari (`tests/db/*.test.mjs`, PGlite — xotiradagi Postgres). Hozir **129/129**.
+- `npm test` = unit (`tests/*.test.ts`) + migratsiya testlari (`tests/db/*.test.mjs`, PGlite — xotiradagi Postgres). Hozir **135/135**.
 - `tests/db/harness.mjs` — umumiy vositalar; `tests/db/legacy-schema.sql` — Supabase muhiti yaqinlashuvi + 047 dan oldingi sxema.
 - `tests/db/chain.test.mjs` — nomlar qoidasi va 047+ har biri ketma-ket 2 marta qo'llanishi.
 - `tests/db/migrator.test.mjs` — ishga tushirgich (adopt, xato, tartib, checksum, huquqlar).
@@ -133,27 +133,61 @@ mumkin (Vercel statusi commit'ga yoziladi).
 
 ---
 
+### 3.12. Xavfsizlik yangilanishi — `afffc57`
+Capacitor 8.5.0 → **8.5.1** (critical GHSA-rvm3-566m-v7fv: ichki HTTP proxy
+orqali ilova manzilida tashqi kontent). `npm audit fix` — production
+paketlarida 0 zaiflik. Vite 6.3.5 → 6.4.4 (dev server; qolgan bitta
+"moderate" faqat Vite 7 bilan yopiladi). `versionCode 2`, `versionName 1.0.1`.
+AI tahlildagi "tanga yechilmadi" xatosi: Vercel'dagi `SUPABASE_SERVICE_ROLE_KEY`
+noto'g'ri edi — foydalanuvchi almashtirdi, AI tahlil jonli serverda ishlaydi.
+
+### 3.13. Taklif tizimi va ulashish posteri
+- `c80e72e` — **058:** `profiles.referral_code` (7 belgi, 0/O/1/I/L yo'q,
+  unikal; mavjudlarga berildi, yangilariga BEFORE INSERT trigger) va
+  `referred_by` — mijoz o'qiy/yoza olmaydi; `referral_rewards` (RLS, mijozga
+  huquq yo'q, `referred_id UNIQUE`); `apply_referral_code(p_code)` — o'zini,
+  ikkinchi marta, 48 soatdan eski akkaunt, o'zaro (A↔B) va bloklangan
+  foydalanuvchi kodi rad etiladi; do'st **+50**, taklif qiluvchi **+100**
+  tanga va bildirishnoma (`link: profile:<do'st id>`); taklif qiluvchi
+  sutkada ko'pi bilan **10** marta mukofot oladi (keyin 0, do'st baribir +50).
+  `get_my_referral_info()` — kod, `can_apply`, muddat, taklif qilinganlar
+  soni, ishlangan tangalar.
+- `604f9ea` — `?ref=KOD` `main.tsx` da saqlanadi (`utils/referral.ts`), kirgach
+  `useReferralAutoApply` qo'llaydi (tarmoq xatosida keyin qayta urinadi).
+  Profil: `InviteFriendsCard` → `InviteFriendsModal` (nusxalash, ulashish,
+  Telegram, statistika, 48 soat ichida kodni qo'lda kiritish).
+  `utils/share.ts` — umumiy ulashish yordamchilari.
+- `4d0e0a4` — `ShareAnalyticsModal` + `AnalyticsPoster`: Story 9:16
+  (1080x1920) va Post 1:1 (1080x1080) PNG. Telegram tugmasi natija va taklif
+  havolasini matn sifatida yuboradi (Telegram'ning ochiq ulashish havolasi
+  rasm qabul qilmaydi); Ulashish — PNG; Rasmni saqlash — Documents/IDROK,
+  bo'lmasa ulashish oynasi. Personaj — `idle-poster.jpg` statik kadri.
+  Shriftlar `utils/posterFonts.ts` orqali PNG ichiga joylanadi.
+
 ## 4. Joriy holat
 
-- Kod: `main` = `idrok/refactor`, oxirgi kod commiti `0930f42`. Testlar **130/130**, typecheck 0 xato.
+- Kod: `main` = `idrok/refactor`, oxirgi kod commiti `4d0e0a4`. Testlar **135/135**, typecheck 0 xato.
 - Vercel: deploy yana ishlaydi (`4e63a43` dan beri). `privacy.html` va `delete-account.html` ochiq, `/api/ai-analysis` javob beradi.
-- Prod baza: 002–056 qo'llangan va jurnalda; 057 CI orqali qo'llanadi. Ilova `kiwrqzetpyobaemrsquq` loyihasiga ulangan (`ccjtciguxjogeadmstnd` — boshqa, bo'sh loyiha, ishlatilmaydi).
+- Prod baza: 002–057 qo'llangan va jurnalda; 058 CI orqali qo'llanadi (tekshirish: `npm run db:status`). Ilova `kiwrqzetpyobaemrsquq` loyihasiga ulangan (`ccjtciguxjogeadmstnd` — boshqa, bo'sh loyiha, ishlatilmaydi).
 - Baza parollari almashtirilgan; yangi parol faqat GitHub secret'da va foydalanuvchida.
-- **Paketlar** (`versionName 1.0.0`, `versionCode 1`, `com.idrok.app`):
-  - sinov: `android\app\build\outputs\apk\debug\app-debug.apk` (~9.5 MB);
-  - Play Console: `android\app\build\outputs\bundle\release\app-release.aab` (~6.8 MB), release kaliti bilan imzolangan (`jarsigner`: `jar verified`, `CN=Tracker, O=Tracker, C=UZ`). Imzo `android/keystore.properties` (git-ignored) dan o'qiladi.
+- **Paketlar** (`versionName 1.0.1`, `versionCode 2`, `com.idrok.app`):
+  - sinov: `android\app\build\outputs\apk\debug\app-debug.apk` (~9.7 MB, `4d0e0a4`);
+  - Play Console: `android\app\build\outputs\bundle\release\app-release.aab` (~7.2 MB, `afffc57` holatida — taklif va poster yo'q; yuklashdan oldin `bundleRelease` ni qayta yig'ing), release kaliti bilan imzolangan (`jarsigner`: `jar verified`, `CN=Tracker, O=Tracker, C=UZ`). Imzo `android/keystore.properties` (git-ignored) dan o'qiladi.
 - Ma'lum ogohlantirish: release build'da `@capgo/capacitor-health` uchun "Kotlin metadata 2.4.0, expected 2.2.0" xabarlari chiqadi — build muvaffaqiyatli, lekin Kotlin/AGP versiyasini keyinroq moslash kerak.
-- Keyingi AAB yuklashda `versionCode` ni oshiring (2, 3, …).
+- Play Console'ga hali hech narsa yuklanmagan: birinchi yuklash `versionCode 2` bilan bo'lishi mumkin, keyingilarida oshiring.
 
 ## 5. Qilinmagan / keyingi ishlar
 
 1. **Play Market:** `app-release.aab` ni Internal testing trekiga yuklash; Play Console'da Data safety, Health apps, App access (reviewer test hisobi), Target audience formalarini `docs/PLAY_STORE.md` bo'yicha to'ldirish; keyin Closed testing (12 tester, 14 kun).
-2. **057 prod'da qo'llanganini tasdiqlash:** GitHub Actions → CI → `migrate` (kerak bo'lsa "Review deployments"), keyin `npm run db:status` — kutilayotgan 0.
+2. **058 prod'da qo'llanganini tasdiqlash:** GitHub Actions → CI → `migrate` (kerak bo'lsa "Review deployments"), keyin `npm run db:status` — kutilayotgan 0.
 3. **Tanga sotish (B variant, keyinroq):** Google Play Billing (consumable) + serverda Google Play Developer API orqali xaridni tekshirish + `credit_payment` kabi RPC; yoqish — `platformPolicy.ts`.
 4. **Tanga iqtisodi:** narxlar 150–600 ga tushirildi (057); foydalanuvchi kuniga qancha tanga ishlashini haqiqiy ma'lumotda o'lchab, kerak bo'lsa yana moslash.
 5. **Sinov (telefonda ko'rilmagan):** yangi vaqt tanlagich, AI closeup kadri, ekran vaqti va uyqu hisoblari (Samsung Digital Wellbeing bilan farq bo'lishi mumkin), 20 kunlik bezaklar va yangi narxlar, admin bildirishnomasi, Sozlamalardan akkauntni o'chirish, veb-versiyaga kirish va AI tahlil (Vercel tiklangandan keyin).
 6. **Texnik qarz (qolgan):** `social.ts` dagi "sizi kuzatishni boshladi" bildirishnoma matni boshqa foydalanuvchi uchun bazaga o'zbekcha yoziladi (qabul qiluvchi tili noma'lum); Kotlin metadata ogohlantirishi (`@capgo/capacitor-health`); admin `UsersTab` boshqalarning ramkasini `profiles` dan ko'rsatadi (faqat admin uchun).
-7. **Mahsulot:** funksiyalar ko'p; yangi narsa qo'shishdan oldin yopiq beta va 7/30 kunlik qaytish (retention) ko'rsatkichini o'lchash tavsiya etilgan.
+7. **Taklif tizimi:** soxta akkauntlar bilan tanga yig'ish kuzatilsa — taklif qiluvchi mukofotini do'st birinchi odatini bajargandan keyin berishga o'tkazish. `?ref` faqat veb havola orqali ishlaydi; Android App Links (havola ilovani ochishi) hali yo'q — ilova foydalanuvchisi kodni qo'lda kiritadi. Telefonda sinalmagan: ulashish oynasi, Documents/IDROK ga saqlash, Telegram havolasi.
+8. **Personaj tizimi (reja):** Rive (holat mashinasi: emotsiya, harakat, kiyim joylari); `wearable_items` / `user_wearables` / `user_loadout`; darajaga qarab ochiladigan emotsiyalar; odat turkumiga bog'liq harakatlar (masalan, ertalabki yugurishda krossovka bog'lash). Avval rassom uchun texnik topshiriq.
+9. **Maktablar:** Play'da 13+ (7–11-sinflar); 13 yoshdan kichiklar uchun Families siyosati talablari; shaxsiy ma'lumotlarni O'zbekistonda saqlash talabini huquqshunos bilan aniqlashtirish.
+10. **Mahsulot:** funksiyalar ko'p; yangi narsa qo'shishdan oldin yopiq beta va 7/30 kunlik qaytish (retention) ko'rsatkichini o'lchash tavsiya etilgan.
 
 ## 6. Foydali fayllar
 
