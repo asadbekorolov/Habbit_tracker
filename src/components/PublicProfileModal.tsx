@@ -154,11 +154,6 @@ export function PublicProfileModal({ viewingId, myProfile, onClose }: PublicProf
   const initials = nameInitials(name);
   // Nishonlar — o'z profilidagi bilan bir xil shartlar (utils/badges), faqat ochilganlari
   const earnedBadges = isPrivate ? [] : computeNativeBadges({ score: profile.score || 0, totalCompleted, activeDays, bestStreak }).filter((b) => b.isUnlocked);
-  // Telegram identifikatori faqat quyidagi holatlarda DOM'ga chiqariladi:
-  // o'zi, yoki profil ochiq (telegram_private=false), yoki so'rov allaqachon
-  // tasdiqlangan. Aks holda hech narsa ko'rsatilmaydi — pastdagi "So'rov
-  // yuborish" tugmasi orqali ruxsat so'raladi (Actions bo'limi).
-  const canSeeTelegram = isSelf || !profile.telegram_private || tgStatus === 'approved';
 
   return (
     <div
@@ -252,18 +247,6 @@ export function PublicProfileModal({ viewingId, myProfile, onClose }: PublicProf
               <p className="text-[11px]" style={{ color: "var(--muted-foreground)" }}>{t('profile_following')}</p>
             </div>
             <div className="ml-auto flex items-center gap-2 flex-wrap justify-end">
-              {profile.telegram_username && canSeeTelegram && (
-                <a
-                  href={`https://t.me/${profile.telegram_username}`}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl text-xs font-semibold transition-all hover:opacity-80"
-                  style={{ background: "rgba(96,165,250,0.12)", color: "#60A5FA", border: "1px solid rgba(96,165,250,0.25)", textDecoration: "none" }}
-                >
-                  <Send size={12} />
-                  {t('pp_telegram_connect')}
-                </a>
-              )}
               {profile.instagram_username && (
                 <a
                   href={`https://instagram.com/${profile.instagram_username}`}
